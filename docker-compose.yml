@@ -12,6 +12,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
       - NGROK_DOMAIN=${NGROK_DOMAIN}
+      - GROQ_API_KEY=${GROQ_API_KEY}
     volumes:
       - .:/app  # 將當前目錄映射到容器中的 /app 目錄
     command: ["bash", "./start.sh"]  # 使用 bash 執行 start.sh 腳本

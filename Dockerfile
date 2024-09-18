@@ -22,15 +22,14 @@ RUN curl -Lo /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-
     tar -xvzf /usr/local/bin/ngrok -C /usr/local/bin && \
     chmod +x /usr/local/bin/ngrok
 
+# 複製應用代碼
+COPY . /app/
+
 # 設置工作目錄
 WORKDIR /app
 
-# 複製需求文件並安裝 Python 依賴項
-COPY requirements.txt /app/
 RUN uv pip install --no-cache-dir -r requirements.txt
 
-# 複製應用代碼
-COPY . /app/
 
 # 確保 start.sh 是 Unix 格式並設置執行權限
 RUN chmod +x /app/start.sh

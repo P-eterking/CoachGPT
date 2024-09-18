@@ -23,11 +23,13 @@ from linebot.v3.webhooks import (
     TextMessageContent,
     AudioMessageContent
 )
+from groq import Groq
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
+groq  = Groq(api_key=os.getenv("GROQ_API_KEY"))
 app = FastAPI()
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
@@ -85,8 +87,8 @@ async def handle_audio_message(event):
         await f.write(message_content)
     
     # 使用 Whisper API 轉錄音頻
-    transcript = client.audio.transcriptions.create(
-        model="whisper-1",
+    transcript = groq.audio.transcriptions.create(
+        model="whisper-large-v3",
         file=Path(f"{event.message.id}.m4a"),  # Pass the audio content as bytes
         prompt="",
     )
