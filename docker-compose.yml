@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  service:
+    build: .
+    container_name: linebot-service
+    ports:
+      - "8000:8000"  # 映射 FastAPI 服務的端口
+    environment:
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - NGROK_DOMAIN=${NGROK_DOMAIN}
+    volumes:
+      - .:/app  # 將當前目錄映射到容器中的 /app 目錄
+    command: ["bash", "./start.sh"]  # 使用 bash 執行 start.sh 腳本
