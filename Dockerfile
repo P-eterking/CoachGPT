@@ -30,6 +30,7 @@ WORKDIR /app
 
 RUN uv pip install --no-cache-dir -r requirements.txt
 
+RUN echo "vm.swappiness=10" >> /etc/sysctl.conf
 
 # 確保 start.sh 是 Unix 格式並設置執行權限
 RUN chmod +x /app/start.sh
