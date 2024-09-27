@@ -12,11 +12,11 @@ async def handle_text_message(event):
     # 用戶資料綁定
     if user_data.get(user_id) is None:
         if len(message.split()) < 3:
-            await send_text_message(event, "請先綁定個人資料！\n依指定格式輸入：<系級> <學號> <姓名>")
+            await send_text_message(event, "請先綁定個人資料！\n依指定格式輸入：<系級> <學號> <姓名>\n如：應外一乙 11352237 王大明\n\nPlease enter your info first!\nInput format:\n<Department> <Student ID> <Name>")
             return
         depart, student_id, name = message.split(' ')[0], message.split(' ')[1], message.split(' ')[2]
         if not student_id.isdigit():
-            await send_text_message(event, "學號格式錯誤！")
+            await send_text_message(event, "學號格式錯誤！\nFormat error!")
             return
         user_data[user_id] = {'dep': depart, 'id': student_id, 'name': name}
         await send_text_message(event, f"綁定完成，Hello! {name}")
