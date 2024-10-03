@@ -7,6 +7,7 @@ from groq import Groq
 # 環境變數設定
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
+DOMAIN = os.getenv("NGROK_DOMAIN")
 
 # LINE Bot 配置
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
