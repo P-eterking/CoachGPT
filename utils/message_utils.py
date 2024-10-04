@@ -32,6 +32,14 @@ qs = [
 
 richMenuId : str = None
 
+async def send_message(event, msg):
+    await line_bot_api.reply_message(
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=msg
+        )
+    )
+
 async def send_text_message(event, text):
     await line_bot_api.reply_message(
         ReplyMessageRequest(
@@ -40,7 +48,53 @@ async def send_text_message(event, text):
         )
     )
 
-async def send_carousel_message(event,unit):
+async def question_message(unit, sub):
+    return FlexMessage(
+            altText='口語練習',
+            contents=FlexBubble(   
+                size='giga', 
+                body=FlexBox(
+                    layout='vertical',
+                    contents=[
+                        FlexText(
+                            text=f'題目 {unit+1}-{sub+1}',
+                            wrap=True,
+                            weight='bold',
+                            size='xl',
+                        ),
+                        FlexBox(
+                            layout='baseline',
+                            margin='md',
+                            contents=[
+                                FlexText(
+                                    text=qs[unit][sub],
+                                    color='#5b5b5b',
+                                    size='sm',
+                                    margin='md',
+                                    wrap=True,
+                                    flex=1,
+                                ),
+                            ]
+                        ),
+                    ],
+                ),
+                footer=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    alignItems='center',
+                    justifyContent='center',
+                    contents=[
+                        FlexText(
+                            style='italic',
+                            size='xs',
+                            text='用語音回答問題，請按下方按鈕開始錄音',
+                        )
+                    ]
+                )
+            )
+        )
+
+async def carousel_message(unit):
     cols = []
     for sub,j in enumerate(qs[unit-1]):
         cols.append(FlexBubble(
@@ -72,33 +126,29 @@ async def send_carousel_message(event,unit):
                 ]
             )
         ))
-    cols.append(FlexBubble(
-        body=FlexBox(
-            contents=[
-                FlexText(
-                        text=f'前往下一單元',
-                        weight='bold',
-                        size='xl',
-                    ),],
-            layout='vertical',
-            alignItems='center',
-            justifyContent='center',
-            action=PostbackAction(
-                label='下一單元',
-                data=f'action=unit&unit={unit+1}'
-            )
-        ),
-    ))
+    if len(qs) > unit:
+        cols.append(FlexBubble(
+            body=FlexBox(
+                contents=[
+                    FlexText(
+                            text=f'前往下一單元',
+                            weight='bold',
+                            size='xl',
+                        ),],
+                layout='vertical',
+                alignItems='center',
+                justifyContent='center',
+                action=PostbackAction(
+                    label='下一單元',
+                    data=f'action=unit&unit={unit+1}'
+                )
+            ),
+        ))
     msg = FlexMessage(
         altText='單元導覽',
         contents=FlexCarousel(contents=cols)
     )
-    await line_bot_api.reply_message(
-        ReplyMessageRequest(
-            reply_token=event.reply_token,
-            messages=[msg]
-        )
-    )
+    return msg
 
 async def create_rich_menu():
     richMenu = await line_bot_api.create_rich_menu(

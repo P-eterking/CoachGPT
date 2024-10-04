@@ -1,8 +1,9 @@
+from collections import UserString
 import aiofiles
 from config import line_bot_api, line_bot_api_blob, groq
 import asyncio
-from utils.message_utils import send_carousel_message, send_text_message, qs
-from utils.file_utils import user_data
+from utils.message_utils import send_message, send_text_message, question_message, carousel_message
+from utils.file_utils import user_data, user_state
 import tempfile
 
 async def handle_text_message(event):
@@ -10,13 +11,13 @@ async def handle_text_message(event):
     message = event.message.text.strip()
 
     # 用戶資料綁定
-    if not await check_user_state(event, message):
+    if not await check_user_login(event, message):
         return
 
     # 如果是其他指令或回應
     # await send_carousel_message(event, unit=1)
 
-async def check_user_state(event, message = None):
+async def check_user_login(event, message = None):
     user_id = event.source.user_id
     
     if user_data.get(user_id) is None:
@@ -33,9 +34,13 @@ async def check_user_state(event, message = None):
     return True
 
 async def handle_audio_message(event):
-    if not await check_user_state(event):
+    if not await check_user_login(event):
         return
+    
     user_id = event.source.user_id
+    
+    if user_state.get(user_id) is None:
+        return
     
     result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
     
@@ -44,6 +49,9 @@ async def handle_audio_message(event):
         await asyncio.sleep(1)
 
     message_content = await line_bot_api_blob.get_message_content(event.message.id)
+    
+    text = None
+    
     with tempfile.NamedTemporaryFile(suffix=".m4a", delete=True) as f:
         f.write(message_content)
         f.seek(0)
@@ -58,19 +66,25 @@ async def handle_audio_message(event):
             file=f.file,
             language="en",
         )
-
-        await send_text_message(event, f"您說的是: {transcript.text}")
+        text = transcript.text
         f.flush()
+    
+    unit = user_state[user_id]['unit']
+    sub = user_state[user_id]['sub']
+    
+    await send_text_message(event, f"您說的是: {text}")
 
 async def handle_postback(event):
-    if not await check_user_state(event):
+    if not await check_user_login(event):
         return
+    user_id = event.source.user_id
     data :str = event.postback.data
     vars = {}
     for sep in data.split('&'):
         vars[sep.split('=')[0]] = sep.split('=')[1]
     if vars['action'] == 'record':
-        await send_text_message(event, qs[int(vars['unit'])][int(vars['sub'])])
+        user_state[user_id] = {'unit': int(vars['unit']), 'sub': int(vars['sub'])}
+        await send_message(event, question_message(int(vars['unit']), int(vars['sub'])))
     elif vars['action'] == 'unit':
-        await send_carousel_message(event, int(vars['unit']))
+        await send_message(event, carousel_message(int(vars['unit'])))
     return
