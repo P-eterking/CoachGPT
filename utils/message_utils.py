@@ -1,5 +1,8 @@
+from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
 from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
+from pydantic import BaseModel
+import json
 
 url  = f'https://{DOMAIN}'
 qs = [
@@ -30,9 +33,45 @@ qs = [
             "**Ending**: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n**結尾**：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。"
         ]]
 
+class SpeechAssessment(BaseModel):
+    suggestion: Annotated[str, '你的建議']
+    score: Annotated[int, '評量分數']
+    improved_speech: Annotated[str, '改善後的純文本']
+    
+SYSTEM_INSTRUCTION = f"""
+                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並生成建議、0-200的客觀評分與改善後的文本。
+                190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
+                此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
+                160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
+                以下有些小缺失可能發生，但不會影響訊息本身：
+                1. 使用複雜的語法結構時發生一些錯誤。
+                2. 一些不精確的詞彙。
+                3. 此區間的考生可以使用口語回答問題，並且傳達基本訊息。
+                130-150：考生被要求發表意見或回覆複雜的請求時，能夠提出相關的回應。不過，聽眾有時無法理解。
+                這可能是因為下列幾點：
+                1. 文法上的錯誤。
+                2. 字彙量有限。
+                此區間的考生通常可以回答問題，並且傳達基本的訊息。然而，有時候他們的回應是較難理解或解釋的。
+                110-120：考生只能有限的發表意見或回覆複雜請求，回應時會出現下列的問題：
+                語言不精確、模糊或重複。
+                1. 意見表達能力有限和論點間關連性不大。
+                2. 字彙量有限。
+                此區間的考生通常可以回答問題，並且傳達基本訊息。然而，有時候他們的回應較難理解或解讀。
+                80-100：考生無法表達意見或回覆複雜的請求。可能只能用單一句子或不完整的句子回答。其他可能出現的問題包括：
+                1. 語言的使用非常有限。
+                2. 字彙量嚴重不足。
+                此區間的考生無法回答問題，或是傳達基本的訊息。
+                60-70：考生勉強可以表達意見，但無法提出支持的論點，對於複雜的請求無法回應。此區間的考生無法回答問題，或是傳達基本訊息。此區間的考生通常缺乏足夠的字彙或文法能力來做簡單的說明。
+                40-50：考生無法表達意見或提出支持的論點。他們既不能回應複雜的請求，也不能提出相關的回應。此區間的考生無法做到社會或職場上的一般互動，如：回答問題與傳達基本的訊息。
+                0-30：考生在進行口說測驗時，通常會有許多部分沒有作答。考生也許不具備英文聽力或閱讀的基本技能，來了解測驗的指示或題目的內容。
+                The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
+                """
+
 richMenuId : str = None
 
 async def send_message(event, msg):
+    if not isinstance(msg, list):
+        msg = [msg]
     await line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
@@ -45,6 +84,90 @@ async def send_text_message(event, text):
         ReplyMessageRequest(
             reply_token=event.reply_token,
             messages=[TextMessage(text=text)]
+        )
+    )
+
+async def result_message(result: SpeechAssessment, unit, sub):
+    return FlexMessage(
+        altText=f'{unit+1}-{sub+1} 口語練習結果',
+        contents=FlexCarousel(
+            contents=[
+                FlexBubble(
+                    size='giga',
+                    body=FlexBox(
+                        layout='vertical',
+                        justifyContent='center',
+                        alignItems='center',
+                        contents=[
+                            FlexText(
+                                text=f'{unit+1}-{sub+1} 口語練習結果',
+                                wrap=True,
+                                weight='bold',
+                                size='3xl',
+                            ),
+                            FlexBox(
+                                layout='vertical',
+                                margin='md',
+                                contents=[
+                                    FlexText(
+                                        text=f'評分: {result.score}/200',
+                                        color='#5b5b5b',
+                                        size='xl',
+                                        wrap=True,
+                                        flex=1,
+                                    ),
+                                ]
+                            ),
+                        ],
+                    ),
+                ),
+                FlexBubble(
+                    size='giga',
+                    body=FlexBox(
+                        layout='vertical',
+                        contents=[
+                            FlexText(
+                                text='建議',
+                                wrap=True,
+                                weight='bold',
+                                size='xl',
+                            ),
+                            FlexBox(
+                                layout='vertical',
+                                margin='md',
+                                contents=[
+                                    FlexText(
+                                        text=result.suggestion,
+                                        color='#5b5b5b',
+                                        size='sm',
+                                        wrap=True,
+                                        flex=1,
+                                    ),
+                                ]
+                            ),
+                            FlexText(
+                                text='改善後的句子',
+                                wrap=True,
+                                weight='bold',
+                                size='xl',
+                            ),
+                            FlexBox(
+                                layout='vertical',
+                                margin='md',
+                                contents=[
+                                    FlexText(
+                                        text=result.improved_speech,
+                                        color='#5b5b5b',
+                                        size='sm',
+                                        wrap=True,
+                                        flex=1,
+                                    ),
+                                ]
+                            ),
+                        ],
+                    ),
+                )
+            ]
         )
     )
 

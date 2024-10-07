@@ -1,8 +1,7 @@
-from collections import UserString
 import aiofiles
 from config import line_bot_api, line_bot_api_blob, groq
 import asyncio
-from utils.message_utils import send_message, send_text_message, question_message, carousel_message
+from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, SpeechAssessment, qs, SYSTEM_INSTRUCTION
 from utils.file_utils import user_data, user_state
 import tempfile
 
@@ -61,7 +60,7 @@ async def handle_audio_message(event):
             return
 
         # 使用 Whisper 進行音訊轉錄
-        transcript = groq.audio.transcriptions.create(
+        transcript =await groq.audio.transcriptions.create(
             model="whisper-large-v3",
             file=f.file,
             language="en",
@@ -72,7 +71,26 @@ async def handle_audio_message(event):
     unit = user_state[user_id]['unit']
     sub = user_state[user_id]['sub']
     
-    await send_text_message(event, f"您說的是: {text}")
+    completion =  await groq.chat.completions.create(
+        model="llama-3.2-11b-vision-preview",
+        # response_format=SpeechAssessment,
+        response_format={"type": "json_object"},
+        max_tokens=2048,
+        temperature=0.5,
+        messages=[
+            {
+                "role": "system",
+                "content": SYSTEM_INSTRUCTION
+            },
+            {
+                "role": "user",
+                "content": f"<question>{qs[unit][sub]}</question><userAnswer>使用者回答：{text}</userAnswer>",
+            }
+        ],
+    )
+    result : SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
+    
+    await send_message(event, await result_message(result, unit, sub))
 
 async def handle_postback(event):
     if not await check_user_login(event):
@@ -84,7 +102,7 @@ async def handle_postback(event):
         vars[sep.split('=')[0]] = sep.split('=')[1]
     if vars['action'] == 'record':
         user_state[user_id] = {'unit': int(vars['unit']), 'sub': int(vars['sub'])}
-        await send_message(event, question_message(int(vars['unit']), int(vars['sub'])))
+        await send_message(event, await question_message(int(vars['unit']), int(vars['sub'])))
     elif vars['action'] == 'unit':
-        await send_message(event, carousel_message(int(vars['unit'])))
+        await send_message(event, await carousel_message(int(vars['unit'])))
     return
