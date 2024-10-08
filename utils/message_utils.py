@@ -34,12 +34,12 @@ qs = [
         ]]
 
 class SpeechAssessment(BaseModel):
-    suggestion: Annotated[str, '你的建議']
+    suggestion: Annotated[str, '給予的建議']
     score: Annotated[int, '評量分數']
     improved_speech: Annotated[str, '改善後的純文本']
     
 SYSTEM_INSTRUCTION = f"""
-                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並生成建議、0-200的客觀評分與改善後的文本。
+                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並以台灣繁體中文生成建議、0-200的客觀評分與改善後的文本。
                 190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
                 此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
                 160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
@@ -125,6 +125,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                     size='giga',
                     body=FlexBox(
                         layout='vertical',
+                        spacing='sm',
                         contents=[
                             FlexText(
                                 text='建議',
@@ -146,7 +147,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                                 ]
                             ),
                             FlexText(
-                                text='改善後的句子',
+                                text='可改善為',
                                 wrap=True,
                                 weight='bold',
                                 size='xl',

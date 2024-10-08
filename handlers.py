@@ -1,12 +1,12 @@
 import aiofiles
-from config import line_bot_api, line_bot_api_blob, groq
+from config import line_bot_api, line_bot_api_blob, groq, client
 import asyncio
 from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, SpeechAssessment, qs, SYSTEM_INSTRUCTION
 from utils.file_utils import user_data, user_state
 import tempfile
 
 async def handle_text_message(event):
-    user_id = event.source.user_id
+    # user_id = event.source.user_id
     message = event.message.text.strip()
 
     # 用戶資料綁定
@@ -60,23 +60,26 @@ async def handle_audio_message(event):
             return
 
         # 使用 Whisper 進行音訊轉錄
-        transcript =await groq.audio.transcriptions.create(
+        transcript = await groq.audio.transcriptions.create(
             model="whisper-large-v3",
             file=f.file,
             language="en",
         )
+        
         text = transcript.text
         f.flush()
     
     unit = user_state[user_id]['unit']
     sub = user_state[user_id]['sub']
     
-    completion =  await groq.chat.completions.create(
-        model="llama-3.2-11b-vision-preview",
-        # response_format=SpeechAssessment,
-        response_format={"type": "json_object"},
+    # completion =  await groq.chat.completions.create(
+    completion = await client.beta.chat.completions.parse(
+        # model="llama-3.2-11b-vision-preview",
+        model="gpt-4o-mini",
+        response_format=SpeechAssessment,
+        # response_format={"type": "json_object"},
         max_tokens=2048,
-        temperature=0.5,
+        temperature=0.8,
         messages=[
             {
                 "role": "system",

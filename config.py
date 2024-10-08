@@ -1,7 +1,7 @@
 import os
 from linebot.v3.messaging import Configuration, AsyncApiClient, AsyncMessagingApi, AsyncMessagingApiBlob
 from linebot.v3.webhook import WebhookParser
-from openai import OpenAI
+from openai import AsyncOpenAI
 from groq import AsyncGroq
 
 # 環境變數設定
@@ -17,7 +17,7 @@ line_bot_api = AsyncMessagingApi(async_api_client)
 line_bot_api_blob = AsyncMessagingApiBlob(async_api_client)
 
 # OpenAI 和 Groq 配置
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 groq = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 # 檔案儲存路徑
