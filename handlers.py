@@ -8,7 +8,7 @@ async def handle_text_message(event):
     # user_id = event.source.user_id
     message = event.message.text.strip()
 
-    response = line_bot_api.get_rich_menu_id_of_user(event.source.user_id).get()
+    response = await line_bot_api.get_rich_menu_id_of_user(event.source.user_id).get()
     if not response.to_dict()['richMenuId']:
         await line_bot_api.link_rich_menu_id_to_user(event.source.user_id, richMenuId).get()
     
