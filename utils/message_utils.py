@@ -67,7 +67,7 @@ SYSTEM_INSTRUCTION = f"""
                 The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
                 """
 
-richMenuId : str = None
+RICH_MENU_ID : str = None
 
 async def send_message(event, msg):
     if not isinstance(msg, list):
@@ -299,8 +299,11 @@ async def create_rich_menu():
         async_req=True
     ).get()
     
-    richMenuId = richMenu.to_dict()['richMenuId']
+    global RICH_MENU_ID
+    RICH_MENU_ID = richMenu.to_dict()['richMenuId']
+    
+    print(f'Rich Menu ID: {RICH_MENU_ID}')
 
-    await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=richMenuId, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
+    await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=RICH_MENU_ID, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
     # await line_bot_api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=richMenuId,async_req=True).get()
-    await line_bot_api.set_default_rich_menu_with_http_info(richMenuId,async_req=True).get()
+    await line_bot_api.set_default_rich_menu_with_http_info(RICH_MENU_ID,async_req=True).get()
