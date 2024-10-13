@@ -303,4 +303,4 @@ async def create_rich_menu():
 
     await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=richMenuId, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
     # await line_bot_api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=richMenuId,async_req=True).get()
-    await line_bot_api.set_default_rich_menu(richMenuId,async_req=True).get()
+    await line_bot_api.set_default_rich_menu_with_http_info(richMenuId,async_req=True).get()

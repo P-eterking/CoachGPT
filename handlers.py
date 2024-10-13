@@ -13,6 +13,16 @@ async def handle_text_message(event):
     if not await check_user_login(event, message):
         return
 
+    if message.startswith('口語練習一'):
+        await send_message(event, await carousel_message(1))
+        return
+    elif message.startswith('口語練習二'):
+        await send_message(event, await carousel_message(2))
+        return
+    elif message.startswith('口語練習三'):
+        await send_message(event, await carousel_message(3))
+        return
+    
     # 如果是其他指令或回應
     # await send_carousel_message(event, unit=1)
 
