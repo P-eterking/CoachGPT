@@ -10,12 +10,15 @@ app = FastAPI()
 app.post("/callback")(callback)
 app.mount('/templates', StaticFiles(directory='templates'))
 
-if __name__ == "__main__":
+async def init():
     # 載入之前儲存的狀態資料
-    asyncio.run(load_user_state())
-    asyncio.run(load_user_data())
-    asyncio.run(create_rich_menu())
-    
+    await load_user_state()
+    await load_user_data()
+    await create_rich_menu()
+
     # 開始執行定時儲存任務
     asyncio.create_task(save_user_state())
     asyncio.create_task(save_user_data())
+
+loop = asyncio.get_running_loop()
+loop.create_task(init())
