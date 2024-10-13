@@ -1,7 +1,6 @@
-import aiofiles
 from config import line_bot_api, line_bot_api_blob, groq, client
 import asyncio
-from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, SpeechAssessment, qs, SYSTEM_INSTRUCTION
+from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, SpeechAssessment, qs, SYSTEM_INSTRUCTION, richMenuId
 from utils.file_utils import user_data, user_state
 import tempfile
 
@@ -9,6 +8,10 @@ async def handle_text_message(event):
     # user_id = event.source.user_id
     message = event.message.text.strip()
 
+    response = line_bot_api.get_rich_menu_id_of_user(event.source.user_id).get()
+    if not response.to_dict()['richMenuId']:
+        await line_bot_api.link_rich_menu_id_to_user(event.source.user_id, richMenuId).get()
+    
     # 用戶資料綁定
     if not await check_user_login(event, message):
         return
