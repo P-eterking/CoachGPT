@@ -1,6 +1,7 @@
 from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
 from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
+from linebot.v3.messaging.exceptions import ApiException
 from pydantic import BaseModel
 import json
 
@@ -67,7 +68,7 @@ SYSTEM_INSTRUCTION = f"""
                 The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
                 """
 
-RICH_MENU_ID : str = None
+rich_menu_id : str = None
 
 async def send_message(event, msg):
     if not isinstance(msg, list):
@@ -274,7 +275,15 @@ async def carousel_message(unit):
     )
     return msg
 
+async def handle_rich_menu(user_id):
+    global rich_menu_id
+    try:
+        await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
+    except ApiException as e:
+        await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
+
 async def create_rich_menu():
+    global rich_menu_id
     richMenu = await line_bot_api.create_rich_menu(
         rich_menu_request=RichMenuRequest(
             size=RichMenuSize(width=2500, height=843),
@@ -298,12 +307,11 @@ async def create_rich_menu():
         ),
         async_req=True
     ).get()
-    
-    global RICH_MENU_ID
-    RICH_MENU_ID = richMenu.to_dict()['richMenuId']
-    
-    print(f'Rich Menu ID: {RICH_MENU_ID}')
 
-    await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=RICH_MENU_ID, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
+    rich_menu_id = richMenu.to_dict()['richMenuId']
+    
+    print(f'Rich Menu ID: {rich_menu_id}')
+
+    await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=rich_menu_id, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
     # await line_bot_api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=richMenuId,async_req=True).get()
-    await line_bot_api.set_default_rich_menu_with_http_info(RICH_MENU_ID,async_req=True).get()
+    await line_bot_api.set_default_rich_menu_with_http_info(rich_menu_id=rich_menu_id,async_req=True).get()
