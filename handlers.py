@@ -1,6 +1,6 @@
 from config import line_bot_api, line_bot_api_blob, groq, client
 import asyncio
-from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, handle_rich_menu, SpeechAssessment, qs, SYSTEM_INSTRUCTION
+from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, handle_rich_menu, SpeechAssessment, qs, SYSTEM_INSTRUCTION, text_message
 from utils.file_utils import user_data, user_state
 import tempfile
 
@@ -42,7 +42,7 @@ async def check_user_login(event, message = None):
             await send_text_message(event, "學號格式錯誤！\nFormat error!")
             return False
         user_data[user_id] = {'dep': depart, 'id': student_id, 'name': name}
-        await send_text_message(event, f"綁定完成，Hello! {name}")
+        await send_message(event, [await text_message(f"綁定完成，Hello! {name}"), await carousel_message(1)])
         
     return True
 

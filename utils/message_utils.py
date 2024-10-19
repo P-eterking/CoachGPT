@@ -1,6 +1,6 @@
 from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
-from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
+from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,QuickReplyItem, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
 from linebot.v3.messaging.exceptions import ApiException
 from pydantic import BaseModel
 import json
@@ -40,7 +40,7 @@ class SpeechAssessment(BaseModel):
     improved_speech: Annotated[str, '改善後的純文本']
     
 SYSTEM_INSTRUCTION = f"""
-                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並以台灣繁體中文生成建議、0-200的客觀評分與改善後的文本。
+                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並以台灣繁體中文生成建議、0-200的客觀評分與改善後的英文 文本。
                 190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
                 此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
                 160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
@@ -79,6 +79,9 @@ async def send_message(event, msg):
             messages=msg
         )
     )
+    
+async def text_message(text):
+    return TextMessage(text=text)
 
 async def send_text_message(event, text):
     await line_bot_api.reply_message(
@@ -91,6 +94,10 @@ async def send_text_message(event, text):
 async def result_message(result: SpeechAssessment, unit, sub):
     return FlexMessage(
         altText=f'{unit+1}-{sub+1} 口語練習結果',
+        quickReply=QuickReply(items=[
+            QuickReplyItem(action=PostbackAction(text='下一題',label='下一題', data=f'action=unit&unit={unit+1}' if len(qs[unit])-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
+            QuickReplyItem(action=PostbackAction(text='查看單元',label='查看單元', data=f'action=unit&unit={unit+1}')),
+        ]),
         contents=FlexCarousel(
             contents=[
                 FlexBubble(
@@ -218,7 +225,7 @@ async def question_message(unit, sub):
                 )
             )
         )
-
+    
 async def carousel_message(unit):
     cols = []
     for sub,j in enumerate(qs[unit-1]):
