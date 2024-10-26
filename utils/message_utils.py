@@ -1,3 +1,4 @@
+import re
 from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
 from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,QuickReplyItem, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
@@ -35,40 +36,168 @@ qs = [
         ]]
 
 class SpeechAssessment(BaseModel):
-    suggestion: Annotated[str, '給予的建議']
+    suggestion: Annotated[str, '給予之中文建議']
     score: Annotated[int, '評量分數']
-    improved_speech: Annotated[str, '改善後的純文本']
+    transcript: Annotated[str, '轉錄後文本']
+    better_ans: Annotated[str, '改善後文本']
+    
+    def to_dict(self):
+        return {
+            "suggestion": self.suggestion,
+            "score": self.score,
+            "transcript": self.transcript,
+            "better_ans": self.better_ans
+        }
     
 SYSTEM_INSTRUCTION = f"""
-                你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並以台灣繁體中文生成建議、0-200的客觀評分與改善後的英文 文本。
-                190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
-                此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
-                160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
-                以下有些小缺失可能發生，但不會影響訊息本身：
-                1. 使用複雜的語法結構時發生一些錯誤。
-                2. 一些不精確的詞彙。
-                3. 此區間的考生可以使用口語回答問題，並且傳達基本訊息。
-                130-150：考生被要求發表意見或回覆複雜的請求時，能夠提出相關的回應。不過，聽眾有時無法理解。
-                這可能是因為下列幾點：
-                1. 文法上的錯誤。
-                2. 字彙量有限。
-                此區間的考生通常可以回答問題，並且傳達基本的訊息。然而，有時候他們的回應是較難理解或解釋的。
-                110-120：考生只能有限的發表意見或回覆複雜請求，回應時會出現下列的問題：
-                語言不精確、模糊或重複。
-                1. 意見表達能力有限和論點間關連性不大。
-                2. 字彙量有限。
-                此區間的考生通常可以回答問題，並且傳達基本訊息。然而，有時候他們的回應較難理解或解讀。
-                80-100：考生無法表達意見或回覆複雜的請求。可能只能用單一句子或不完整的句子回答。其他可能出現的問題包括：
-                1. 語言的使用非常有限。
-                2. 字彙量嚴重不足。
-                此區間的考生無法回答問題，或是傳達基本的訊息。
-                60-70：考生勉強可以表達意見，但無法提出支持的論點，對於複雜的請求無法回應。此區間的考生無法回答問題，或是傳達基本訊息。此區間的考生通常缺乏足夠的字彙或文法能力來做簡單的說明。
-                40-50：考生無法表達意見或提出支持的論點。他們既不能回應複雜的請求，也不能提出相關的回應。此區間的考生無法做到社會或職場上的一般互動，如：回答問題與傳達基本的訊息。
-                0-30：考生在進行口說測驗時，通常會有許多部分沒有作答。考生也許不具備英文聽力或閱讀的基本技能，來了解測驗的指示或題目的內容。
-                The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
-                """
+        你是一個專業英語口說評量助手，請根據學生的回答內容提供之台灣繁體中文具體改進建議和改善後之英文文本。
+        請針對以下評估面向給予分析和建議：流暢度、表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性、自信與互動性
+        同時，提供具體的改進方式，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量。
+        
+        Context #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
+        Context #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
+        
+        90-100 優異表達者
+        流暢度：非常流暢，無明顯停頓，能自信地解釋詞彙、描述圖片。
+        表達清晰度：能清楚表達意見或完整描述，回應詳細且準確。
+        語法使用：熟練使用基本及複雜的文法，無明顯錯誤。
+        字彙量：詞彙使用豐富且精準，能靈活運用各種詞彙。
+        回應複雜度：能對詞彙解釋、圖片描述及段落構建給出完整且有深度的回應。
+        Answer #1: A brochure is a printed material designed to provide detailed information about a
+        product, service, or event, often including eye-catching images and persuasive text to attract potential customers.
+        Answer #2: The picture shows people standing in line at a bank counter, each waiting patiently 
+        for their turn. The setting appears orderly, and the individuals are maintaining a 
+        proper distance.
+        
+        80-89 優良表達者
+        流暢度：流暢，有少量停頓，但不影響整體表達。 
+        表達清晰度：能有效表達意見或描述圖片，內容清楚。 
+        語法使用：能使用複雜語法，偶有小錯誤但不影響理解。 
+        字彙量：詞彙豐富但有少量不精確的使用。 
+        回應複雜度：能有效回應並詳細解釋詞彙，描述圖片清楚。 
+        Answer #1: A brochure is a printed document that gives information about a specific product 
+        or service, usually featuring attractive images and descriptions to engage the reader.
+        Answer #2: Several people are standing in line at a bank. They are waiting for their turn at the 
+        counter in an organized manner. 
+        
+        70-79 良好表達者
+        流暢度：表達流暢，但有時會停頓。 
+        表達清晰度：能清楚表達大部分意見，描述圖片時可能有些許不清晰之處。 
+        語法使用：能使用較複雜的語法，但存在一些錯誤。 
+        字彙量：詞彙量足夠，但在精確性上有所欠缺。 
+        回應複雜度：能回應詞彙解釋和圖片描述，但不總是完全準確。 
+        Answer #1: A brochure is a type of printed material that explains a product or service, often 
+        with pictures and text to help people understand what is being offered.
+        Answer #2: The image shows people waiting in line at a bank counter. They are standing one 
+        behind another. 
+        
+        60-69 基礎表達者 
+        流暢度：表達時有明顯停頓，流暢度有限。 
+        表達清晰度：能夠基本描述圖片，但表達的清晰度不穩定。 
+        語法使用：基本語法使用正確，但在使用較複雜語法時有明顯錯誤。 
+        字彙量：詞彙量有限，影響表達的完整性。 
+        回應複雜度：能提供基本回應，但深度和連貫性不足。 
+        Answer #1: A brochure is a printed piece that tells about a product or service, usually with 
+        some images and information.
+        Answer #2: People are lined up at a counter. It looks like they are at a bank, waiting for service.
+        
+        50-59 有限表達者 
+        流暢度：頻繁出現停頓和遲疑。 
+        表達清晰度：在解釋詞彙和描述圖片時，表達不清晰，可能影響理解。 
+        語法使用：主要使用簡單語法，複雜語法的使用常出錯。 
+        字彙量：詞彙量有限，常常無法找到適當的詞彙。 
+        回應複雜度：回應缺乏詳細性和深度。 
+        Answer #1: A brochure is a paper that has information about something, often with pictures.
+        Answer #2: There are people waiting in line at what seems to be a bank. 
+        
+        40-49 簡單表達者 
+        流暢度：表達中出現長時間停頓，語速較慢。 
+        表達清晰度：回應中存在不連貫的部分，圖片描述或詞彙解釋可能無法理解。 
+        語法使用：主要使用基本語法，錯誤頻繁。 
+        字彙量：詞彙量非常有限，表達受限。 
+        回應複雜度：回應多為簡單句，缺乏深入性。 
+        Answer #1: A brochure is a small booklet that gives information.
+        Answer #2: People are standing in line at a counter. It looks like a bank. 
+        
+        30-39 有限互動能力者 
+        流暢度：表達中有明顯且頻繁的停頓。 
+        表達清晰度：無法完整描述圖片，回應詞彙解釋時表達不清。 
+        語法使用：語法錯誤頻繁，影響理解。 
+        字彙量：詞彙量極少，無法有效表達意見。
+        回應複雜度：無法給出複雜回應，多為不完整句子。 
+        Answer #1: A brochure is paper that shows products.
+        Answer #2: People are waiting at a counter in a bank. 
+        
+        20-29 極度有限的表達者 
+        流暢度：表達中多數時間有長時間停頓，無法連貫。 
+        表達清晰度：多數時間無法完成句子，描述圖片時困難重重。 
+        語法使用：無法正確使用基本語法，錯誤頻繁且嚴重。 
+        字彙量：詞彙量極度有限，無法進行有效表達。 
+        回應複雜度：無法給出有效回應。 
+        Answer #1: A brochure is for information. 
+        Answer #2: People are standing in line. It looks like a bank. 
+        
+        10-19 極低表達能力者 
+        流暢度：幾乎無法進行持續表達。 
+        表達清晰度：只能使用簡單詞語或片語，無法形成完整句子。 
+        語法使用：無法使用基本語法。 
+        字彙量：詞彙極少，無法有效傳達訊息。 
+        回應複雜度：無法回應基本問題。 
+        Answer #1: A brochure is a book.
+        Answer #2: People are at a bank.
+        
+        0-9 無表達能力者 
+        流暢度：無法進行表達。 
+        表達清晰度：無法作答或表達。 
+        語法使用：無法使用任何語法。 
+        字彙量：無可使用詞彙。 
+        回應複雜度：無回應能力。 
+        Answer #1: <Not speaking, nonsense, or not knowing> 
+        Answer #2: Queue at the bank.
+        
+        你需要以3個步驟執行任務:
+        1. 根據以上評分標準為學生回答評分。
+        2. 思考並給予具體的改進建議，以繁體中文回覆。
+        3. 依照學生回答文本，延伸或改進其回答，並以英文回覆。
+        
+        The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
+    """
+    # f"""
+    #             你是一個專業英語口說評量助手，你會根據題目與使用者提供的回答根據以下分數階段的評量標準進行評量。並以台灣繁體中文生成建議、0-200的客觀評分與改善後的英文 文本。
+    #             190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
+    #             此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
+    #             160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
+    #             以下有些小缺失可能發生，但不會影響訊息本身：
+    #             1. 使用複雜的語法結構時發生一些錯誤。
+    #             2. 一些不精確的詞彙。
+    #             3. 此區間的考生可以使用口語回答問題，並且傳達基本訊息。
+    #             130-150：考生被要求發表意見或回覆複雜的請求時，能夠提出相關的回應。不過，聽眾有時無法理解。
+    #             這可能是因為下列幾點：
+    #             1. 文法上的錯誤。
+    #             2. 字彙量有限。
+    #             此區間的考生通常可以回答問題，並且傳達基本的訊息。然而，有時候他們的回應是較難理解或解釋的。
+    #             110-120：考生只能有限的發表意見或回覆複雜請求，回應時會出現下列的問題：
+    #             語言不精確、模糊或重複。
+    #             1. 意見表達能力有限和論點間關連性不大。
+    #             2. 字彙量有限。
+    #             此區間的考生通常可以回答問題，並且傳達基本訊息。然而，有時候他們的回應較難理解或解讀。
+    #             80-100：考生無法表達意見或回覆複雜的請求。可能只能用單一句子或不完整的句子回答。其他可能出現的問題包括：
+    #             1. 語言的使用非常有限。
+    #             2. 字彙量嚴重不足。
+    #             此區間的考生無法回答問題，或是傳達基本的訊息。
+    #             60-70：考生勉強可以表達意見，但無法提出支持的論點，對於複雜的請求無法回應。此區間的考生無法回答問題，或是傳達基本訊息。此區間的考生通常缺乏足夠的字彙或文法能力來做簡單的說明。
+    #             40-50：考生無法表達意見或提出支持的論點。他們既不能回應複雜的請求，也不能提出相關的回應。此區間的考生無法做到社會或職場上的一般互動，如：回答問題與傳達基本的訊息。
+    #             0-30：考生在進行口說測驗時，通常會有許多部分沒有作答。考生也許不具備英文聽力或閱讀的基本技能，來了解測驗的指示或題目的內容。
+    #             The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
+    #             """
 
 rich_menu_id : str = None
+
+def get_question(unit, sub):
+    return qs[unit][sub]
+
+def get_context_url():
+    return f'{url}/templates/example_context.png'
 
 async def send_message(event, msg):
     if not isinstance(msg, list):
@@ -95,8 +224,9 @@ async def result_message(result: SpeechAssessment, unit, sub):
     return FlexMessage(
         altText=f'{unit+1}-{sub+1} 口語練習結果',
         quickReply=QuickReply(items=[
-            QuickReplyItem(action=PostbackAction(text='下一題',label='下一題', data=f'action=unit&unit={unit+1}' if len(qs[unit])-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
-            QuickReplyItem(action=PostbackAction(text='查看單元',label='查看單元', data=f'action=unit&unit={unit+1}')),
+            QuickReplyItem(action=PostbackAction(label='再次回答',data=f'action=record&unit={unit}&sub={sub}')),
+            QuickReplyItem(action=PostbackAction(label='下一題', data=f'action=unit&unit={unit+1}' if len(qs[unit])-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
+            QuickReplyItem(action=PostbackAction(label='查看單元', data=f'action=unit&unit={unit+1}')),
         ]),
         contents=FlexCarousel(
             contents=[
@@ -118,7 +248,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                                 margin='md',
                                 contents=[
                                     FlexText(
-                                        text=f'評分: {result.score}/200',
+                                        text=f'評分: {result.score}/100',
                                         color='#5b5b5b',
                                         size='xl',
                                         wrap=True,
@@ -165,7 +295,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                                 margin='md',
                                 contents=[
                                     FlexText(
-                                        text=result.improved_speech,
+                                        text=result.better_ans,
                                         color='#5b5b5b',
                                         size='sm',
                                         wrap=True,
@@ -192,7 +322,7 @@ async def question_message(unit, sub):
                             text=f'題目 {unit+1}-{sub+1}',
                             wrap=True,
                             weight='bold',
-                            size='xl',
+                            size='xxl',
                         ),
                         FlexBox(
                             layout='baseline',
@@ -201,7 +331,7 @@ async def question_message(unit, sub):
                                 FlexText(
                                     text=qs[unit][sub],
                                     color='#5b5b5b',
-                                    size='sm',
+                                    size='lg',
                                     margin='md',
                                     wrap=True,
                                     flex=1,
@@ -218,7 +348,7 @@ async def question_message(unit, sub):
                     contents=[
                         FlexText(
                             style='italic',
-                            size='xs',
+                            size='md',
                             text='用語音回答問題，請按下方按鈕開始錄音',
                         )
                     ]

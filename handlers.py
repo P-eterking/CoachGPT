@@ -1,12 +1,12 @@
 from config import line_bot_api, line_bot_api_blob, groq, client
 import asyncio
-from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, handle_rich_menu, SpeechAssessment, qs, SYSTEM_INSTRUCTION, text_message
-from utils.file_utils import user_data, user_state
+from utils.message_utils import result_message, send_message, send_text_message, question_message, carousel_message, handle_rich_menu, SpeechAssessment, get_question, get_context_url, SYSTEM_INSTRUCTION, text_message
+from utils.file_utils import user_state, save_user_data, hasData, updateHistory, initData
 import tempfile
 
 async def handle_text_message(event):
     # user_id = event.source.user_id
-    message = event.message.text.strip()
+    message : str = event.message.text.strip()
     if message.startswith('清除'):
         await line_bot_api.unlink_rich_menu_id_from_user(event.source.user_id)
         return
@@ -26,14 +26,17 @@ async def handle_text_message(event):
     elif message.startswith('口語練習三'):
         await send_message(event, await carousel_message(3))
         return
-    
+    elif message.startswith('儲存'):
+        await save_user_data()
+        return
+        
     # 如果是其他指令或回應
     # await send_carousel_message(event, unit=1)
 
 async def check_user_login(event, message = None):
     user_id = event.source.user_id
     
-    if user_data.get(user_id) is None:
+    if not hasData(user_id):
         if message is None or len(message.split()) < 3:
             await send_text_message(event, "請先綁定個人資料！\n依指定格式輸入：<系級> <學號> <姓名>\n如：應外一乙 11352237 王大明\n\nPlease enter your info first!\nInput format:\n<Department> <Student ID> <Name>")
             return False
@@ -41,7 +44,7 @@ async def check_user_login(event, message = None):
         if not student_id.isdigit():
             await send_text_message(event, "學號格式錯誤！\nFormat error!")
             return False
-        user_data[user_id] = {'dep': depart, 'id': student_id, 'name': name}
+        initData(user_id, depart, student_id, name)
         await send_message(event, [await text_message(f"綁定完成，Hello! {name}"), await carousel_message(1)])
         
     return True
@@ -55,8 +58,8 @@ async def handle_audio_message(event):
     if user_state.get(user_id) is None:
         return
     
+    # 獲取音訊內容
     result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
-    
     while result.status == 'processing':
         result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
         await asyncio.sleep(1)
@@ -93,19 +96,30 @@ async def handle_audio_message(event):
         response_format=SpeechAssessment,
         # response_format={"type": "json_object"},
         max_tokens=2048,
-        temperature=0.8,
+        temperature=1.2,
         messages=[
             {
                 "role": "system",
-                "content": SYSTEM_INSTRUCTION
+                "content": [{
+                    "type": "text",
+                    "text": SYSTEM_INSTRUCTION,
+                },],
             },
             {
                 "role": "user",
-                "content": f"<question>{qs[unit][sub]}</question><userAnswer>使用者回答：{text}</userAnswer>",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"<question>{get_question(unit,sub)}</question><userAnswer>{text}</userAnswer>"
+                        }, 
+                    ],
             }
         ],
     )
     result : SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
+    result.transcript = text.strip()
+
+    updateHistory(user_id, f'{unit}-{sub}', result.to_dict())
     
     await send_message(event, await result_message(result, unit, sub))
 
