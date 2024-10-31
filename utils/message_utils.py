@@ -1,39 +1,109 @@
-import re
 from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
-from linebot.v3.messaging import ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,QuickReplyItem, RichMenuRequest, RichMenuSize, RichMenuArea, RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage, FlexText, FlexBox, FlexButton
+from linebot.v3.messaging import (
+    ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
+    QuickReplyItem, RichMenuRequest, RichMenuSize, RichMenuArea,
+    RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
+    FlexText, FlexBox, FlexButton
+)
 from linebot.v3.messaging.exceptions import ApiException
 from pydantic import BaseModel
 import json
+import asyncio
 
 url  = f'https://{DOMAIN}'
 qs = [
-        [
-            "**What does 'inexpensive' mean, and can you name something that is inexpensive?**\n - 什麼是「便宜」的意思？你能舉出一個「便宜」的例子嗎？",
-            "**How would you describe 'portable'? Mention a portable item you use.**\n - 「便攜的」應該怎麼解釋？提到一個你使用「便攜的」物品。",
-            "**What is the role of 'management' in a company?**\n - 在公司中，「管理」有什麼作用？",
-            "**Define 'manual' and give an example of a manual task.**\n - 定義「手動」並給出一個關於「手動」任務的例子。",
-            "**Can you make a sentence using 'export' and 'recently'?**\n - 你能使用「出口」和「最近」造一個句子嗎？",
-            "**Describe a situation where you might need to 'replace' something because it is 'inexpensive'.**\n - 描述一個你可能需要因為物品是「便宜」而「取代」它的情境。",
-            "**How would you tell someone to 'decrease' the volume using polite language?**\n - 你會如何用禮貌的語言告訴某人「減少」音量？",
-            "**Write a sentence where you explain to a friend why something is 'comfortable'.**\n - 寫一個句子解釋給朋友聽為什麼某物是「舒服的」。"
-        ],
-        [
-            "**Meet the Deadline:**\n- Can you describe a time when you had to meet a tight deadline?\n- 你能描述一次你必須在截止日期前完成任務的情況嗎？",
-            "**Apply for the Job:**\n- What kind of job do you want to apply for?\n- 你想申請什麼樣的工作？",
-            "**Keep in Touch with Someone:**\n- Talk about a friend or family member you try to keep in touch with regularly.\n- 談談你努力與朋友或家人保持聯繫的情況。",
-            "**Offer a Discount:**\n- Please create a situation where you purchased an item because it was discounted.\n- 請創造一個你因為商品打折而購買的情況。",
-            "**Register In:**\n- Pretend you are a student, use 'register in' to make a sentence.\n- 假設你是一名學生，用“註冊”一詞造一個句子。",
-            "**Make an Appointment:**\n- Can you recall a time when you had to make an appointment for an important meeting or event?\n- 你能回憶起你曾經為一次重要的會議或活動預約的時候嗎？",
-            "**Remain a Concern:**\n- What things make you remain a concern?\n- 有什麼事情讓你一直擔心嗎？",
-            "**Book a Ticket:**\n- Describe a situation in which you would need to book a ticket by yourself.\n- 描述您需要自己訂票的情況",
-        ],
-        [
-            "**Beginning**: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n**開始**：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
-            "**Then**: Introduce obstacles and challenges main character encounters.\nWhen the race started, the hare bounded off in front, making good progress. He was so far ahead of the tortoise that he decided he could afford to stop and have a rest.\n**然後**：介紹主要角色遇到的障礙和挑戰。\n比賽一開始，野兔就飛奔而出，並且進展迅速。遠遠地把烏龜甩在後面，牠覺得自己可以停下來休息一下。",
-            "**After**: Reach the climax or turning point of the story, where the main character confronts the central conflict head-on.\nHowever, the hare fell fast asleep, and as he lay sleeping, the tortoise continued to plod along at his slow pace. In time, he reached the finish-line and won the race.\n**之後**：到達故事的高潮或轉折點，主角正面對抗主要衝突。\n然而，野兔很快就睡著了，當牠在睡覺時，烏龜以緩慢的步伐繼續向前爬行。最終，烏龜到達了終點線，贏得了比賽。",
-            "**Ending**: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n**結尾**：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。"
-        ]]
+    [
+        {
+            "text": "**What does 'inexpensive' mean, and can you name something that is inexpensive?**\n - 什麼是「便宜」的意思？你能舉出一個「便宜」的例子嗎？",
+            "image_url": None
+        },
+        {
+            "text": "**Look at the image and describe what you see in the store.**\n - 看著圖片，描述你在商店裡看到什麼。",
+            "image_url": f"{url}/templates/store.jpg"
+        },
+        {
+            "text": "**How would you describe 'portable'? Mention a portable item you use.**\n - 「便攜的」應該怎麼解釋？提到一個你使用「便攜的」物品。",
+            "image_url": None
+        },
+        {
+            "text": "**What is the role of 'management' in a company?**\n - 在公司中，「管理」有什麼作用？",
+            "image_url": None
+        },
+        {
+            "text": "**Define 'manual' and give an example of a manual task.**\n - 定義「手動」並給出一個關於「手動」任務的例子。",
+            "image_url": None
+        },
+        {
+            "text": "**Can you make a sentence using 'export' and 'recently'?**\n - 你能使用「出口」和「最近」造一個句子嗎？",
+            "image_url": None
+        },
+        {
+            "text": "**Describe a situation where you might need to 'replace' something because it is 'inexpensive'.**\n - 描述一個你可能需要因為物品是「便宜」而「取代」它的情境。",
+            "image_url": None
+        },
+        {
+            "text": "**How would you tell someone to 'decrease' the volume using polite language?**\n - 你會如何用禮貌的語言告訴某人「減少」音量？",
+            "image_url": None
+        },
+        {
+            "text": "**Write a sentence where you explain to a friend why something is 'comfortable'.**\n - 寫一個句子解釋給朋友聽為什麼某物是「舒服的」。",
+            "image_url": None
+        }
+    ],
+    [
+        {
+            "text": "**Meet the Deadline:**\n- Can you describe a time when you had to meet a tight deadline?\n- 你能描述一次你必須在截止日期前完成任務的情況嗎？",
+            "image_url": None
+        },
+        {
+            "text": "**Apply for the Job:**\n- What kind of job do you want to apply for?\n- 你想申請什麼樣的工作？",
+            "image_url": None
+        },
+        {
+            "text": "**Keep in Touch with Someone:**\n- Talk about a friend or family member you try to keep in touch with regularly.\n- 談談你努力與朋友或家人保持聯繫的情況。",
+            "image_url": None
+        },
+        {
+            "text": "**Offer a Discount:**\n- Please create a situation where you purchased an item because it was discounted.\n- 請創造一個你因為商品打折而購買的情況。",
+            "image_url": None
+        },
+        {
+            "text": "**Register In:**\n- Pretend you are a student, use 'register in' to make a sentence.\n- 假設你是一名學生，用“註冊”一詞造一個句子。",
+            "image_url": None
+        },
+        {
+            "text": "**Make an Appointment:**\n- Can you recall a time when you had to make an appointment for an important meeting or event?\n- 你能回憶起你曾經為一次重要的會議或活動預約的時候嗎？",
+            "image_url": None
+        },
+        {
+            "text": "**Remain a Concern:**\n- What things make you remain a concern?\n- 有什麼事情讓你一直擔心嗎？",
+            "image_url": None
+        },
+        {
+            "text": "**Book a Ticket:**\n- Describe a situation in which you would need to book a ticket by yourself.\n- 描述您需要自己訂票的情況",
+            "image_url": None
+        }
+    ],
+    [
+        {
+            "text": "**Beginning**: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n**開始**：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
+            "image_url": None
+        },
+        {
+            "text": "**Then**: Introduce obstacles and challenges main character encounters.\nWhen the race started, the hare bounded off in front, making good progress. He was so far ahead of the tortoise that he decided he could afford to stop and have a rest.\n**然後**：介紹主要角色遇到的障礙和挑戰。\n比賽一開始，野兔就飛奔而出，並且進展迅速。遠遠地把烏龜甩在後面，牠覺得自己可以停下來休息一下。",
+            "image_url": None
+        },
+        {
+            "text": "**After**: Reach the climax or turning point of the story, where the main character confronts the central conflict head-on.\nHowever, the hare fell fast asleep, and as he lay sleeping, the tortoise continued to plod along at his slow pace. In time, he reached the finish-line and won the race.\n**之後**：到達故事的高潮或轉折點，主角正面對抗主要衝突。\n然而，野兔很快就睡著了，當牠在睡覺時，烏龜以緩慢的步伐繼續向前爬行。最終，烏龜到達了終點線，贏得了比賽。",
+            "image_url": None
+        },
+        {
+            "text": "**Ending**: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n**結尾**：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。",
+            "image_url": None
+        }
+    ]
+]
 
 class SpeechAssessment(BaseModel):
     suggestion: Annotated[str, '給予之中文建議']
@@ -41,13 +111,8 @@ class SpeechAssessment(BaseModel):
     transcript: Annotated[str, '轉錄後文本']
     better_ans: Annotated[str, '改善後文本']
     
-    def to_dict(self):
-        return {
-            "suggestion": self.suggestion,
-            "score": self.score,
-            "transcript": self.transcript,
-            "better_ans": self.better_ans
-        }
+    def to_dict(self) -> dict:
+        return self.model_dump()
     
 SYSTEM_INSTRUCTION = f"""
         你是一個專業英語口說評量助手，請根據學生的回答內容提供之台灣繁體中文具體改進建議和改善後之英文文本。
@@ -57,7 +122,7 @@ SYSTEM_INSTRUCTION = f"""
         Context #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
         Context #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
         
-        90-100 優異表達者
+        90-100分 優異表達者
         流暢度：非常流暢，無明顯停頓，能自信地解釋詞彙、描述圖片。
         表達清晰度：能清楚表達意見或完整描述，回應詳細且準確。
         語法使用：熟練使用基本及複雜的文法，無明顯錯誤。
@@ -69,7 +134,7 @@ SYSTEM_INSTRUCTION = f"""
         for their turn. The setting appears orderly, and the individuals are maintaining a 
         proper distance.
         
-        80-89 優良表達者
+        80-89分 優良表達者
         流暢度：流暢，有少量停頓，但不影響整體表達。 
         表達清晰度：能有效表達意見或描述圖片，內容清楚。 
         語法使用：能使用複雜語法，偶有小錯誤但不影響理解。 
@@ -80,7 +145,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #2: Several people are standing in line at a bank. They are waiting for their turn at the 
         counter in an organized manner. 
         
-        70-79 良好表達者
+        70-79分 良好表達者
         流暢度：表達流暢，但有時會停頓。 
         表達清晰度：能清楚表達大部分意見，描述圖片時可能有些許不清晰之處。 
         語法使用：能使用較複雜的語法，但存在一些錯誤。 
@@ -91,7 +156,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #2: The image shows people waiting in line at a bank counter. They are standing one 
         behind another. 
         
-        60-69 基礎表達者 
+        60-69分 基礎表達者 
         流暢度：表達時有明顯停頓，流暢度有限。 
         表達清晰度：能夠基本描述圖片，但表達的清晰度不穩定。 
         語法使用：基本語法使用正確，但在使用較複雜語法時有明顯錯誤。 
@@ -101,7 +166,7 @@ SYSTEM_INSTRUCTION = f"""
         some images and information.
         Answer #2: People are lined up at a counter. It looks like they are at a bank, waiting for service.
         
-        50-59 有限表達者 
+        50-59分 有限表達者 
         流暢度：頻繁出現停頓和遲疑。 
         表達清晰度：在解釋詞彙和描述圖片時，表達不清晰，可能影響理解。 
         語法使用：主要使用簡單語法，複雜語法的使用常出錯。 
@@ -110,7 +175,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: A brochure is a paper that has information about something, often with pictures.
         Answer #2: There are people waiting in line at what seems to be a bank. 
         
-        40-49 簡單表達者 
+        40-49分 簡單表達者 
         流暢度：表達中出現長時間停頓，語速較慢。 
         表達清晰度：回應中存在不連貫的部分，圖片描述或詞彙解釋可能無法理解。 
         語法使用：主要使用基本語法，錯誤頻繁。 
@@ -119,7 +184,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: A brochure is a small booklet that gives information.
         Answer #2: People are standing in line at a counter. It looks like a bank. 
         
-        30-39 有限互動能力者 
+        30-39分 有限互動能力者 
         流暢度：表達中有明顯且頻繁的停頓。 
         表達清晰度：無法完整描述圖片，回應詞彙解釋時表達不清。 
         語法使用：語法錯誤頻繁，影響理解。 
@@ -128,7 +193,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: A brochure is paper that shows products.
         Answer #2: People are waiting at a counter in a bank. 
         
-        20-29 極度有限的表達者 
+        20-29分 極度有限的表達者 
         流暢度：表達中多數時間有長時間停頓，無法連貫。 
         表達清晰度：多數時間無法完成句子，描述圖片時困難重重。 
         語法使用：無法正確使用基本語法，錯誤頻繁且嚴重。 
@@ -137,7 +202,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: A brochure is for information. 
         Answer #2: People are standing in line. It looks like a bank. 
         
-        10-19 極低表達能力者 
+        10-19分 極低表達能力者 
         流暢度：幾乎無法進行持續表達。 
         表達清晰度：只能使用簡單詞語或片語，無法形成完整句子。 
         語法使用：無法使用基本語法。 
@@ -146,7 +211,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: A brochure is a book.
         Answer #2: People are at a bank.
         
-        0-9 無表達能力者 
+        0-9分 無表達能力者 
         流暢度：無法進行表達。 
         表達清晰度：無法作答或表達。 
         語法使用：無法使用任何語法。 
@@ -167,7 +232,7 @@ SYSTEM_INSTRUCTION = f"""
     #             190-200：可以流暢地表達與職場環境相關的語句。他們能夠非常清晰地表達意見或回覆複雜的請求，能夠適切地使用基本或複雜的文法；字彙的使用也是正確並精準地。
     #             此區間的考生也可以使用口語回答問題，並且傳達基本訊息。
     #             160-180：考生可以清楚的表達與職場環境相關的語句。他們能夠有效地表達意見或回覆複雜的請求，從他們較長的回應中，
-    #             以下有些小缺失可能發生，但不會影響訊息本身：
+    #             以下有些小缺失可能發生，但不會影響訊息本身： 
     #             1. 使用複雜的語法結構時發生一些錯誤。
     #             2. 一些不精確的詞彙。
     #             3. 此區間的考生可以使用口語回答問題，並且傳達基本訊息。
@@ -311,50 +376,63 @@ async def result_message(result: SpeechAssessment, unit, sub):
     )
 
 async def question_message(unit, sub):
-    return FlexMessage(
-            altText='口語練習',
-            contents=FlexBubble(   
-                size='giga', 
-                body=FlexBox(
-                    layout='vertical',
-                    contents=[
-                        FlexText(
-                            text=f'題目 {unit+1}-{sub+1}',
-                            wrap=True,
-                            weight='bold',
-                            size='xxl',
-                        ),
-                        FlexBox(
-                            layout='baseline',
-                            margin='md',
-                            contents=[
-                                FlexText(
-                                    text=qs[unit][sub],
-                                    color='#5b5b5b',
-                                    size='lg',
-                                    margin='md',
-                                    wrap=True,
-                                    flex=1,
-                                ),
-                            ]
-                        ),
-                    ],
+    question = get_question(unit, sub)
+    contents = [
+        FlexText(
+            text=f'題目 {unit+1}-{sub+1}',
+            wrap=True,
+            weight='bold',
+            size='xxl',
+        ),
+        FlexBox(
+            layout='baseline',
+            margin='md',
+            contents=[
+                FlexText(
+                    text=question["text"],
+                    color='#5b5b5b',
+                    size='lg',
+                    margin='md',
+                    wrap=True,
+                    flex=1,
                 ),
-                footer=FlexBox(
-                    layout='vertical',
-                    spacing='sm',
-                    alignItems='center',
-                    justifyContent='center',
-                    contents=[
-                        FlexText(
-                            style='italic',
-                            size='md',
-                            text='用語音回答問題，請按下方按鈕開始錄音',
-                        )
-                    ]
-                )
+            ]
+        ),
+    ]
+    
+    # Add image if present
+    if question.get("image_url"):
+        contents.insert(1, FlexImage(
+            url=question["image_url"],
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+            margin='md'
+        ))
+
+    return FlexMessage(
+        altText='口語練習',
+        contents=FlexBubble(   
+            size='giga', 
+            body=FlexBox(
+                layout='vertical',
+                contents=contents
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                alignItems='center',
+                justifyContent='center',
+                contents=[
+                    FlexText(
+                        style='italic',
+                        size='md',
+                        text='用語音回答問題，請按下方按鈕開始錄音',
+                    )
+                ]
             )
         )
+    )
     
 async def carousel_message(unit):
     cols = []
@@ -421,7 +499,7 @@ async def handle_rich_menu(user_id):
 
 async def create_rich_menu():
     global rich_menu_id
-    richMenu = await line_bot_api.create_rich_menu(
+    rich_menu = await line_bot_api.create_rich_menu(
         rich_menu_request=RichMenuRequest(
             size=RichMenuSize(width=2500, height=843),
             name="Menu",
@@ -445,10 +523,17 @@ async def create_rich_menu():
         async_req=True
     ).get()
 
-    rich_menu_id = richMenu.to_dict()['richMenuId']
-    
+    rich_menu_id = rich_menu.to_dict().get('richMenuId')
+        
     print(f'Rich Menu ID: {rich_menu_id}')
-
-    await line_bot_api_blob.set_rich_menu_image_with_http_info(rich_menu_id=rich_menu_id, body='templates/richmenu.png',_headers={"Content-Type": "image/png"},async_req=True).get()
-    # await line_bot_api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=richMenuId,async_req=True).get()
-    await line_bot_api.set_default_rich_menu_with_http_info(rich_menu_id=rich_menu_id,async_req=True).get()
+    
+    await line_bot_api_blob.set_rich_menu_image_with_http_info(
+        rich_menu_id=rich_menu_id,
+        body='templates/richmenu.png',
+        _headers={"Content-Type": "image/png"},
+        async_req=True
+    ).get()
+    await line_bot_api.set_default_rich_menu_with_http_info(
+        rich_menu_id=rich_menu_id,
+        async_req=True
+    ).get()
