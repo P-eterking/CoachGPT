@@ -63,3 +63,4 @@ __pycache__/
 # Uvicorn log and reload configurations
 *.reload
 *.log
+user_data.json
