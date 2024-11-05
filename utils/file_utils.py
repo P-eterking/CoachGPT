@@ -7,8 +7,8 @@ from config import USER_DATA_FILE
 user_state = {}
 user_data = {}
 
-def initData(user_id, dep, id, name):
-    user_data[user_id] = {'dep': dep, 'id': id, 'name': name, 'history': {}}
+def initData(user_id, classTime, dep, id, name):
+    user_data[user_id] = {'dep': dep, 'id': id, 'name': name, 'class-time': classTime, 'history': {}}
     
 def hasData(user_id) -> bool:
     return user_data.get(user_id) is not None
@@ -30,7 +30,6 @@ async def load_user_data():
 
 async def save_user_data():
     global user_data
-    print(json.dumps(user_data))
     async with aiofiles.open(USER_DATA_FILE, 'w', encoding='utf-8') as file:
         await file.write(json.dumps(user_data, indent=4))
         print("User data saved.")
