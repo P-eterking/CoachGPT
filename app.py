@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from routes import callback
 from utils.file_utils import load_user_data, user_data_task
 from utils.message_utils import create_rich_menu
+
 app = FastAPI()
 
 # 註冊路由

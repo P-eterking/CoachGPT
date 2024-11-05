@@ -1,6 +1,7 @@
 #!/bin/bash
+# 設置 Ngrok 
 
-# 設置 Ngrok Authtoken
+# 設置 ngrok authtoken
 ngrok config add-authtoken $NGROK_AUTHTOKEN
 
 if [ -n "$NGROK_DOMAIN" ]; then
