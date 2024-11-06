@@ -20,35 +20,27 @@ qs = {
         [
             {
                 "text": "**What does 'inexpensive' mean, and can you name something that is inexpensive?**\n - 什麼是「便宜」的意思？你能舉出一個「便宜」的例子嗎？",
-                "image_url": None
             },
             {
                 "text": "**How would you describe 'portable'? Mention a portable item you use.**\n - 「便攜的」應該怎麼解釋？提到一個你使用「便攜的」物品。",
-                "image_url": None
             },
             {
                 "text": "**What is the role of 'management' in a company?**\n - 在公司中，「管理」有什麼作用？",
-                "image_url": None
             },
             {
                 "text": "**Define 'manual' and give an example of a manual task.**\n - 定義「手動」並給出一個關於「手動」任務的例子。",
-                "image_url": None
             },
             {
                 "text": "**Can you make a sentence using 'export' and 'recently'?**\n - 你能使用「出口」和「最近」造一個句子嗎？",
-                "image_url": None
             },
             {
                 "text": "**Describe a situation where you might need to 'replace' something because it is 'inexpensive'.**\n - 描述一個你可能需要因為物品是「便宜」而「取代」它的情境。",
-                "image_url": None
             },
             {
                 "text": "**How would you tell someone to 'decrease' the volume using polite language?**\n - 你會如何用禮貌的語言告訴某人「減少」音量？",
-                "image_url": None
             },
             {
                 "text": "**Write a sentence where you explain to a friend why something is 'comfortable'.**\n - 寫一個句子解釋給朋友聽為什麼某物是「舒服的」。",
-                "image_url": None
             }
         ],
         [
@@ -108,9 +100,11 @@ qs = {
         [
             {
                 "text": "How would you describe 'brochure'? How does it works?\n - 「宣傳冊」應該怎麼解釋？它是如何運作的？",
+                "assessment_standard": "",
             },
             {
                 "text": "Explain 'convention' and what are its main functions?\n - 「會議」是什麼？它的主要功能是什麼？",
+                "assessment_standard": "",
             },
         ],
         [
@@ -125,11 +119,27 @@ qs = {
         ],
         [
             {
-                "text": "**What kind of information might the participants in the meeting be discussing?**\n - 會議中可能討論的資訊類型。",
+                "text": "What activities do you think are taking place in the warehouse?\n - 你認為倉庫中正在進行的活動是什麼？",
                 "image_url": f"{url}/templates/1/cover3-1.jpg"
             },
             {
-                "text": "**What activities do you think are taking place in the warehouse?**\n - 你認為倉庫中正在進行的活動是什麼？",
+                "text": "How can efficient logistics management improve a company's supply chain?\n - 有效的物流管理如何改善公司的供應鏈？",
+                "image_url": f"{url}/templates/1/cover3-1.jpg"
+            },
+            {
+                "text": "What safety precautions should be considered in a warehouse setting?\n - 在倉庫環境中應考慮哪些安全預防措施？",
+                "image_url": f"{url}/templates/1/cover3-1.jpg"
+            },
+            {
+                "text": "What emotions or thoughts might visitors experience while viewing the artwork?\n - 參觀者在觀看藝術作品時可能會經歷哪些情感或想法？",
+                "image_url": f"{url}/templates/1/cover3-2.jpg"
+            },
+            {
+                "text": "How does the layout of the gallery enhance the visitor experience?\n - 畫廊的佈局如何提升參觀者的體驗？",
+                "image_url": f"{url}/templates/1/cover3-2.jpg"
+            },
+            {
+                "text": "In what ways can art galleries contribute to cultural awareness in society?\n - 藝術畫廊可以通過哪些方式促進社會的文化意識？",
                 "image_url": f"{url}/templates/1/cover3-2.jpg"
             },
         ],
