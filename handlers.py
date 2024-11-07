@@ -109,6 +109,7 @@ async def handle_audio_message(event):
         
         unit = user_state[user_id]['unit']
         sub = user_state[user_id]['sub']
+        question = get_question(unit,sub)
         
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
@@ -122,7 +123,7 @@ async def handle_audio_message(event):
                 },
                 {
                     "role": "user",
-                    "content": f"<question>{get_question(unit,sub)}</question><userAnswer>{text}</userAnswer>",
+                    "content": f"<question>{question['text']}</question>{"<standard>"+question['assessment_standard'].replace('\n','').strip()+"</standard>" if question.get('assessment_standard') else ""}<userAnswer>{text}</userAnswer>",
                 }
             ],
         )

@@ -100,47 +100,265 @@ qs = {
         [
             {
                 "text": "How would you describe 'brochure'? How does it works?\n - 「宣傳冊」應該怎麼解釋？它是如何運作的？",
-                "assessment_standard": "",
+                "assessment_standard": """
+                10 優異表達者
+                A brochure is a printed document that provides detailed information about a specific topic, product, or service. It is often used for marketing purposes to attract potential customers by highlighting key features and benefits. Brochures can be found in various formats, including tri-folds and booklets, and are designed to be visually appealing to engage readers effectively.
+                9 優良表達者
+                A brochure is a promotional document that offers information about a product, service, or event. It typically includes attractive images and concise text to inform potential customers. Brochures are commonly distributed at conventions or events to provide attendees with valuable details about what is being offered.
+                8 良好表達者
+                A brochure is a type of printed material that gives information about something, such as a service or a place. It often has pictures and a layout designed to catch people’s attention. Brochures are used by businesses and organizations to promote their offerings.
+                7 基礎表達者
+                A brochure is a small booklet that contains information. It can be about a place or a service, and it usually has some pictures. People use brochures to learn more about different things.
+                6 有限表達者
+                A brochure is a paper that tells about something. It has some words and pictures to help people understand. It is used by companies to share information.
+                5 簡單表達者
+                A brochure is a paper with information. It shows pictures and tells about things. It helps people know more about products.
+                4 有限互動能力者
+                A brochure is a type of paper with stuff on it. It has pictures. It gives some information, but it is not clear.
+                3 極度有限的表達者
+                A brochure is paper. It has pictures. I don’t know much more.
+                2 極低表達能力者
+                A brochure is paper. It has something.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
             },
             {
                 "text": "Explain 'convention' and what are its main functions?\n - 「會議」是什麼？它的主要功能是什麼？",
-                "assessment_standard": "",
+                "assessment_standard": """
+                10 優異表達者
+                A convention is a formal gathering or meeting of individuals who share a common interest or profession. These events often include presentations, workshops, and discussions aimed at exchanging knowledge, networking, and addressing issues relevant to the group. Conventions can be organized around specific themes, such as education, technology, or health, and typically attract participants from various regions or fields.
+                9 優良表達者
+                A convention is a large meeting where people with similar interests come together to discuss topics and share ideas. These gatherings usually include speakers, workshops, and networking opportunities. Conventions are common in various fields, such as science, business, and arts, and provide a platform for collaboration.
+                8 良好表達者
+                A convention is a meeting of a group of people who come together to talk about certain topics. It often includes presentations and activities related to a specific theme. Conventions allow attendees to learn and network with others in their field.
+                7 基礎表達者
+                A convention is a big meeting. People come together to talk about something important. They have speakers and discussions.
+                6 有限表達者
+                A convention is a place where people meet. They talk about things and share information. It can be big.
+                5 簡單表達者
+                A convention is a meeting. People go there to talk and learn.
+                4 有限互動能力者
+                A convention is a type of meeting. People gather, but I don’t know what they do.
+                3 極度有限的表達者
+                A convention is a meeting. People are there.
+                2 極低表達能力者
+                A convention is a meeting of people.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
             },
         ],
         [
             {
                 "text": "Describe the picture in as much detail as you can\n根據螢幕上的照片，詳細描述其中出現的人物、場景與所發生的事，細節越詳細越好。",
-                "image_url": f"{url}/templates/1/cover2-1.jpg"
+                "image_url": f"{url}/templates/1/cover2-1.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                This picture shows a business meeting in a modern office with large windows overlooking the city. There are several professionals around a polished wooden table, engaged in discussion. Some are looking at reports, while one person is taking notes. The atmosphere feels serious, indicating important decisions are being made.
+                9 優良表達者
+                The image depicts a business meeting happening in a high-rise office. People are sitting around a table, reviewing documents and charts. One person is writing notes, and the others are discussing strategies. The setting looks professional and focused.
+                8 良好表達者
+                This image features a meeting in an office. There are several people at a table with papers and charts. One person is writing while others seem to be talking about important topics.
+                7 基礎表達者
+                The picture shows a meeting in an office. People are gathered around a table with documents. It looks like they are discussing something serious.
+                6 有限表達者
+                This image has a group of people in a meeting. They have papers on the table, and one person is writing. It seems important.
+                5 簡單表達者
+                There are people in a meeting. They are looking at papers.
+                4 有限互動能力者
+                Meeting. People with papers. They look serious.
+                3 極度有限的表達者
+                Meeting with papers. People are there.
+                2 極低表達能力者
+                Meeting. Not clear.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "Describe the picture in as much detail as you can\n根據螢幕上的照片，詳細描述其中出現的人物、場景與所發生的事，細節越詳細越好。",
-                "image_url": f"{url}/templates/1/cover2-2.jpg"
+                "image_url": f"{url}/templates/1/cover2-2.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                This image shows a busy train station with lots of people waiting for trains. The station is modern, with tall ceilings and clear signs. A train is arriving, and everyone looks ready to travel. The scene captures the excitement of commuting in a big city.
+                9 優良表達者
+                The picture depicts a crowded train station. There are many people waiting for trains, and a train is at the platform. The place looks lively and organized.
+                8 良好表達者
+                This image features a train station with many passengers. A train is arriving, and it looks busy with people moving around.
+                7 基礎表達者
+                The picture shows a train station. There are lots of people, and a train is there.
+                6 有限表達者
+                There are people at a train station. A train is there.
+                5 簡單表達者
+                Train station with many people.
+                4 有限互動能力者
+                Train station. People are waiting.
+                3 極度有限的表達者
+                Train station. I see many people.
+                2 極低表達能力者
+                Train.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
             },
         ],
         [
             {
                 "text": "What activities do you think are taking place in the warehouse?\n - 你認為倉庫中正在進行的活動是什麼？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg"
+                "image_url": f"{url}/templates/1/cover3-1.jpg",
+                "assessment_standard": """
+                10優異表達者
+                The warehouse is likely bustling with activity. Workers are probably unloading shipments, checking inventory levels, and organizing products on shelves. Additionally, items might be prepared for delivery, ensuring that everything is correctly labeled and stored. Quality control checks are likely conducted to maintain standards.
+                9優良表達者
+                Various tasks are likely taking place in the warehouse. Employees may be unloading boxes, organizing products, and packing orders for shipment. Inventory checks might also be happening to keep track of stock levels.
+                8良好表達者
+                People in the warehouse seem to be involved in packing and sorting items. They may also be checking what products are available and getting them ready to send out.
+                7基礎表達者
+                Activities in the warehouse probably include packing boxes and organizing items. Inventory checks may also take place to see what is in stock.
+                6有限表達者
+                Workers seem to be packing and moving items around in the warehouse. They might be checking some products, but it’s not clear.
+                5簡單表達者
+                There are workers in the warehouse packing items and moving boxes. It looks busy, but not much detail is available.
+                4有限互動能力者
+                It seems like people are working in the warehouse. They might be packing and moving items, but it’s difficult to know exactly what they are doing.
+                3極度有限的表達者
+                Some workers are busy moving things in the warehouse. Packing might be happening, but it’s not very clear.
+                2極低表達能力者
+                There are people working. Boxes are being moved around, and maybe some packing is happening.
+                1無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "How can efficient logistics management improve a company's supply chain?\n - 有效的物流管理如何改善公司的供應鏈？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg"
+                "image_url": f"{url}/templates/1/cover3-1.jpg",
+                "assessment_standard": """
+                10優異表達者
+                Efficient logistics management plays a crucial role in optimizing a company's supply chain. By streamlining processes like inventory management and transportation, companies can reduce costs and improve delivery times. This efficiency not only enhances customer satisfaction but also helps the company respond quickly to market changes and demands, ultimately leading to increased competitiveness.
+                9優良表達者
+                Good logistics management can significantly enhance a company’s supply chain. When processes are organized efficiently, it reduces delays and lowers operational costs. This means products can be delivered faster and more reliably, which is important for keeping customers happy and maintaining a good reputation.
+                8良好表達者
+                Efficient logistics helps companies manage their supply chains better. For example, if inventory levels are tracked accurately, it can prevent overstocking or stockouts, ensuring that products are available when needed. This can lead to smoother operations and satisfied customers.
+                7基礎表達者 
+                Managing logistics well can improve the supply chain by making sure that products are delivered on time. When things are organized, it helps reduce costs and avoid delays, which is important for business success.
+                6有限表達者
+                Good logistics management can help a company by making sure things are delivered faster. It might also save money, but it’s not clear how much impact it has overall.
+                5簡單表達者
+                Logistics management helps companies deliver products on time. If it’s organized well, it can save money and time.
+                4有限互動能力者
+                Efficient logistics seems to help with delivery times. It probably makes things easier for companies, but it’s not entirely clear how it works.
+                3極度有限的表達者
+                Logistics helps in some way, but it’s hard to say how exactly. It might make deliveries better.
+                2極低表達能力者
+                Um... logistics helps? Deliveries... maybe faster?
+                1無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "What safety precautions should be considered in a warehouse setting?\n - 在倉庫環境中應考慮哪些安全預防措施？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg"
+                "image_url": f"{url}/templates/1/cover3-1.jpg",
+                "assessment_standard": """
+                10優異表達者
+                Safety precautions in a warehouse are critical for protecting workers and maintaining a safe environment. Comprehensive training on equipment operation, especially for machinery like forklifts, is essential. Regular safety audits should be conducted to identify potential hazards. Additionally, proper labeling of hazardous materials and ensuring that personal protective equipment, such as gloves, helmets, and safety shoes, is always worn are crucial steps to prevent accidents and injuries.
+                9優良表達者
+                In a warehouse, safety is very important. Workers should receive thorough training on how to operate equipment safely. Regular inspections for hazards, such as spills or blocked pathways, can help prevent accidents. It's also vital for employees to wear appropriate personal protective equipment, like hard hats and safety glasses, to reduce the risk of injury.
+                8良好表達者
+                Important safety precautions include training workers on the proper use of machinery and following safety guidelines. Regular checks for potential hazards, like wet floors or improperly stored items, can help avoid accidents. Wearing safety gear, such as gloves and helmets, is also necessary to protect workers.
+                7基礎表達者
+                Safety is important in a warehouse setting. Workers should be trained to use machines correctly, and the area should be kept clean to prevent accidents. Wearing protective gear, such as gloves and hard hats, is necessary to ensure safety.
+                6有限表達者
+                Safety rules are essential in a warehouse. Workers need training on how to use equipment properly, and they should pay attention to their surroundings. Keeping the area tidy and using safety gear can help prevent injuries.
+                5簡單表達者
+                Workers should be careful in a warehouse. They need to learn how to use tools safely and keep the area organized to avoid accidents. Using safety gear is also important.
+                4有限互動能力者
+                Safety in the warehouse is important. Training might help workers know how to avoid accidents, and cleaning up seems like a good idea to keep things safe.
+                3極度有限的表達者
+                Safety matters, but it's hard to explain. It seems like training and wearing protective gear are important.
+                2極低表達能力者
+                Um... being careful is good? Using safety gear might help.
+                1無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "What emotions or thoughts might visitors experience while viewing the artwork?\n - 參觀者在觀看藝術作品時可能會經歷哪些情感或想法？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg"
+                "image_url": f"{url}/templates/1/cover3-2.jpg",
+                "assessment_standard": """
+                10優異表達者
+                Visitors in the gallery may experience a wide range of emotions, such as awe, inspiration, and nostalgia. Engaging with the artwork can evoke deep reflections on personal experiences or cultural themes. The use of color, composition, and subject matter can provoke meaningful discussions and inspire visitors to think critically about the artwork’s message and its relevance to society.
+                9優良表達者
+                While viewing the artwork, visitors are likely to feel inspired and moved. The different pieces might spark thoughts about personal memories or evoke emotions related to the themes depicted in the art. Engaging with the artwork can encourage visitors to reflect on their own experiences and feelings.
+                8良好表達者
+                People in the gallery might feel a sense of wonder or curiosity when looking at the artwork. Some pieces could remind them of personal experiences or make them think about different ideas and emotions.
+                7 基礎表達者
+                Visitors probably experience various emotions while looking at the art. They might feel happy or thoughtful, depending on what the artwork represents. Some pieces may resonate with their own life experiences.
+                6 有限表達者
+                People might feel different things while viewing the art. Some might feel happy, while others could be confused or unsure about what they see.
+                5 簡單表達者
+                Visitors see art and might feel something like happiness or confusion. It depends on the piece they are looking at.
+                4 有限互動能力者
+                There are likely different feelings when people look at the art. Some might like it, but others might not understand it well.
+                3 極度有限的表達者
+                People are looking at art and might feel something, but it’s hard to say what exactly.
+                2 極低表達能力者
+                Um... people look at art. They might feel something, maybe good?
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "How does the layout of the gallery enhance the visitor experience?\n - 畫廊的佈局如何提升參觀者的體驗？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg"
+                "image_url": f"{url}/templates/1/cover3-2.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                The layout of the gallery plays a crucial role in enhancing the visitor experience by creating a logical flow that guides viewers through the space. Well-planned pathways allow visitors to engage with each piece of artwork without feeling rushed. Open spaces and strategic lighting draw attention to specific pieces, making it easier for visitors to appreciate details and context. Additionally, thematic groupings of artworks can provoke deeper connections and reflections among the visitors.
+                9 優良表達者
+                A thoughtfully designed layout significantly enhances the visitor experience. By organizing artworks in a way that flows naturally, visitors can move comfortably from one piece to another. Clear sightlines and appropriate lighting help highlight important works, allowing for better appreciation. The grouping of related artworks can also encourage visitors to draw connections and think more critically about the themes presented.
+                8 良好表達者
+                The gallery layout helps visitors navigate the space more easily. A good arrangement means people can see the artworks clearly without obstruction. Proper lighting and spacing allow viewers to appreciate the details of each piece, making the experience more enjoyable.
+                7 基礎表達者
+                The layout of the gallery is important because it helps people find their way around. When the artworks are spaced out well, it makes it easier for visitors to see and enjoy each piece.
+                6 有限表達者
+                The gallery layout probably helps visitors see the art better. If everything is organized, it should make it easier to walk around and look at the pieces.
+                5 簡單表達者
+                A good layout in the gallery helps people look at the art. If things are organized, it makes it easier to walk around.
+                4 有限互動能力者
+                The layout seems to matter because it helps people find their way. It could make looking at art a bit easier, but it’s hard to say how.
+                3 極度有限的表達者
+                Layout helps, but not sure how exactly. It seems like it makes things easier to see.
+                2 極低表達能力者
+                Um... the layout is good? Maybe it helps people see art?
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "In what ways can art galleries contribute to cultural awareness in society?\n - 藝術畫廊可以通過哪些方式促進社會的文化意識？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg"
+                "image_url": f"{url}/templates/1/cover3-2.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                Art galleries play a vital role in promoting cultural awareness by showcasing diverse artists and their work. They provide a platform for underrepresented voices and perspectives, fostering dialogue about social issues and cultural identity. Through exhibitions and educational programs, galleries can encourage visitors to explore different cultures, challenge stereotypes, and appreciate the richness of global art. This engagement not only broadens understanding but also cultivates empathy among individuals from varied backgrounds.
+                9 優良表達者
+                Galleries contribute to cultural awareness by displaying art from different cultures and communities. They can host exhibitions that highlight important social issues and encourage discussions among visitors. Educational programs and guided tours can also help people learn about the cultural significance of the artworks, deepening their understanding of various traditions and histories.
+                8 良好表達者
+                Art galleries help raise cultural awareness by showing a variety of artworks from different cultures. They can educate visitors about the history and significance of the art, which helps people understand and appreciate different perspectives.
+                7 基礎表達者
+                Art galleries play a role in showing art from different cultures. This helps visitors learn about other people's backgrounds and traditions.
+                6 有限表達者
+                Galleries show art that can help people learn about different cultures. It might make them think more about other ways of life.
+                5 簡單表達者
+                Art galleries display different types of art that can help people know about other cultures. This might make them more interested in learning about those cultures.
+                4 有限互動能力者
+                Art galleries seem to help people understand other cultures, but it’s not entirely clear how that happens. Seeing different art might give some ideas about other ways of life.
+                3 極度有限的表達者
+                Galleries show art, and that could help people learn about different cultures, but the details are unclear.
+                2 極低表達能力者
+                Um... galleries show art? Maybe it helps with cultures?
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
             },
         ],
         # [
@@ -157,10 +375,54 @@ qs = {
             {
                 "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為社交媒體應該被限制在改善心理健康的使用？",
                 "image_url": None,
+                "assessment_standard": """
+                10 優異表達者
+                "Yes, I strongly agree that limiting social media use can significantly benefit mental health. Studies show that excessive social media use can lead to issues such as anxiety, depression, and low self-esteem, particularly among young people. Constant comparison with others' seemingly perfect lives creates unrealistic expectations and promotes negative self-image. By reducing time on social platforms, individuals can shift focus to real-life interactions, fostering genuine connections and reducing anxiety. Moreover, decreased social media use allows for increased productivity and personal development, as people can invest time in hobbies, exercise, or mindfulness practices, which all contribute positively to mental health."
+                9優良表達者 
+                "Yes, I agree that people should limit social media usage for better mental health. Many studies highlight that too much time on social media can lead to issues like anxiety and feeling inadequate. Social media often shows only the highlights of people’s lives, which makes others feel they are not doing enough. By cutting down on social media, people can focus more on their personal lives and relationships, reducing stress and negativity. Also, using less social media can increase time for other meaningful activities, such as spending time with friends, exercising, or learning new skills."
+                8良好表達者 
+                "Yes, I think people should try to reduce their use of social media for mental health. Many people feel anxious or stressed after looking at social media because they compare themselves to others. When people spend too much time online, it can make them feel bad about themselves. By spending less time on social media, they might feel happier and can focus on things they enjoy in real life. Also, it could give people more time to be with friends or family, which is also good for mental health."
+                7基礎表達者
+                "I think it is a good idea for people to use less social media to feel better. Social media can sometimes make people feel bad because they compare their lives to others. If they don’t use it so much, they might feel happier and focus on other things like family or hobbies. Also, they can spend more time outside or with friends, which is good for health."
+                6 有限表達者 
+                "I think people should use social media less. It makes people feel bad because they look at other people’s lives. When they don’t use it so much, they can feel better. They can spend more time with family or do fun things."
+                5簡單表達者
+                "People should not use too much social media. It is not good. They feel sad because they look at others. If they use less, they can be happier and do other things."
+                4 有限互動能力者
+                "Social media is not good for people. They feel bad. Less is better."
+                3 極度有限的表達者 
+                "Social media… not good. People feel sad. Less… better."
+                2極低表達能力者 
+                "Social media… not… good. People… sad."
+                1 無表達能力者 
+                (No response or attempt to answer.)
+                """
             },
             {
                 "text": "**Do you agree that animal testing should be banned in all cases?**\n - 你是否認為動物檢測應該被全面禁止？",
                 "image_url": None,
+                "assessment_standard": """
+                10 優異表達者
+                "Yes, I believe animal testing should be banned in all cases. While it has contributed to scientific and medical advancements, the harm and suffering inflicted on animals is unacceptable. With the development of alternative methods, such as computer modeling and cell cultures, we now have other ways to test the safety and effectiveness of products. Banning animal testing would encourage innovation in developing cruelty-free methods, ultimately leading to a more humane approach in science and technology. Although some argue that animal testing is necessary for complex studies, I believe modern technology can replace these practices."
+                9 優良表達者
+                "Yes, I think animal testing should be banned because it causes unnecessary suffering. Many new technologies, like computer simulations, offer alternative ways to test products safely. If we stop animal testing, it will push scientists to find more humane methods. While some believe animal testing is still needed, I think we can find other solutions."
+                8 良好表達者
+                "I agree that animal testing should be banned. Testing causes animals pain, and now we have other ways to do research, like using computers. If we stop testing on animals, we can find kinder ways to do research. Some people think it’s needed, but I think there are other options."
+                7 基礎表達者
+                "I think animal testing should be banned. Testing causes animals to suffer, which isn’t fair. We have other options for testing, like using computers, so animal testing isn’t needed anymore."
+                6 有限表達者
+                "Yes, I think animal testing should stop because it hurts animals. We can use other ways to test products now, like computer models, which are better."
+                5 簡單表達者
+                "Animal testing is bad because it hurts animals. We can use other methods instead of testing on animals."
+                4 有限互動能力者
+                "Animal testing is not good because it causes pain. We should use different ways to test things."
+                3 極度有限的表達者
+                "Animal testing is bad. We should find other ways."
+                2極低表達能力者
+                "Animal testing is bad. Use other ways."
+                1 無表達能力者 
+                (No response or attempt to answer.)
+                """
             },
         ],
     ]
@@ -282,7 +544,7 @@ SYSTEM_INSTRUCTION = f"""
         Answer #2: <Not speaking, nonsense, or not knowing>
         
         你需要以3個步驟執行任務:
-        1. 根據以上評分標準為學生回答評分。
+        1. 根據提供之評分標準為學生回答評分。
         2. 思考並給予具體的改進建議，同時以繁體中文與英文回覆。
         3. 依照學生回答文本，延伸或改進其回答，並以英文回覆。
         
