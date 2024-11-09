@@ -1,5 +1,3 @@
-from errno import ENOMSG
-from textwrap import wrap
 from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
 from linebot.v3.messaging import (
@@ -374,25 +372,24 @@ qs = {
         [
             {
                 "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為社交媒體應該被限制在改善心理健康的使用？",
-                "image_url": None,
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I strongly agree that limiting social media use can significantly benefit mental health. Studies show that excessive social media use can lead to issues such as anxiety, depression, and low self-esteem, particularly among young people. Constant comparison with others' seemingly perfect lives creates unrealistic expectations and promotes negative self-image. By reducing time on social platforms, individuals can shift focus to real-life interactions, fostering genuine connections and reducing anxiety. Moreover, decreased social media use allows for increased productivity and personal development, as people can invest time in hobbies, exercise, or mindfulness practices, which all contribute positively to mental health."
-                9優良表達者 
+                9 優良表達者 
                 "Yes, I agree that people should limit social media usage for better mental health. Many studies highlight that too much time on social media can lead to issues like anxiety and feeling inadequate. Social media often shows only the highlights of people’s lives, which makes others feel they are not doing enough. By cutting down on social media, people can focus more on their personal lives and relationships, reducing stress and negativity. Also, using less social media can increase time for other meaningful activities, such as spending time with friends, exercising, or learning new skills."
-                8良好表達者 
+                8 良好表達者 
                 "Yes, I think people should try to reduce their use of social media for mental health. Many people feel anxious or stressed after looking at social media because they compare themselves to others. When people spend too much time online, it can make them feel bad about themselves. By spending less time on social media, they might feel happier and can focus on things they enjoy in real life. Also, it could give people more time to be with friends or family, which is also good for mental health."
-                7基礎表達者
+                7 基礎表達者
                 "I think it is a good idea for people to use less social media to feel better. Social media can sometimes make people feel bad because they compare their lives to others. If they don’t use it so much, they might feel happier and focus on other things like family or hobbies. Also, they can spend more time outside or with friends, which is good for health."
                 6 有限表達者 
                 "I think people should use social media less. It makes people feel bad because they look at other people’s lives. When they don’t use it so much, they can feel better. They can spend more time with family or do fun things."
-                5簡單表達者
+                5 簡單表達者
                 "People should not use too much social media. It is not good. They feel sad because they look at others. If they use less, they can be happier and do other things."
                 4 有限互動能力者
                 "Social media is not good for people. They feel bad. Less is better."
                 3 極度有限的表達者 
                 "Social media… not good. People feel sad. Less… better."
-                2極低表達能力者 
+                2 極低表達能力者 
                 "Social media… not… good. People… sad."
                 1 無表達能力者 
                 (No response or attempt to answer.)
@@ -400,7 +397,6 @@ qs = {
             },
             {
                 "text": "**Do you agree that animal testing should be banned in all cases?**\n - 你是否認為動物檢測應該被全面禁止？",
-                "image_url": None,
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I believe animal testing should be banned in all cases. While it has contributed to scientific and medical advancements, the harm and suffering inflicted on animals is unacceptable. With the development of alternative methods, such as computer modeling and cell cultures, we now have other ways to test the safety and effectiveness of products. Banning animal testing would encourage innovation in developing cruelty-free methods, ultimately leading to a more humane approach in science and technology. Although some argue that animal testing is necessary for complex studies, I believe modern technology can replace these practices."
@@ -429,7 +425,8 @@ qs = {
 }
 
 class SpeechAssessment(BaseModel):
-    suggestion: Annotated[str, '給予之中英文建議']
+    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion']
+    eng_suggestion: Annotated[str, 'English sugeestion']
     score: Annotated[int, '評量分數']
     transcript: Annotated[str, '轉錄後文本']
     better_ans: Annotated[str, '改善後文本']
@@ -544,8 +541,8 @@ SYSTEM_INSTRUCTION = f"""
         Answer #2: <Not speaking, nonsense, or not knowing>
         
         你需要以3個步驟執行任務:
-        1. 根據提供之評分標準為學生回答評分。
-        2. 思考並給予具體的改進建議，同時以繁體中文與英文回覆。
+        1. 根據提供之評分標準為學生的答案評分(It's okay to give out a full marks)。
+        2. 思考並給予具體的改進建議，以台灣繁體中文與英文回傳建議。
         3. 依照學生回答文本，延伸或改進其回答，並以英文回覆。
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
@@ -662,14 +659,22 @@ async def result_message(result: SpeechAssessment, unit, sub):
                             FlexBox(
                                 layout='vertical',
                                 margin='md',
+                                spacing='sm',
                                 contents=[
                                     FlexText(
-                                        text=result.suggestion,
+                                        text=result.chi_suggestion.replace('\\n','\n').strip(),
                                         color='#5b5b5b',
                                         size='sm',
                                         wrap=True,
                                         flex=1,
                                     ),
+                                    FlexText(
+                                        text=result.eng_suggestion.replace('\\n','\n').strip(),
+                                        color='#5b5b5b',
+                                        size='sm',
+                                        wrap=True,
+                                        flex=1,
+                                    )
                                 ]
                             ),
                         ]

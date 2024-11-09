@@ -101,7 +101,7 @@ async def handle_audio_message(event):
             # 使用 Whisper 進行音訊轉錄
             transcript = await groq.audio.transcriptions.create(
                 model="whisper-large-v3",
-                file=(f.name,message_content),
+                file=(f.name,f.read()),
                 language="en",
             )
             
@@ -114,7 +114,7 @@ async def handle_audio_message(event):
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
             response_format=SpeechAssessment,
-            max_completion_tokens=3072,
+            max_completion_tokens=2048,
             temperature=1.2,
             messages=[
                 {
