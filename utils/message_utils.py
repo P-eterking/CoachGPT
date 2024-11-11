@@ -10,9 +10,13 @@ from linebot.v3.messaging.exceptions import ApiException
 from pydantic import BaseModel
 import json
 
+from utils.file_utils import get_test_mode
+
+# 設定主網址和分類變數
 url  = f'https://{DOMAIN}'
 category = 1
 
+# 定義問題集合
 qs = {
     0:[
         [
@@ -424,23 +428,27 @@ qs = {
     ]
 }
 
+# 定義評估模型的格式
 class SpeechAssessment(BaseModel):
-    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion']
-    eng_suggestion: Annotated[str, 'English sugeestion']
-    score: Annotated[int, '評量分數']
-    transcript: Annotated[str, '轉錄後文本']
-    better_ans: Annotated[str, '改善後文本']
+    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion']  # 中文建議
+    eng_suggestion: Annotated[str, 'English suggestion']  # 英文建議
+    score: Annotated[int, '評量分數']  # 分數
+    transcript: Annotated[str, '轉錄後文本']  # 使用者回答的轉錄文本
+    better_ans: Annotated[str, '改善後文本']  # 改進的回覆範例
     
     def to_dict(self) -> dict:
         return self.model_dump()
-    
+
+# 系統評估提示語，指導如何進行回答分析
 SYSTEM_INSTRUCTION = f"""
-        你是一個專業英語口說評量助手，請根據學生的回答內容提供台灣繁體中文和英文之具體改進建議和改善後之英文文本。
-        請針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性
-        同時，提供具體的改進方式，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量。
+        你是一個專業英語口說評量助手，擅長根據學生的回答提供改進建議和改善後之文本。
         
-        Question #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
-        Question #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
+        userAnswer 代表使用者的口說回答
+        question 代表題目
+        standard 代表評量標準
+        
+        Sample Question #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
+        Sample Question #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
         
         10分 優異表達者
         表達清晰度：能清楚表達意見或完整描述，回應詳細且準確。
@@ -540,10 +548,11 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
         
-        你需要以3個步驟執行任務:
-        1. 根據提供之評分標準為學生的答案評分(It's okay to give out a full marks)。
-        2. 思考並給予具體的改進建議，以台灣繁體中文與英文回傳建議。
-        3. 依照學生回答文本，延伸或改進其回答，並以英文回覆。
+        你需要以4個步驟執行任務，Think step by step:
+        1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
+        2. 根據提供之評分標準，為學生的口說回答評分(It's okay to give out a full marks)。
+        3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文與英文回傳。
+        4. 依照學生回答文本，延伸或改進其回答，以英文回覆。
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
@@ -687,7 +696,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                         spacing='sm',
                         contents=[
                             FlexText(
-                                text='可改善為 Imporvements',
+                                text='可改善為 Improvements',
                                 wrap=True,
                                 weight='bold',
                                 size='xl',
@@ -708,6 +717,23 @@ async def result_message(result: SpeechAssessment, unit, sub):
                         ],
                     ),
                 )
+            ] if not get_test_mode() else [
+                FlexBubble(
+                    size='giga',
+                    body=FlexBox(
+                        layout='vertical',
+                        justifyContent='center',
+                        alignItems='center',
+                        contents=[
+                            FlexText(
+                                text=f'Q{unit+1}-{sub+1} 作答完成 Complete',
+                                wrap=True,
+                                weight='bold',
+                                size='xxl',
+                            ),
+                        ],
+                    ),
+                ),
             ]
         )
     )
