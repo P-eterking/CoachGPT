@@ -10,7 +10,7 @@ from utils.file_utils import (
     updateHistory, initData, switch_test_mode
 )
 import tempfile
-import base64
+
 async def handle_text_message(event):
     # 獲取使用者傳來的文字訊息並移除前後空白
     message: str = event.message.text.strip()

@@ -233,146 +233,115 @@ qs = {
                 """
             },
             {
-                "text": "How can efficient logistics management improve a company's supply chain?\n - 有效的物流管理如何改善公司的供應鏈？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg",
-                "assessment_standard": """
-                10優異表達者
-                Efficient logistics management plays a crucial role in optimizing a company's supply chain. By streamlining processes like inventory management and transportation, companies can reduce costs and improve delivery times. This efficiency not only enhances customer satisfaction but also helps the company respond quickly to market changes and demands, ultimately leading to increased competitiveness.
-                9優良表達者
-                Good logistics management can significantly enhance a company’s supply chain. When processes are organized efficiently, it reduces delays and lowers operational costs. This means products can be delivered faster and more reliably, which is important for keeping customers happy and maintaining a good reputation.
-                8良好表達者
-                Efficient logistics helps companies manage their supply chains better. For example, if inventory levels are tracked accurately, it can prevent overstocking or stockouts, ensuring that products are available when needed. This can lead to smoother operations and satisfied customers.
-                7基礎表達者 
-                Managing logistics well can improve the supply chain by making sure that products are delivered on time. When things are organized, it helps reduce costs and avoid delays, which is important for business success.
-                6有限表達者
-                Good logistics management can help a company by making sure things are delivered faster. It might also save money, but it’s not clear how much impact it has overall.
-                5簡單表達者
-                Logistics management helps companies deliver products on time. If it’s organized well, it can save money and time.
-                4有限互動能力者
-                Efficient logistics seems to help with delivery times. It probably makes things easier for companies, but it’s not entirely clear how it works.
-                3極度有限的表達者
-                Logistics helps in some way, but it’s hard to say how exactly. It might make deliveries better.
-                2極低表達能力者
-                Um... logistics helps? Deliveries... maybe faster?
-                1無表達能力者
-                (No response or attempt to answer.)
-                """
-            },
-            {
-                "text": "What safety precautions should be considered in a warehouse setting?\n - 在倉庫環境中應考慮哪些安全預防措施？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg",
-                "assessment_standard": """
-                10優異表達者
-                Safety precautions in a warehouse are critical for protecting workers and maintaining a safe environment. Comprehensive training on equipment operation, especially for machinery like forklifts, is essential. Regular safety audits should be conducted to identify potential hazards. Additionally, proper labeling of hazardous materials and ensuring that personal protective equipment, such as gloves, helmets, and safety shoes, is always worn are crucial steps to prevent accidents and injuries.
-                9優良表達者
-                In a warehouse, safety is very important. Workers should receive thorough training on how to operate equipment safely. Regular inspections for hazards, such as spills or blocked pathways, can help prevent accidents. It's also vital for employees to wear appropriate personal protective equipment, like hard hats and safety glasses, to reduce the risk of injury.
-                8良好表達者
-                Important safety precautions include training workers on the proper use of machinery and following safety guidelines. Regular checks for potential hazards, like wet floors or improperly stored items, can help avoid accidents. Wearing safety gear, such as gloves and helmets, is also necessary to protect workers.
-                7基礎表達者
-                Safety is important in a warehouse setting. Workers should be trained to use machines correctly, and the area should be kept clean to prevent accidents. Wearing protective gear, such as gloves and hard hats, is necessary to ensure safety.
-                6有限表達者
-                Safety rules are essential in a warehouse. Workers need training on how to use equipment properly, and they should pay attention to their surroundings. Keeping the area tidy and using safety gear can help prevent injuries.
-                5簡單表達者
-                Workers should be careful in a warehouse. They need to learn how to use tools safely and keep the area organized to avoid accidents. Using safety gear is also important.
-                4有限互動能力者
-                Safety in the warehouse is important. Training might help workers know how to avoid accidents, and cleaning up seems like a good idea to keep things safe.
-                3極度有限的表達者
-                Safety matters, but it's hard to explain. It seems like training and wearing protective gear are important.
-                2極低表達能力者
-                Um... being careful is good? Using safety gear might help.
-                1無表達能力者
-                (No response or attempt to answer.)
-                """
-            },
-            {
-                "text": "What emotions or thoughts might visitors experience while viewing the artwork?\n - 參觀者在觀看藝術作品時可能會經歷哪些情感或想法？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg",
-                "assessment_standard": """
-                10優異表達者
-                Visitors in the gallery may experience a wide range of emotions, such as awe, inspiration, and nostalgia. Engaging with the artwork can evoke deep reflections on personal experiences or cultural themes. The use of color, composition, and subject matter can provoke meaningful discussions and inspire visitors to think critically about the artwork’s message and its relevance to society.
-                9優良表達者
-                While viewing the artwork, visitors are likely to feel inspired and moved. The different pieces might spark thoughts about personal memories or evoke emotions related to the themes depicted in the art. Engaging with the artwork can encourage visitors to reflect on their own experiences and feelings.
-                8良好表達者
-                People in the gallery might feel a sense of wonder or curiosity when looking at the artwork. Some pieces could remind them of personal experiences or make them think about different ideas and emotions.
-                7 基礎表達者
-                Visitors probably experience various emotions while looking at the art. They might feel happy or thoughtful, depending on what the artwork represents. Some pieces may resonate with their own life experiences.
-                6 有限表達者
-                People might feel different things while viewing the art. Some might feel happy, while others could be confused or unsure about what they see.
-                5 簡單表達者
-                Visitors see art and might feel something like happiness or confusion. It depends on the piece they are looking at.
-                4 有限互動能力者
-                There are likely different feelings when people look at the art. Some might like it, but others might not understand it well.
-                3 極度有限的表達者
-                People are looking at art and might feel something, but it’s hard to say what exactly.
-                2 極低表達能力者
-                Um... people look at art. They might feel something, maybe good?
-                1 無表達能力者
-                (No response or attempt to answer.)
-                """
-            },
-            {
-                "text": "How does the layout of the gallery enhance the visitor experience?\n - 畫廊的佈局如何提升參觀者的體驗？",
+                "text": "What considerations should hikers keep in mind to ensure a safe and enjoyable outing\n - 登山者應該考慮哪些因素，以確保安全且愉快的郊遊？",
                 "image_url": f"{url}/templates/1/cover3-2.jpg",
                 "assessment_standard": """
                 10 優異表達者
-                The layout of the gallery plays a crucial role in enhancing the visitor experience by creating a logical flow that guides viewers through the space. Well-planned pathways allow visitors to engage with each piece of artwork without feeling rushed. Open spaces and strategic lighting draw attention to specific pieces, making it easier for visitors to appreciate details and context. Additionally, thematic groupings of artworks can provoke deeper connections and reflections among the visitors.
+                Hikers should prioritize safety by planning their routes carefully and ensuring they are well-prepared for theterrain. This includes checking weather conditions and dressing appropriately for the climate. Carrying
+                essential gear, such as a first aid kit, sufficient water, and nutritious snacks, is crucial. Additionally, informing someone about their hiking plans and estimated return time can enhance safety. Practicing Leave No
+                Trace principles also helps preserve the environment for future hikers.
                 9 優良表達者
-                A thoughtfully designed layout significantly enhances the visitor experience. By organizing artworks in a way that flows naturally, visitors can move comfortably from one piece to another. Clear sightlines and appropriate lighting help highlight important works, allowing for better appreciation. The grouping of related artworks can also encourage visitors to draw connections and think more critically about the themes presented.
+                To ensure a safe and enjoyable hiking experience, it's important for hikers to choose suitable trails that match their skill levels. They should check the weather
+                forecast and pack necessary items like water, snacks, and a map. Wearing appropriate footwear and clothing can also prevent injuries and discomfort. It’s a good idea to hike with a friend and let someone know the planned route and return time for added safety.
                 8 良好表達者
-                The gallery layout helps visitors navigate the space more easily. A good arrangement means people can see the artworks clearly without obstruction. Proper lighting and spacing allow viewers to appreciate the details of each piece, making the experience more enjoyable.
+                Hikers should consider planning their hike based on the trail difficulty and checking the weather. Bringing enough water and snacks is important to stay energized.
+                Wearing the right shoes and clothes can help prevent injuries, and it’s better to hike with others for safety.
                 7 基礎表達者
-                The layout of the gallery is important because it helps people find their way around. When the artworks are spaced out well, it makes it easier for visitors to see and enjoy each piece.
+                When hiking, it’s good to pick a trail that is not too hard. Checking the weather and bringing water and snacks can make the hike better. Wearing proper shoes is also important for safety.
                 6 有限表達者
-                The gallery layout probably helps visitors see the art better. If everything is organized, it should make it easier to walk around and look at the pieces.
+                Hikers need to think about the trail they choose and check the weather. Bringing water and snacks is important to stay safe.
                 5 簡單表達者
-                A good layout in the gallery helps people look at the art. If things are organized, it makes it easier to walk around.
+                Hiking safely means picking the right trail and bringing enough water. Wearing good shoes helps too.
                 4 有限互動能力者
-                The layout seems to matter because it helps people find their way. It could make looking at art a bit easier, but it’s hard to say how.
+                Hikers should remember to check the weather and bring supplies. It seems like knowing the trail is important for safety.
                 3 極度有限的表達者
-                Layout helps, but not sure how exactly. It seems like it makes things easier to see.
+                Safety is important when hiking, but it’s hard to say what to do exactly.
                 2 極低表達能力者
-                Um... the layout is good? Maybe it helps people see art?
+                Um... just be careful? Bring water?
                 1 無表達能力者
                 (No response or attempt to answer.)
                 """
+            }
+        ],
+        [
+            {
+                "text": "**What time does Band A perform?**\n - Band A 是在哪一個時間表演?",
+                "image_url": f"{url}/templates/1/cover4-1.jpg",
+                "max_score": 4,
+                "assessment_standard": """
+                為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
+                3分：鼓勵學生繼續保持正確性和流利度。
+                2分：指導學生在句子結構或細節準確性上進行改善。
+                1分：提供更基礎的建議，幫助他們增強語法和句子結構的理解。
+                
+                4 回答完整且正確
+                • 使用完整句子，且回答內容完全正確，無語法或內容錯誤。
+                • 例子：學生完整且正確地表達所要求的資訊，語法與用詞準確。
+                3 回答部分正確或語法不完整，但仍表達主要資訊
+                • 情況1：回答內容大部分正確，但有些小錯誤或不完整，影響回答的全面性。
+                • 情況2：回答為完整句子，但內容部分不正確。
+                • 例子：學生表達了主要資訊，但在細節或語法上 存在小錯誤。
+                2 回答不完整且不正確
+                • 回答內容部分不正確且未使用完整句子，或只表達非常有限的資訊。
+                • 例子：學生的回答僅包含少量正確資訊，且句子不完整或語法錯誤嚴重。
+                1 (No response or attempt to answer.)
+                
+                4:
+                - Band A performs at 1:00 PM on the main stage.
+                - Band A is scheduled to play at 1:00 PM.
+                - Band A plays at 1:00 PM.
+                - Band A is on at 1 PM.
+                
+                3:
+                - Band A performs at 1.
+                - Band A is at 1 PM.
+                - Band A plays at 1.
+
+                2:
+                - Band A at 1.
+                - 1 PM.
+                
+                1: (No response.)
+                """
             },
             {
-                "text": "In what ways can art galleries contribute to cultural awareness in society?\n - 藝術畫廊可以通過哪些方式促進社會的文化意識？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg",
+                "text": "**How much does the Beach Getaway to Cancun cost?**\n - Cancun 海灘度假的費用是多少？",
+                "image_url": f"{url}/templates/1/cover4-2.jpg",
+                "max_score": 4,
                 "assessment_standard": """
-                10 優異表達者
-                Art galleries play a vital role in promoting cultural awareness by showcasing diverse artists and their work. They provide a platform for underrepresented voices and perspectives, fostering dialogue about social issues and cultural identity. Through exhibitions and educational programs, galleries can encourage visitors to explore different cultures, challenge stereotypes, and appreciate the richness of global art. This engagement not only broadens understanding but also cultivates empathy among individuals from varied backgrounds.
-                9 優良表達者
-                Galleries contribute to cultural awareness by displaying art from different cultures and communities. They can host exhibitions that highlight important social issues and encourage discussions among visitors. Educational programs and guided tours can also help people learn about the cultural significance of the artworks, deepening their understanding of various traditions and histories.
-                8 良好表達者
-                Art galleries help raise cultural awareness by showing a variety of artworks from different cultures. They can educate visitors about the history and significance of the art, which helps people understand and appreciate different perspectives.
-                7 基礎表達者
-                Art galleries play a role in showing art from different cultures. This helps visitors learn about other people's backgrounds and traditions.
-                6 有限表達者
-                Galleries show art that can help people learn about different cultures. It might make them think more about other ways of life.
-                5 簡單表達者
-                Art galleries display different types of art that can help people know about other cultures. This might make them more interested in learning about those cultures.
-                4 有限互動能力者
-                Art galleries seem to help people understand other cultures, but it’s not entirely clear how that happens. Seeing different art might give some ideas about other ways of life.
-                3 極度有限的表達者
-                Galleries show art, and that could help people learn about different cultures, but the details are unclear.
-                2 極低表達能力者
-                Um... galleries show art? Maybe it helps with cultures?
-                1 無表達能力者
-                (No response or attempt to answer.)
+                為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
+                3分：鼓勵學生繼續保持正確性和流利度。
+                2分：指導學生在句子結構或細節準確性上進行改善。
+                1分：提供更基礎的建議，幫助他們增強語法和句子結構的理解。
+                
+                4 回答完整且正確
+                • 使用完整句子，且回答內容完全正確，無語法或內容錯誤。
+                • 例子：學生完整且正確地表達所要求的資訊，語法與用詞準確。
+                3 回答部分正確或語法不完整，但仍表達主要資訊
+                • 情況1：回答內容大部分正確，但有些小錯誤或不完整，影響回答的全面性。
+                • 情況2：回答為完整句子，但內容部分不正確。
+                • 例子：學生表達了主要資訊，但在細節或語法上 存在小錯誤。
+                2 回答不完整且不正確
+                • 回答內容部分不正確且未使用完整句子，或只表達非常有限的資訊。
+                • 例子：學生的回答僅包含少量正確資訊，且句子不完整或語法錯誤嚴重。
+                1 (No response or attempt to answer.)
+                
+                4:
+                - The 7-day trip to Cancun costs $999.
+                - The price for the 7-day Cancun trip is $999.
+                - The 7-day Cancun trip is priced at $999.
+                - A 7-day trip to Cancun costs $999.
+                3:
+                - It is $999 for Cancun.
+                - The Cancun trip is $999.
+                - Cancun is $999.
+                2:
+                - $999.
+                - Cancun $999.
+                1: (No response.)
                 """
             },
         ],
-        # [
-        #     {
-        #         "text": "**What time does Band A perform?**\n - 哪一個時間段，Band A 會進行活動？",
-        #         "image_url": f"{url}/templates/1/cover4-1.jpg"
-        #     },
-        #     {
-        #         "text": "**How much does the Beach Getaway to Cancun cost?**\n - Cancun 海灘度假遊戲費用多少？",
-        #         "image_url": f"{url}/templates/1/cover4-2.jpg"
-        #     },
-        # ],
         [
             {
                 "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為社交媒體應該被限制在改善心理健康的使用？",
@@ -896,7 +865,9 @@ async def info_hint_message(index: int):
 async def handle_rich_menu(user_id):
     global rich_menu_id
     try:
-        await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
+        oldId = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
+        if oldId.rich_menu_id is not rich_menu_id:
+            await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
     except ApiException as e:
         await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
 
@@ -904,9 +875,27 @@ async def create_rich_menu():
     global rich_menu_id
     rich_menu = await line_bot_api.create_rich_menu(
         rich_menu_request=RichMenuRequest(
-            size=RichMenuSize(width=2500, height=843),
+            # size=RichMenuSize(width=2500, height=843),
+            # name="Menu",
+            # chatBarText="Exercises 1~3",
+            # selected=True,
+            # areas=[
+            #     RichMenuArea(
+            #         bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
+            #         action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
+            #     ),
+            #     RichMenuArea(
+            #         bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
+            #         action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
+            #     ),
+            #     RichMenuArea(
+            #         bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
+            #         action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
+            #     ),
+            # ]
+            size=RichMenuSize(width=2500, height=1686),
             name="Menu",
-            chatBarText="Exercises 1~3",
+            chatBarText="CoachGPT",
             selected=True,
             areas=[
                 RichMenuArea(
@@ -921,6 +910,14 @@ async def create_rich_menu():
                     bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
                     action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
                 ),
+                RichMenuArea(
+                    bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
+                    action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
+                ),
+                RichMenuArea(
+                    bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
+                    action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
+                ),
             ]
         ),
         async_req=True
@@ -932,7 +929,7 @@ async def create_rich_menu():
     
     await line_bot_api_blob.set_rich_menu_image_with_http_info(
         rich_menu_id=rich_menu_id,
-        body='templates/richmenu.png',
+        body=f'templates/richmenu-1.png',
         _headers={"Content-Type": "image/png"},
         async_req=True
     ).get()
