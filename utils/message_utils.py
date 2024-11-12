@@ -265,7 +265,7 @@ qs = {
         ],
         [
             {
-                "text": "**What time does Band A perform?**\n - Band A 是在哪一個時間表演?",
+                "text": "**What time does Bandaid Band perform?**\n - Bandaid Band 是在哪一個時間表演?",
                 "image_url": f"{url}/templates/1/cover4-1.jpg",
                 "max_score": 4,
                 "assessment_standard": """
@@ -287,18 +287,18 @@ qs = {
                 1 (No response or attempt to answer.)
                 
                 4:
-                - Band A performs at 1:00 PM on the main stage.
-                - Band A is scheduled to play at 1:00 PM.
-                - Band A plays at 1:00 PM.
-                - Band A is on at 1 PM.
+                - Bandaid Band performs at 1:00 PM on Stage B.
+                - Bandaid Band is scheduled to play at 1:00 PM.
+                - Bandaid Band plays at 1:00 PM.
+                - Bandaid Band is on at 1 PM.
                 
                 3:
-                - Band A performs at 1.
-                - Band A is at 1 PM.
-                - Band A plays at 1.
+                - Bandaid Band performs at 1.
+                - Bandaid Band is at 1 PM.
+                - Bandaid Band plays at 1.
 
                 2:
-                - Band A at 1.
+                - Bandaid Band at 1.
                 - 1 PM.
                 
                 1: (No response.)
