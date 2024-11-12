@@ -101,7 +101,7 @@ qs = {
     1: [
         [
             {
-                "text": "How would you describe 'brochure'? How does it works?\n - 「宣傳冊」應該怎麼解釋？它是如何運作的？",
+                "text": "What is a 'brochure'? Could you provide an example and explain it?\n - 什麼是「宣傳冊」？試著舉一個例子解釋",
                 "assessment_standard": """
                 10 優異表達者
                 A brochure is a printed document that provides detailed information about a specific topic, product, or service. It is often used for marketing purposes to attract potential customers by highlighting key features and benefits. Brochures can be found in various formats, including tri-folds and booklets, and are designed to be visually appealing to engage readers effectively.
