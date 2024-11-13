@@ -127,15 +127,19 @@ async def handle_audio_message(event):
             f.flush()
                 
             # 使用 Whisper 進行音訊轉錄
-            transcript = await groq.audio.transcriptions.create(
-                model="whisper-large-v3",
-                file=(f.name,f.read()),
+            # transcript = await groq.audio.transcriptions.create(
+            #     model="whisper-large-v3",
+            #     file=(f.name,f.read()),
+            #     language="en",
+            # )
+            transcript = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=(f.name, f.read()),
                 language="en",
             )
-            
             # 獲取轉錄的文字
             text = transcript.text.strip()
-                
+            
             f.close()
             # text = base64.b64encode(message_content).decode('utf-8')
         except Exception as e:
