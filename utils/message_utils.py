@@ -153,7 +153,7 @@ qs = {
         ],
         [
             {
-                "text": "Describe the picture in as much detail as you can\n根據螢幕上的照片，詳細描述其中出現的人物、場景與所發生的事，細節越詳細越好。",
+                "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
                 "image_url": f"{url}/templates/1/cover2-1.jpg",
                 "assessment_standard": """
                 10 優異表達者
@@ -179,7 +179,7 @@ qs = {
                 """
             },
             {
-                "text": "Describe the picture in as much detail as you can\n根據螢幕上的照片，詳細描述其中出現的人物、場景與所發生的事，細節越詳細越好。",
+                "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
                 "image_url": f"{url}/templates/1/cover2-2.jpg",
                 "assessment_standard": """
                 10 優異表達者
@@ -344,7 +344,7 @@ qs = {
         ],
         [
             {
-                "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為社交媒體應該被限制在改善心理健康的使用？",
+                "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為人們是否需限制社交媒體使用時間，以改善心裡健康？",
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I strongly agree that limiting social media use can significantly benefit mental health. Studies show that excessive social media use can lead to issues such as anxiety, depression, and low self-esteem, particularly among young people. Constant comparison with others' seemingly perfect lives creates unrealistic expectations and promotes negative self-image. By reducing time on social platforms, individuals can shift focus to real-life interactions, fostering genuine connections and reducing anxiety. Moreover, decreased social media use allows for increased productivity and personal development, as people can invest time in hobbies, exercise, or mindfulness practices, which all contribute positively to mental health."
@@ -369,7 +369,7 @@ qs = {
                 """
             },
             {
-                "text": "**Do you agree that animal testing should be banned in all cases?**\n - 你是否認為動物檢測應該被全面禁止？",
+                "text": "**Do you agree that animal testing should be banned in all cases?**\n - 你是否認為動物實驗應該被全面禁止？",
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I believe animal testing should be banned in all cases. While it has contributed to scientific and medical advancements, the harm and suffering inflicted on animals is unacceptable. With the development of alternative methods, such as computer modeling and cell cultures, we now have other ways to test the safety and effectiveness of products. Banning animal testing would encourage innovation in developing cruelty-free methods, ultimately leading to a more humane approach in science and technology. Although some argue that animal testing is necessary for complex studies, I believe modern technology can replace these practices."
