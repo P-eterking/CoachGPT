@@ -23,7 +23,13 @@ def get_test_mode() -> bool:
 def initData(user_id, classTime, dep, id, name):
     # 將新的使用者資料加入 user_data 字典，並初始化歷史紀錄為空字典
     user_data[user_id] = {'dep': dep, 'id': id, 'name': name, 'class-time': classTime, 'history': {}}
-    
+
+# 刪除使用者資料
+def delData(user_id):
+    # 若 user_data 中存在此 user_id 的資料，則刪除之
+    if user_data.get(user_id) is not None:
+        del user_data[user_id]
+
 # 檢查是否已有使用者資料
 def hasData(user_id) -> bool:
     # 若 user_data 中存在此 user_id 的資料，返回 True，否則返回 False

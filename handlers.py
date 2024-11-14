@@ -7,7 +7,7 @@ from utils.message_utils import (
 )
 from utils.file_utils import (
     user_state, save_user_data, hasData,
-    updateHistory, initData, switch_test_mode
+    updateHistory, initData, delData, switch_test_mode
 )
 import tempfile
 
@@ -38,6 +38,9 @@ async def handle_text_message(event):
         await send_message(event, await carousel_message(3))
     elif message.startswith('儲存'):
         await save_user_data()
+    elif message.startswith('解除綁定'):
+        delData(user_id)
+        await send_text_message(event, "已解除綁定！\nUnlinked!")
     elif message.startswith('/測驗模式'):
         if switch_test_mode():
             await send_text_message(event, "已進入測驗模式！\nTest mode activated!")
