@@ -6,8 +6,8 @@ from utils.message_utils import (
     category, SpeechAssessment, get_question, SYSTEM_INSTRUCTION, text_message
 )
 from utils.file_utils import (
-    user_state, save_user_data, hasData,
-    updateHistory, initData, delData, switch_test_mode
+    get_test_mode, user_state, save_user_data, hasData,
+    updateHistory,getHistory, initData, delData, switch_test_mode
 )
 import tempfile
 
@@ -232,3 +232,13 @@ async def handle_postback(event):
         # 發送特定單元的 carousel 訊息
         unit = int(vars.get('unit', 1))
         await send_message(event, await carousel_message(unit))
+    elif action == 'result':
+        if get_test_mode():
+            return
+        history = getHistory(user_id, f'{category}-{unit}-{sub}')
+        if not history:
+            await send_text_message(event, '查無紀錄！\nNo history found!')
+        unit = int(vars.get('unit', 0))
+        sub = int(vars.get('sub', 0))
+        result = SpeechAssessment.model_validate(history)
+        await send_message(event, await result_message(result, unit, sub))

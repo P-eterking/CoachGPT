@@ -772,6 +772,38 @@ async def question_message(unit, sub):
 async def carousel_message(unit):
     cols = []
     for sub,j in enumerate(qs[category][unit-1]):
+        body = FlexBox(
+            layout='vertical',
+            spacing='lg',
+            contents=[
+                FlexText(
+                    text=f'口語練習 Q{unit}-{sub+1}',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                ),
+                FlexButton(
+                    action=PostbackAction(
+                        label='開始作答 Enter',
+                        data=f'action=record&unit={unit-1}&sub={sub}'
+                    ),
+                    height='sm',
+                    style='primary',
+                ),
+            ]
+        )
+        if not get_test_mode():
+            body.contents.append(
+                FlexButton(
+                    action=PostbackAction(
+                        label='查看結果 Result',
+                        data=f'action=result&unit={unit-1}&sub={sub}'
+                    ),
+                    height='sm',
+                    style='secondary',
+                )
+            )
         cols.append(FlexBubble(
             hero=FlexImage(
                 url=f'{url}/templates/{category}/cover{unit}-{sub+1}.jpg',
@@ -779,27 +811,7 @@ async def carousel_message(unit):
                 aspect_ratio='20:13',
                 aspect_mode='cover',
             ),
-            body=FlexBox(
-                layout='vertical',
-                spacing='lg',
-                contents=[
-                    FlexText(
-                        text=f'口語練習 Q{unit}-{sub+1}',
-                        wrap=True,
-                        weight='bold',
-                        size='xl',
-                        align='center',
-                    ),
-                    FlexButton(
-                        action=PostbackAction(
-                            label='開始作答 Enter',
-                            data=f'action=record&unit={unit-1}&sub={sub}'
-                        ),
-                        height='sm',
-                        style='primary',
-                    )
-                ]
-            )
+            body=body
         ))
     if len(qs[category]) > unit:
         cols.append(FlexBubble(

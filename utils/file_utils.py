@@ -39,7 +39,11 @@ def hasData(user_id) -> bool:
 def updateHistory(user_id, key, history: dict):
     # 將指定的歷史紀錄（history）新增或更新到 user_data 中該使用者的歷史紀錄
     user_data[user_id]['history'][key] = history
-    
+
+def getHistory(user_id, key):
+    # 獲取指定使用者的指定歷史紀錄
+    return user_data[user_id]['history'].get(key)
+
 # 非同步加載使用者資料
 async def load_user_data():
     global user_data
