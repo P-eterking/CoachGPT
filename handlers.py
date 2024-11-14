@@ -106,7 +106,12 @@ async def handle_audio_message(event):
         # 取得音訊訊息內容並等待處理完成
         result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
         text = None
-            
+        
+        # 獲取使用者的練習單元和題目
+        unit = user_state[user_id]['unit']
+        sub = user_state[user_id]['sub']
+        question = get_question(unit, sub)
+        
         try:
             while result.status == 'processing':
                 result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
@@ -152,11 +157,6 @@ async def handle_audio_message(event):
             print('No text found in audio')
             return
          
-        # 獲取使用者的練習單元和題目
-        unit = user_state[user_id]['unit']
-        sub = user_state[user_id]['sub']
-        question = get_question(unit, sub)
-        
         # 使用 GPT 模型進行回應分析與評估
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
@@ -174,7 +174,6 @@ async def handle_audio_message(event):
                 }
             ],
         )
-        
         # completion = await client.beta.chat.completions.parse(
         #     model="gpt-4o-audio-preview",
         #     # response_format={ "type": "json_object" },
