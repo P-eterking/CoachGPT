@@ -64,3 +64,4 @@ __pycache__/
 *.reload
 *.log
 user_data.json
+config.json

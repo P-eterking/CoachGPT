@@ -1,4 +1,3 @@
-from typing import Annotated
 from config import line_bot_api, line_bot_api_blob, DOMAIN
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
@@ -7,10 +6,10 @@ from linebot.v3.messaging import (
     FlexText, FlexBox, FlexButton
 )
 from linebot.v3.messaging.exceptions import ApiException
-from pydantic import BaseModel
+from utils.models import SpeechAssessment, User
 import json
 
-from utils.file_utils import get_test_mode
+from utils.file_utils import get_test_mode, getData, getHistory, get_rich_menu_id,set_rich_menu_id, save_config
 
 # 設定主網址和分類變數
 url  = f'https://{DOMAIN}'
@@ -48,53 +47,41 @@ qs = {
         [
             {
                 "text": "**Meet the Deadline:**\n- Can you describe a time when you had to meet a tight deadline?\n- 你能描述一次你必須在截止日期前完成任務的情況嗎？",
-                "image_url": None
             },
             {
                 "text": "**Apply for the Job:**\n- What kind of job do you want to apply for?\n- 你想申請什麼樣的工作？",
-                "image_url": None
             },
             {
                 "text": "**Keep in Touch with Someone:**\n- Talk about a friend or family member you try to keep in touch with regularly.\n- 談談你努力與朋友或家人保持聯繫的情況。",
-                "image_url": None
             },
             {
                 "text": "**Offer a Discount:**\n- Please create a situation where you purchased an item because it was discounted.\n- 請創造一個你因為商品打折而購買的情況。",
-                "image_url": None
             },
             {
                 "text": "**Register In:**\n- Pretend you are a student, use 'register in' to make a sentence.\n- 假設你是一名學生，用“註冊”一詞造一個句子。",
-                "image_url": None
             },
             {
                 "text": "**Make an Appointment:**\n- Can you recall a time when you had to make an appointment for an important meeting or event?\n- 你能回憶起你曾經為一次重要的會議或活動預約的時候嗎？",
-                "image_url": None
             },
             {
                 "text": "**Remain a Concern:**\n- What things make you remain a concern?\n- 有什麼事情讓你一直擔心嗎？",
-                "image_url": None
             },
             {
                 "text": "**Book a Ticket:**\n- Describe a situation in which you would need to book a ticket by yourself.\n- 描述您需要自己訂票的情況。",
-                "image_url": None
             }
         ],
         [
             {
                 "text": "**Beginning**: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n**開始**：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
-                "image_url": None
             },
             {
                 "text": "**Then**: Introduce obstacles and challenges main character encounters.\nWhen the race started, the hare bounded off in front, making good progress. He was so far ahead of the tortoise that he decided he could afford to stop and have a rest.\n**然後**：介紹主要角色遇到的障礙和挑戰。\n比賽一開始，野兔就飛奔而出，並且進展迅速。遠遠地把烏龜甩在後面，牠覺得自己可以停下來休息一下。",
-                "image_url": None
             },
             {
                 "text": "**After**: Reach the climax or turning point of the story, where the main character confronts the central conflict head-on.\nHowever, the hare fell fast asleep, and as he lay sleeping, the tortoise continued to plod along at his slow pace. In time, he reached the finish-line and won the race.\n**之後**：到達故事的高潮或轉折點，主角正面對抗主要衝突。\n然而，野兔很快就睡著了，當牠在睡覺時，烏龜以緩慢的步伐繼續向前爬行。最終，烏龜到達了終點線，贏得了比賽。",
-                "image_url": None
             },
             {
                 "text": "**Ending**: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n**結尾**：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。",
-                "image_url": None
             }
         ]
     ],
@@ -397,17 +384,6 @@ qs = {
     ]
 }
 
-# 定義評估模型的格式
-class SpeechAssessment(BaseModel):
-    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion']  # 中文建議
-    eng_suggestion: Annotated[str, 'English suggestion']  # 英文建議
-    score: Annotated[int, '評量分數']  # 分數
-    transcript: Annotated[str, '轉錄後文本']  # 使用者回答的轉錄文本
-    better_ans: Annotated[str, '改善後文本']  # 改進的回覆範例
-    
-    def to_dict(self) -> dict:
-        return self.model_dump()
-
 # 系統評估提示語，指導如何進行回答分析
 SYSTEM_INSTRUCTION = f"""
         你是一個專業英語口說評量助手，擅長根據學生的回答提供改進建議和改善後之文本。
@@ -553,8 +529,6 @@ SYSTEM_INSTRUCTION = f"""
     #             0-30：考生在進行口說測驗時，通常會有許多部分沒有作答。考生也許不具備英文聽力或閱讀的基本技能，來了解測驗的指示或題目的內容。
     #             The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     #             """
-
-rich_menu_id : str = None
 
 def get_question(unit, sub):
     return qs[category][unit][sub]
@@ -769,7 +743,7 @@ async def question_message(unit, sub):
         )
     )
     
-async def carousel_message(unit):
+async def carousel_message(user_id, unit):
     cols = []
     for sub,j in enumerate(qs[category][unit-1]):
         body = FlexBox(
@@ -793,7 +767,7 @@ async def carousel_message(unit):
                 ),
             ]
         )
-        if not get_test_mode():
+        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
             body.contents.append(
                 FlexButton(
                     action=PostbackAction(
@@ -850,6 +824,7 @@ ENG_HINT =[
     'Next, what is your student ID?\nFor example: 11352237',
     'Next, what is your name?\nFor example: Paul Wang',
 ]
+
 async def info_hint_message(index: int):
     return FlexMessage(
         altText='資料綁定提示',
@@ -874,8 +849,57 @@ async def info_hint_message(index: int):
         )
     )
 
+async def data_message():
+    user_data = getData()
+    users = []
+    for i in user_data:
+        users.append(User.model_validate(user_data[i]))
+        
+    user_count = len(users)
+    total_history_score = 0
+    total_history_count = 0
+    max_score = float('-inf')
+    min_score = float('inf')
+    users_with_history = 0
+    users_with_10plus = 0
+
+    for user in users:
+        if user.history:
+            users_with_history += 1
+            if len(user.history) >= 10:
+                users_with_10plus += 1
+        for assessment in user.history.values():
+            total_history_score += assessment.score
+            total_history_count += 1
+            if assessment.score > max_score:
+                max_score = assessment.score
+            if assessment.score < min_score:
+                min_score = assessment.score
+
+    average_history_score = total_history_score / total_history_count if total_history_count > 0 else 0
+    average_history_per_user = total_history_count / users_with_history if users_with_history > 0 else 0
+
+    return FlexMessage(
+        altText="User data analysis",
+        contents=FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_10plus}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
+                        wrap=True,
+                        size='md',
+                     ),
+                ],
+            ),
+        )
+    )
+
+
 async def handle_rich_menu(user_id):
-    global rich_menu_id
+    rich_menu_id = get_rich_menu_id()
     try:
         oldId = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
         if oldId.rich_menu_id is not rich_menu_id:
@@ -884,58 +908,61 @@ async def handle_rich_menu(user_id):
         await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
 
 async def create_rich_menu():
-    global rich_menu_id
-    rich_menu = await line_bot_api.create_rich_menu(
-        rich_menu_request=RichMenuRequest(
-            # size=RichMenuSize(width=2500, height=843),
-            # name="Menu",
-            # chatBarText="Exercises 1~3",
-            # selected=True,
-            # areas=[
-            #     RichMenuArea(
-            #         bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
-            #         action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
-            #     ),
-            #     RichMenuArea(
-            #         bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
-            #         action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
-            #     ),
-            #     RichMenuArea(
-            #         bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
-            #         action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
-            #     ),
-            # ]
-            size=RichMenuSize(width=2500, height=1686),
-            name="Menu",
-            chatBarText="CoachGPT",
-            selected=True,
-            areas=[
-                RichMenuArea(
-                    bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
-                    action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
-                ),
-                RichMenuArea(
-                    bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
-                    action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
-                ),
-                RichMenuArea(
-                    bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
-                    action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
-                ),
-                RichMenuArea(
-                    bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
-                    action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
-                ),
-                RichMenuArea(
-                    bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
-                    action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
-                ),
-            ]
-        ),
-        async_req=True
-    ).get()
+    rich_menu_id = get_rich_menu_id()
+    if not rich_menu_id:
+        rich_menu = await line_bot_api.create_rich_menu(
+            rich_menu_request=RichMenuRequest(
+                # size=RichMenuSize(width=2500, height=843),
+                # name="Menu",
+                # chatBarText="Exercises 1~3",
+                # selected=True,
+                # areas=[
+                #     RichMenuArea(
+                #         bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
+                #         action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
+                #     ),
+                #     RichMenuArea(
+                #         bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
+                #         action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
+                #     ),
+                #     RichMenuArea(
+                #         bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
+                #         action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
+                #     ),
+                # ]
+                size=RichMenuSize(width=2500, height=1686),
+                name="Menu",
+                chatBarText="CoachGPT",
+                selected=True,
+                areas=[
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
+                        action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
+                        action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
+                        action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
+                        action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
+                        action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
+                    ),
+                ]
+            ),
+            async_req=True
+        ).get()
 
-    rich_menu_id = rich_menu.to_dict().get('richMenuId')
+        rich_menu_id = rich_menu.to_dict().get('richMenuId')
+        set_rich_menu_id(rich_menu_id)
+        await save_config()
         
     print(f'Rich Menu ID: {rich_menu_id}')
     

@@ -1,13 +1,14 @@
 from config import line_bot_api, line_bot_api_blob, groq, client
 import asyncio
 from utils.message_utils import (
-    info_hint_message, result_message, send_message, send_text_message,
+    data_message, info_hint_message, result_message, send_message, send_text_message,
     question_message, carousel_message, handle_rich_menu,
-    category, SpeechAssessment, get_question, SYSTEM_INSTRUCTION, text_message
+    category, SYSTEM_INSTRUCTION, text_message, get_question
 )
+from utils.models import SpeechAssessment
 from utils.file_utils import (
-    get_test_mode, user_state, save_user_data, hasData,
-    updateHistory,getHistory, initData, delData, switch_test_mode
+    get_answerable, get_test_mode, switch_answerable, user_state, save_user_data, hasData,
+    updateHistory, getHistory, initData, delData, switch_test_mode
 )
 import tempfile
 
@@ -31,11 +32,11 @@ async def handle_text_message(event):
 
     # 根據訊息內容執行不同的口語練習
     if message.startswith('口語練習一'):
-        await send_message(event, await carousel_message(1))
+        await send_message(event, await carousel_message(user_id,1))
     elif message.startswith('口語練習二'):
-        await send_message(event, await carousel_message(2))
+        await send_message(event, await carousel_message(user_id,2))
     elif message.startswith('口語練習三'):
-        await send_message(event, await carousel_message(3))
+        await send_message(event, await carousel_message(user_id,3))
     elif message.startswith('儲存'):
         await save_user_data()
     elif message.startswith('解除綁定'):
@@ -46,6 +47,13 @@ async def handle_text_message(event):
             await send_text_message(event, "已進入測驗模式！\nTest mode activated!")
         else:
             await send_text_message(event, "已退出測驗模式！\nTest mode deactivated!")
+    elif message.startswith('/切換'):
+        if switch_answerable():
+            await send_text_message(event, "已切換為不可回答模式！\nAnswerable mode deactivated!")
+        else:
+            await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
+    elif message.startswith('/數據'):
+        await send_message(event, await data_message())
 
 user_data_enter = {}
 
@@ -83,7 +91,7 @@ async def check_user_login(event, message: str = None) -> bool:
             del user_data_enter[user_id]
             await send_message(event, [
                 await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message} !"), 
-                await carousel_message(1)
+                await carousel_message(user_id,1)
             ])
             return True
 
@@ -223,6 +231,9 @@ async def handle_postback(event):
     
     # 處理不同的 postback 動作
     if action == 'record':
+        if not get_answerable():
+            await send_text_message(event, '目前不接受測驗！\nCurrently not available!')
+            return
         # 設定使用者狀態為當前選擇的單元和題目
         unit = int(vars.get('unit', 0))
         sub = int(vars.get('sub', 0))
@@ -231,14 +242,14 @@ async def handle_postback(event):
     elif action == 'unit':
         # 發送特定單元的 carousel 訊息
         unit = int(vars.get('unit', 1))
-        await send_message(event, await carousel_message(unit))
+        await send_message(event, await carousel_message(user_id, unit))
     elif action == 'result':
         if get_test_mode():
             return
+        unit = int(vars.get('unit', 0))
+        sub = int(vars.get('sub', 0))
         history = getHistory(user_id, f'{category}-{unit}-{sub}')
         if not history:
             await send_text_message(event, '查無紀錄！\nNo history found!')
-        unit = int(vars.get('unit', 0))
-        sub = int(vars.get('sub', 0))
         result = SpeechAssessment.model_validate(history)
         await send_message(event, await result_message(result, unit, sub))

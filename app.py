@@ -2,24 +2,23 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from routes import callback
-from utils.file_utils import load_user_data, user_data_task
+from utils.file_utils import load_user_data, save_config, save_user_data, user_data_task, load_config
 from utils.message_utils import create_rich_menu
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await load_user_data()
+    await load_config()
+    await create_rich_menu()
+    asyncio.create_task(user_data_task())
+    yield
+    await save_config()
+    await save_user_data()
+
+# 創建 FastAPI 應用
+app = FastAPI(lifespan=lifespan)
 
 # 註冊路由
 app.post("/callback")(callback)
 app.mount('/templates', StaticFiles(directory='templates'))
-
-async def init():
-    # 載入之前儲存的狀態資料
-    # await load_user_state()
-    await load_user_data()
-    await create_rich_menu()
-
-    # 開始執行定時儲存任務
-    asyncio.create_task(user_data_task())
-    # asyncio.create_task(save_user_data())
-
-loop = asyncio.get_running_loop()
-loop.create_task(init())

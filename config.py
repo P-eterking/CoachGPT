@@ -23,3 +23,4 @@ groq = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 # 檔案儲存路徑
 # USER_STATE_FILE = 'user_state.json'
 USER_DATA_FILE = 'user_data.json'
+CONFIG_FILE = 'config.json'
