@@ -842,7 +842,6 @@ async def info_hint_message(index: int):
                     FlexText(
                         text=ENG_HINT[index],
                         wrap=True,
-                        size='md',
                     )
                 ]
             )
@@ -851,11 +850,8 @@ async def info_hint_message(index: int):
 
 async def data_message():
     user_data = getData()
-    users = []
-    for i in user_data:
-        users.append(User.model_validate(user_data[i]))
-        
-    user_count = len(users)
+
+    user_count = len(user_data)
     total_history_score = 0
     total_history_count = 0
     max_score = float('-inf')
@@ -863,7 +859,7 @@ async def data_message():
     users_with_history = 0
     users_with_10plus = 0
 
-    for user in users:
+    for user in user_data.values():
         if user.history:
             users_with_history += 1
             if len(user.history) >= 10:
@@ -888,7 +884,7 @@ async def data_message():
                 spacing='lg',
                 contents=[
                     FlexText(
-                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_10plus}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
+                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_10plus}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
                         wrap=True,
                         size='md',
                      ),
@@ -964,15 +960,15 @@ async def create_rich_menu():
         set_rich_menu_id(rich_menu_id)
         await save_config()
         
+        await line_bot_api_blob.set_rich_menu_image_with_http_info(
+            rich_menu_id=rich_menu_id,
+            body=f'templates/richmenu-1.png',
+            _headers={"Content-Type": "image/png"},
+            async_req=True
+        ).get()
+        await line_bot_api.set_default_rich_menu_with_http_info(
+            rich_menu_id=rich_menu_id,
+            async_req=True
+        ).get()
+        
     print(f'Rich Menu ID: {rich_menu_id}')
-    
-    await line_bot_api_blob.set_rich_menu_image_with_http_info(
-        rich_menu_id=rich_menu_id,
-        body=f'templates/richmenu-1.png',
-        _headers={"Content-Type": "image/png"},
-        async_req=True
-    ).get()
-    await line_bot_api.set_default_rich_menu_with_http_info(
-        rich_menu_id=rich_menu_id,
-        async_req=True
-    ).get()

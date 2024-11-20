@@ -211,7 +211,7 @@ async def handle_audio_message(event):
         result: SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
         result.transcript = text
         
-        updateHistory(user_id, f'{category}-{unit}-{sub}', result.to_dict())
+        updateHistory(user_id, f'{category}-{unit}-{sub}', result)
         
         # 發送評估結果給使用者
         await send_message(event, await result_message(result, unit, sub))
@@ -248,8 +248,7 @@ async def handle_postback(event):
             return
         unit = int(vars.get('unit', 0))
         sub = int(vars.get('sub', 0))
-        history = getHistory(user_id, f'{category}-{unit}-{sub}')
-        if not history:
+        result = getHistory(user_id, f'{category}-{unit}-{sub}')
+        if not result:
             await send_text_message(event, '查無紀錄！\nNo history found!')
-        result = SpeechAssessment.model_validate(history)
         await send_message(event, await result_message(result, unit, sub))

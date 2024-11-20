@@ -17,3 +17,6 @@ class User(BaseModel):
     name: Annotated[str, '姓名']  # 姓名
     class_time: Annotated[str, '上課時段']  # 上課時段
     history: Annotated[dict[str,SpeechAssessment], '歷史紀錄']  # 歷史紀錄
+    
+    def to_dict(self) -> dict:
+        return self.model_dump()
