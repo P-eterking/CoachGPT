@@ -7,7 +7,7 @@ from utils.message_utils import (
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
-    get_answerable, get_test_mode, switch_answerable, user_state, save_user_data, hasData,
+    get_answerable, get_test_mode, save_config, switch_answerable, user_state, save_user_data, hasData,
     updateHistory, getHistory, initData, delData, switch_test_mode
 )
 import tempfile
@@ -47,11 +47,13 @@ async def handle_text_message(event):
             await send_text_message(event, "已進入測驗模式！\nTest mode activated!")
         else:
             await send_text_message(event, "已退出測驗模式！\nTest mode deactivated!")
+        await save_config()
     elif message.startswith('/切換'):
         if switch_answerable():
             await send_text_message(event, "已切換為不可回答模式！\nAnswerable mode deactivated!")
         else:
             await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
+        await save_config()
     elif message.startswith('/數據'):
         await send_message(event, await data_message())
 

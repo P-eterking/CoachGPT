@@ -3,35 +3,29 @@ import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
 from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
 from utils.models import User, SpeechAssessment  # 使用者和評分資料的模型
+
 # 使用者狀態和資料
 user_state = {}  # 儲存每個使用者的即時狀態
 user_data : dict[str,User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
-config = {}  # 儲存系統設定
-
-test_mode = False
-answerable = True
+config = {'test_mode': False, 'answerable': True}  # 儲存系統設定
 
 # 切換答題模式
 def switch_answerable() -> bool:
-    global answerable
-    answerable = not(answerable)
-    return answerable
+    config['answerable'] = not(config['answerable'])
+    return config['answerable']
 
 # 獲取答題模式狀態
 def get_answerable() -> bool:
-    global answerable
-    return answerable
+    return config['answerable']
 
 # 切換測試模式
 def switch_test_mode() -> bool:
-    global test_mode
-    test_mode = not(test_mode)
-    return test_mode
+    config['test_mode'] = not(config['test_mode'])
+    return config['test_mode'] 
 
 # 獲取測試模式
 def get_test_mode() -> bool:
-    global test_mode
-    return test_mode
+    return config['test_mode'] 
 
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
@@ -80,7 +74,7 @@ async def load_config():
     except FileNotFoundError:
         # 如果 CONFIG_FILE 不存在，則建立一個空的字典並儲存至檔案中
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
-            await file.write(json.dumps({}))
+            await file.write(json.dumps(config))
             print("Config created successfully.")
 
 async def save_config():
