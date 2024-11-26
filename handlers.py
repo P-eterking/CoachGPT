@@ -38,8 +38,9 @@ async def handle_text_message(event):
         await send_message(event, await carousel_message(user_id,2))
     elif message.startswith('口語練習三'):
         await send_message(event, await carousel_message(user_id,3))
-    elif message.startswith('儲存'):
+    elif message.startswith('/儲存'):
         await save_user_data()
+        await send_text_message(event, "儲存成功！\nSaved!")
     elif message.startswith('解除綁定'):
         delData(user_id)
         await send_text_message(event, "已解除綁定！\nUnlinked!")
