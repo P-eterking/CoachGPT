@@ -1,14 +1,14 @@
+from calendar import c
 from config import line_bot_api, line_bot_api_blob, client
 import asyncio
 from utils.message_utils import (
-    data_message, info_hint_message, result_message, send_message, send_text_message,
-    question_message, carousel_message, handle_rich_menu,
-    category, SYSTEM_INSTRUCTION, text_message, get_question
+    create_rich_menu, data_message, info_hint_message, result_message, send_message, send_text_message,
+    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message, get_question
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
     get_answerable, get_test_mode, save_config, switch_answerable, user_state, save_user_data, hasData,
-    updateHistory, getHistory, initData, delData, switch_test_mode
+    updateHistory, getHistory, initData, delData, switch_test_mode, get_category, set_category
 )
 import tempfile
 import time
@@ -57,6 +57,11 @@ async def handle_text_message(event):
         await save_config()
     elif message.startswith('/數據'):
         await send_message(event, await data_message())
+    elif message.startswith('/測驗類別'):
+        category = int(message.split(' ')[1])
+        set_category(category)
+        await create_rich_menu()
+        await send_text_message(event, f"已設定測驗類別為{category}！\nCategory set to {category}!")
 
 user_data_enter = {}
 
@@ -215,7 +220,7 @@ async def handle_audio_message(event):
         result.transcript = text
         result.timestamp = time.time()
         
-        updateHistory(user_id, f'{category}-{unit}-{sub}', result)
+        updateHistory(user_id, f'{get_category()}-{unit}-{sub}', result)
         
         # 發送評估結果給使用者
         await send_message(event, await result_message(result, unit, sub))
@@ -255,7 +260,7 @@ async def handle_postback(event):
             return
         unit = int(vars.get('unit', 0))
         sub = int(vars.get('sub', 0))
-        result = getHistory(user_id, f'{category}-{unit}-{sub}')
+        result = getHistory(user_id, f'{get_category()}-{unit}-{sub}')
         if not result:
             await send_text_message(event, '查無紀錄！\nNo history found!')
         await send_message(event, await result_message(result, unit, sub))

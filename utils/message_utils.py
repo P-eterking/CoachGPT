@@ -6,14 +6,15 @@ from linebot.v3.messaging import (
     FlexText, FlexBox, FlexButton
 )
 from linebot.v3.messaging.exceptions import ApiException
-from utils.models import SpeechAssessment, User
+from utils.models import SpeechAssessment
 import json
-
-from utils.file_utils import get_test_mode, getData, getHistory, get_rich_menu_id,set_rich_menu_id, save_config
-
+from PIL import Image
+from utils.file_utils import (
+    get_test_mode, getData, get_category, getHistory, get_rich_menu_id, set_rich_menu_id, save_config,
+    get_category
+)
 # 設定主網址和分類變數
 url  = f'https://{DOMAIN}'
-category = 0
 
 # 定義問題集合
 qs = {
@@ -666,7 +667,7 @@ SYSTEM_INSTRUCTION = f"""
     #             """
 
 def get_question(unit, sub):
-    return qs[category][unit][sub]
+    return qs[get_category()][unit][sub]
 
 def get_context_url():
     return f'{url}/templates/example_context.png'
@@ -699,7 +700,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
         altText=f'{unit+1}-{sub+1} 口語練習結果',
         quickReply=QuickReply(items=[
             QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&unit={unit}&sub={sub}')),
-            QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(qs[category][unit])-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
+            QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(qs[get_category()][unit])-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
             QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
         ]),
         contents=FlexCarousel(
@@ -722,7 +723,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                                 margin='md',
                                 contents=[
                                     FlexText(
-                                        text=f'評分 Score: {result.score}/{qs[category][unit][sub].get("max_score",10)}',
+                                        text=f'評分 Score: {result.score}/{qs[get_category()][unit][sub].get("max_score",10)}',
                                         color='#5b5b5b',
                                         size='xl',
                                         wrap=True,
@@ -882,7 +883,7 @@ async def question_message(unit, sub):
     
 async def carousel_message(user_id, unit):
     cols = []
-    for sub,j in enumerate(qs[category][unit-1]):
+    for sub,j in enumerate(qs[get_category()][unit-1]):
         body = FlexBox(
             layout='vertical',
             spacing='lg',
@@ -904,7 +905,7 @@ async def carousel_message(user_id, unit):
                 ),
             ]
         )
-        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
+        if getHistory(user_id, f'{get_category()}-{unit-1}-{sub}'):
             body.contents.append(
                 FlexButton(
                     action=PostbackAction(
@@ -917,14 +918,14 @@ async def carousel_message(user_id, unit):
             )
         cols.append(FlexBubble(
             hero=FlexImage(
-                url=f'{url}/templates/{category}/cover{unit}-{sub+1}.jpg',
+                url=f'{url}/templates/{get_category()}/cover{unit}-{sub+1}.jpg',
                 size='full',
                 aspect_ratio='20:13',
                 aspect_mode='cover',
             ),
             body=body
         ))
-    if len(qs[category]) > unit:
+    if len(qs[get_category()]) > unit:
         cols.append(FlexBubble(
             body=FlexBox(
                 contents=[
@@ -1032,7 +1033,7 @@ async def data_message():
 
 
 async def handle_rich_menu(user_id):
-    rich_menu_id = get_rich_menu_id()
+    rich_menu_id = get_rich_menu_id(get_category())
     try:
         oldId = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
         if oldId.rich_menu_id is not rich_menu_id:
@@ -1041,65 +1042,48 @@ async def handle_rich_menu(user_id):
         await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
 
 async def create_rich_menu():
-    rich_menu_id = get_rich_menu_id()
+    rich_menu_id = get_rich_menu_id(get_category())
     if not rich_menu_id:
+        # Load image and get dimensions
+        path = f'templates/richmenu-{get_category()}.png'
+        width, height = Image.open(path).size
+
+        # Calculate rows and columns
+        rows = height // 843
+        cols = width // 3
+        area_height = height // rows
+
+        # Create RichMenuRequest with areas
+        request = RichMenuRequest(
+            size=RichMenuSize(width=width, height=height),
+            name="Menu",
+            chatBarText="CoachGPT",
+            selected=True,
+            areas=[
+                RichMenuArea(
+                    bounds=RichMenuBounds(
+                        x=(i % 3) * cols,
+                        y=(i // 3) * area_height,
+                        width=cols,
+                        height=area_height
+                    ),
+                    action=PostbackAction(label=f'Ex {i+1}', data=f'action=unit&unit={i+1}')
+                )
+                for i in range(3 * rows)
+            ]
+        )
         rich_menu = await line_bot_api.create_rich_menu(
-            rich_menu_request=RichMenuRequest(
-                size=RichMenuSize(width=2500, height=857),
-                name="Menu",
-                chatBarText="CoachGPT",
-                selected=True,
-                areas=[
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=0, y=0, width=833, height=857),
-                        action=PostbackAction(label='Ex 1', data='action=unit&unit=1')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=833, y=0, width=833, height=857),
-                        action=PostbackAction(label='Ex 2', data='action=unit&unit=2')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=1666, y=0, width=833, height=857),
-                        action=PostbackAction(label='Ex 3', data='action=unit&unit=3')
-                    ),
-                ]
-                # size=RichMenuSize(width=2500, height=1686),
-                # name="Menu",
-                # chatBarText="CoachGPT",
-                # selected=True,
-                # areas=[
-                #     RichMenuArea(
-                #         bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
-                #         action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
-                #     ),
-                #     RichMenuArea(
-                #         bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
-                #         action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
-                #     ),
-                #     RichMenuArea(
-                #         bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
-                #         action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
-                #     ),
-                #     RichMenuArea(
-                #         bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
-                #         action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
-                #     ),
-                #     RichMenuArea(
-                #         bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
-                #         action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
-                #     ),
-                # ]
-            ),
+            rich_menu_request=request,
             async_req=True
         ).get()
 
         rich_menu_id = rich_menu.to_dict().get('richMenuId')
-        set_rich_menu_id(rich_menu_id)
+        set_rich_menu_id(rich_menu_id, get_category())
         await save_config()
         
         await line_bot_api_blob.set_rich_menu_image_with_http_info(
             rich_menu_id=rich_menu_id,
-            body=f'templates/richmenu-2.png',
+            body=path,
             _headers={"Content-Type": "image/png"},
             async_req=True
         ).get()
