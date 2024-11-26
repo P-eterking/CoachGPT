@@ -2,12 +2,12 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 class SpeechAssessment(BaseModel):
-    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion']  # 中文建議
-    eng_suggestion: Annotated[str, 'English suggestion']  # 英文建議
-    score: Annotated[int, '評量分數']  # 分數
-    transcript: Annotated[str, '轉錄後文本']  # 使用者回答的轉錄文本
-    better_ans: Annotated[str, '改善後文本']  # 改進的回覆範例
-    timestamp: Annotated[float, '時間戳記'] = Field(default_factory=lambda: 0) # 時間戳記
+    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion'] = Field(default_factory=lambda: "")  # 中文建議
+    eng_suggestion: Annotated[str, 'English suggestion'] = Field(default_factory=lambda: "")  # 英文建議
+    score: Annotated[int, '評量分數'] = Field(default_factory=lambda: 1)  # 分數
+    transcript: Annotated[str, '轉錄後文本'] = Field(default_factory=lambda: "")  # 使用者回答的轉錄文本
+    better_ans: Annotated[str, '改善後文本'] = Field(default_factory=lambda: "")  # 改進的回覆範例
+    timestamp: Annotated[float, '時間戳記'] = Field(default_factory=lambda: 0.0) # 時間戳記
     
     def to_dict(self) -> dict:
         return self.model_dump()

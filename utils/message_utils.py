@@ -672,6 +672,8 @@ def get_context_url():
     return f'{url}/templates/example_context.png'
 
 async def send_message(event, msg):
+    if msg is None:
+        return
     if not isinstance(msg, list):
         msg = [msg]
     await line_bot_api.reply_message(
