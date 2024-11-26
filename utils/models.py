@@ -7,6 +7,7 @@ class SpeechAssessment(BaseModel):
     score: Annotated[int, '評量分數']  # 分數
     transcript: Annotated[str, '轉錄後文本']  # 使用者回答的轉錄文本
     better_ans: Annotated[str, '改善後文本']  # 改進的回覆範例
+    timestamp: Annotated[float, '時間戳記'] # 時間戳記
     
     def to_dict(self) -> dict:
         return self.model_dump()
