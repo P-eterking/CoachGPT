@@ -1,4 +1,4 @@
-from config import line_bot_api, line_bot_api_blob, groq, client
+from config import line_bot_api, line_bot_api_blob, client
 import asyncio
 from utils.message_utils import (
     data_message, info_hint_message, result_message, send_message, send_text_message,
@@ -11,6 +11,7 @@ from utils.file_utils import (
     updateHistory, getHistory, initData, delData, switch_test_mode
 )
 import tempfile
+import time
 
 async def handle_text_message(event):
     # 獲取使用者傳來的文字訊息並移除前後空白
@@ -212,6 +213,7 @@ async def handle_audio_message(event):
         # 將分析結果轉換為 SpeechAssessment 物件並儲存歷史紀錄
         result: SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
         result.transcript = text
+        result.timestamp = time.time()
         
         updateHistory(user_id, f'{category}-{unit}-{sub}', result)
         
@@ -226,6 +228,9 @@ async def handle_postback(event):
     if not await check_user_login(event):
         return
     user_id = event.source.user_id
+    
+    await handle_rich_menu(user_id)
+    
     # 解析 postback 資料
     data: str = event.postback.data
     vars = {sep.split('=')[0]: sep.split('=')[1] for sep in data.split('&')}

@@ -13,77 +13,212 @@ from utils.file_utils import get_test_mode, getData, getHistory, get_rich_menu_i
 
 # 設定主網址和分類變數
 url  = f'https://{DOMAIN}'
-category = 1
+category = 0
 
 # 定義問題集合
 qs = {
     0:[
         [
             {
-                "text": "**What does 'inexpensive' mean, and can you name something that is inexpensive?**\n - 什麼是「便宜」的意思？你能舉出一個「便宜」的例子嗎？",
+                "text": "What does 'access' mean, and can you provide an example of its usage in daily life?\n - 「使用權」是什麼意思？你能舉例說明它在日常生活中的應用嗎？",
+                "assessment_standard": """
+                    10	Access refers to the ability or permission to use, enter, or retrieve something. For example, having access to a restricted area means being allowed to enter it. In the digital world, access often involves obtaining data or using online services, such as accessing a website or a cloud storage platform. The term is widely used in contexts like technology, transportation, and security.
+                    9	Access means the ability to use, enter, or reach something. For instance, having access to a computer allows you to use its programs and files. It can also mean permission to go to a place or obtain specific information, such as accessing private data.
+                    8	Access is the ability to use or enter something, like going into a building or opening a file on a computer. It can also refer to permission to get information or resources.
+                    7	Access means being able to go to a place or use something, like entering a room or opening a computer file. It helps people get what they need.
+                    6	Access is when you can use something or go to somewhere. For example, you have access to a computer or a door to enter.
+                    5	Access is when you can use or go into something, like a room or a computer.
+                    4	Access is when you can go in or use. It has something to do with doors or computers.
+                    3	Access is something you can use. It means go.
+                    2	Access is something. It can go.
+                    1	(No response or attempt to answer.)
+                """,
             },
             {
-                "text": "**How would you describe 'portable'? Mention a portable item you use.**\n - 「便攜的」應該怎麼解釋？提到一個你使用「便攜的」物品。",
+                "text": "Can you explain 'negotiation' and describe where it might be used?\n - 「談判」是什麼？你能描述一個可能需要使用談判的場合嗎？",
+                "assessment_standard": """
+                    10	Negotiation is the process of discussing and reaching an agreement between two or more parties, often to resolve a conflict or finalize a deal. It involves clear communication, compromise, and decision-making to achieve mutual benefits. Negotiations can occur in various contexts, such as business transactions, legal disputes, or personal arrangements, and often require strategic thinking and interpersonal skills.
+                    9	Negotiation refers to a discussion between two or more people to settle a disagreement or make an agreement. It is commonly used in business deals or problem-solving situations. The goal is to find a solution that benefits everyone involved.
+                    8	Negotiation is when people talk to each other to solve a problem or make a deal. It happens in places like businesses, and both sides try to agree on something.
+                    7	Negotiation means talking to someone to agree on something. For example, people negotiate prices when buying or selling things.
+                    6	Negotiation is when people talk about a problem to find a solution. It can happen in a business or between friends.
+                    5	Negotiation is talking to solve a problem or make a deal.
+                    4	Negotiation is when people talk about something and want to agree.
+                    3	Negotiation is people talking. They want to make a deal.
+                    2	Negotiation is talking about something.
+                    1	(No response or attempt to answer.)
+                """
             },
             {
-                "text": "**What is the role of 'management' in a company?**\n - 在公司中，「管理」有什麼作用？",
+                "text": "What does 'warranty' guarantee, and why is it important when buying products?\n - 「保固」是什麼？為什麼在購買產品時它很重要？",
+                "assessment_standard": """
+                    10	Warranty is a written guarantee provided by a manufacturer or seller, assuring the buyer that a product will meet specific quality standards or perform as promised. If the product fails within a certain period, the warranty allows the buyer to request a repair, replacement, or refund. Warranties are often included with appliances, electronics, and vehicles, serving as a form of consumer protection and building trust between businesses and customers.
+                    9	Warranty refers to a promise made by a company to fix or replace a product if it does not work as expected within a certain time. It is often provided for items like electronics or cars to ensure customer satisfaction and trust.
+                    8	Warranty is a guarantee from a seller or maker that a product will work well. If the product breaks within a set time, the company will fix or replace it. It is common for products like phones or cars.
+                    7	Warranty means a promise that if something you buy breaks, the company will fix it for free. It is usually for things like machines or gadgets.
+                    6	Warranty is when a company promises to fix something if it stops working. It is for products like a phone or a car.
+                    5	Warranty is a promise that a company will fix something if it breaks.
+                    4	Warranty is a promise to fix or change something if it doesn’t work.
+                    3	Warranty is a promise. It fixes things.
+                    2	Warranty is fixing something.
+                    1	(No response or attempt to answer.)
+                """
             },
             {
-                "text": "**Define 'manual' and give an example of a manual task.**\n - 定義「手動」並給出一個關於「手動」任務的例子。",
+                "text": "How would you describe 'insurance'? Mention one situation where insurance is helpful.\n - 「保險」該怎麼解釋？提到一個保險有用的情況。",
+                "assessment_standard": """
+                    10	Insurance is a financial arrangement in which an individual or organization pays regular premiums to an insurance company in exchange for protection against potential losses or damages. It provides coverage for various risks, such as accidents, health issues, or property damage. If an insured event occurs, the insurance company compensates the policyholder based on the terms of the agreement, offering financial security and peace of mind.
+                    9	Insurance is a service where people pay money to a company regularly so that the company will cover costs if something bad happens, like an accident or illness. It is a way to protect yourself from financial losses.
+                    8	Insurance is an agreement where you pay money to a company, and they help you if you lose something or have an accident. It can protect your car, house, or health.
+                    7	Insurance means paying money to a company so they will pay you back if something bad happens, like a car crash or a fire.
+                    6	Insurance is when you pay money to a company, and they help you if something bad happens, like a car accident.
+                    5	Insurance is paying money to a company, and they pay you if something happens.
+                    4	Insurance is something you pay for, and it helps if something bad happens.
+                    3	Insurance is something you buy. It helps with problems.
+                    2	Insurance is money for something bad.
+                    1	(No response or attempt to answer.)
+                """
             },
             {
-                "text": "**Can you make a sentence using 'export' and 'recently'?**\n - 你能使用「出口」和「最近」造一個句子嗎？",
+                "text": "Define 'quarter' and give an example of its usage in business or everyday life.\n - 定義「四分之一」，並舉例說明它在商業或日常生活中的使用。",
+                "assessment_standard": """
+                    10	Quarter has multiple meanings depending on the context. It can refer to one-fourth of something, such as a quarter of an hour (15 minutes) or a quarter of a dollar (25 cents in US currency). In business, it represents a three-month period used for financial reporting. Additionally, it can describe a specific area or district within a city, such as the French Quarter in New Orleans.
+                    9	Quarter means one-fourth of something, like 15 minutes in an hour or 25 cents in US money. In business, it also refers to a three-month period, like the first quarter of the year. It can also mean a section of a city, such as a historical area.
+                    8	Quarter is one-fourth of something. For example, it can mean 15 minutes, 25 cents, or a three-month period in business. It can also describe a part of a city.
+                    7	Quarter means a part that is one-fourth of something, like 15 minutes or 25 cents. It can also mean three months of a year.
+                    6	Quarter is one-fourth of something. It can mean a small amount of money or a short period of time.
+                    5	Quarter is one-fourth of something, like time or money.
+                    4	Quarter is one-fourth. It can mean time or money.
+                    3	Quarter is one-fourth. It’s small.
+                    2	Quarter is part of something.
+                    1	(No response or attempt to answer.)
+                """
             },
             {
-                "text": "**Describe a situation where you might need to 'replace' something because it is 'inexpensive'.**\n - 描述一個你可能需要因為物品是「便宜」而「取代」它的情境。",
+                "text": "What is a 'technician,' and what tasks do they perform?\n - 「技術人員」是什麼？他們負責什麼任務？",
+                "assessment_standard": """
+                    10	A technician is a skilled professional who specializes in a specific technical field, such as engineering, electronics, or medical equipment. They are responsible for maintaining, repairing, and operating complex systems or machinery. Technicians often work alongside engineers or other professionals, applying their expertise to ensure that equipment and processes function efficiently and safely.
+                    9	A technician is someone with specialized skills who works in areas like machines, computers, or medical equipment. Their job is to fix, maintain, or operate these systems, helping things run smoothly. They often work closely with engineers or other experts.
+                    8	A technician is a person trained to work with machines or equipment. They repair, check, or operate things like computers or medical tools.
+                    7	A technician is someone who works with machines or equipment. They help fix and make sure things work properly.
+                    6	A technician is a person who fixes or works with machines, like computers or tools.
+                    5	A technician is someone who works with machines and fixes them.
+                    4	A technician is a person who fixes machines or equipment.
+                    3	A technician is someone who fixes things.
+                    2	A technician is a person for machines.
+                    1	(No response or attempt to answer.)
+
+                """
             },
             {
-                "text": "**How would you tell someone to 'decrease' the volume using polite language?**\n - 你會如何用禮貌的語言告訴某人「減少」音量？",
+                "text": "Explain 'provide' and give an example of something you often provide to others.\n - 解釋「提供」，並舉例說明你經常提供的東西。",
+                "assessment_standard": """
+                    10	Provide means to supply or make something available that is needed or wanted. For example, parents provide food, shelter, and education for their children, while companies provide services or products to customers. It is commonly used in various contexts, such as offering assistance, resources, or opportunities.
+                    9	Provide means to give or supply something that people need or ask for. For example, a teacher provides knowledge to students, or a business provides goods to its customers. It is an essential action in everyday life.
+                    8	Provide means to give something that is needed. For instance, a company provides products, or a school provides education for children.
+                    7	Provide means to give something that people need, like food, help, or information.
+                    6	Provide is when you give something to someone, like help or things they need.
+                    5	Provide means to give something, like food or help.
+                    4	Provide is to give things to people, like food or help.
+                    3	Provide is to give something to people.
+                    2	Provide is giving.
+                    1	(No response or attempt to answer.)
+                """
             },
             {
-                "text": "**Write a sentence where you explain to a friend why something is 'comfortable'.**\n - 寫一個句子解釋給朋友聽為什麼某物是「舒服的」。",
+                "text": "What happens in a 'seminar', and can you name a topic you’d like to learn about in one?\n - 「研討會」中會發生什麼？你能舉出一個你想在研討會中學習的主題嗎？",
+                "assessment_standard": """
+                    10	A seminar is a formal meeting or educational session where a small group of people discuss specific topics, often led by an expert or presenter. Seminars are commonly held in academic, professional, or corporate settings to share knowledge, exchange ideas, or provide training. For example, a marketing seminar may teach participants strategies to improve brand visibility.
+                    9	A seminar is a meeting or class where people learn about a specific topic. It is usually guided by a speaker or expert. For example, a seminar on business might include presentations and discussions about improving sales.
+                    8	A seminar is a meeting or class where people discuss and learn about a topic. It is often led by someone knowledgeable, like a teacher or professional.
+                    7	A seminar is a meeting where people talk about a topic and learn from a teacher or expert.
+                    6	A seminar is a small meeting where people learn about something from a speaker.
+                    5	A seminar is a meeting to learn about something.
+                    4	A seminar is a meeting for learning or talking.
+                    3	A seminar is a meeting to talk.
+                    2	A seminar is a meeting.
+                    1	(No response or attempt to answer.)
+                """
+            },
+            {
+                "text": "What does 'reservation' mean, and why is it useful when planning events?\n - 「預約」是什麼意思？在規劃活動時為什麼有用？",
+                "assessment_standard": """
+                    10	A reservation is an arrangement made in advance to secure a place, service, or item, such as booking a table at a restaurant, a seat on a flight, or a hotel room. It ensures that the requested service will be available at a specific time. Additionally, the term can also refer to a doubt or hesitation about something, often used in discussions or agreements.
+                    9	A reservation is an advance booking for something, like a table at a restaurant, a hotel room, or a ticket for a flight. It helps secure a spot or service. It can also mean feeling unsure about something in a conversation.
+                    8	A reservation is when you book something in advance, like a hotel room or a table at a restaurant. It makes sure you have a spot or service ready.
+                    7	A reservation means booking something ahead of time, like a seat, a room, or a table.
+                    6	A reservation is when you save a spot, like a table at a restaurant or a hotel room.
+                    5	A reservation is booking a place like a hotel or restaurant.
+                    4	A reservation is when you book or save a place for later.
+                    3	A reservation is booking or saving a spot.
+                    2	A reservation is saving something.
+                    1	(No response or attempt to answer.)
+                """
+            },
+            {
+                "text": "What does 'previous' mean, and can you describe a previous experience that was important to you?\n - 「先前的」是什麼意思？你能描述一個對你重要的先前經歷嗎？",
+                "assessment_standard": """
+                    10	Previous means something that happened, existed, or occurred before a particular time or event. For example, a previous meeting refers to a meeting that took place earlier. It is often used to describe earlier experiences, events, or versions of something. In context, it might be said, “The previous version of this report was less detailed than the current one.”
+                    9	Previous refers to something that came before another in time or order. For instance, the previous week is the one before the current week, or a previous job refers to a job you had earlier.
+                    8	Previous means something that happened earlier. For example, a previous meeting or event refers to one that happened before now.
+                    7	Previous means something that was before now, like a meeting or a time that happened earlier.
+                    6	Previous is when something happened before, like last week or last time.
+                    5	Previous means before something, like last week.
+                    4	Previous is something before, like last time.
+                    3	Previous is before now.
+                    2	Previous is before.
+                    1	(No response or attempt to answer.)
+                """
             }
         ],
-        [
-            {
-                "text": "**Meet the Deadline:**\n- Can you describe a time when you had to meet a tight deadline?\n- 你能描述一次你必須在截止日期前完成任務的情況嗎？",
-            },
-            {
-                "text": "**Apply for the Job:**\n- What kind of job do you want to apply for?\n- 你想申請什麼樣的工作？",
-            },
-            {
-                "text": "**Keep in Touch with Someone:**\n- Talk about a friend or family member you try to keep in touch with regularly.\n- 談談你努力與朋友或家人保持聯繫的情況。",
-            },
-            {
-                "text": "**Offer a Discount:**\n- Please create a situation where you purchased an item because it was discounted.\n- 請創造一個你因為商品打折而購買的情況。",
-            },
-            {
-                "text": "**Register In:**\n- Pretend you are a student, use 'register in' to make a sentence.\n- 假設你是一名學生，用“註冊”一詞造一個句子。",
-            },
-            {
-                "text": "**Make an Appointment:**\n- Can you recall a time when you had to make an appointment for an important meeting or event?\n- 你能回憶起你曾經為一次重要的會議或活動預約的時候嗎？",
-            },
-            {
-                "text": "**Remain a Concern:**\n- What things make you remain a concern?\n- 有什麼事情讓你一直擔心嗎？",
-            },
-            {
-                "text": "**Book a Ticket:**\n- Describe a situation in which you would need to book a ticket by yourself.\n- 描述您需要自己訂票的情況。",
-            }
-        ],
-        [
-            {
-                "text": "**Beginning**: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n**開始**：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
-            },
-            {
-                "text": "**Then**: Introduce obstacles and challenges main character encounters.\nWhen the race started, the hare bounded off in front, making good progress. He was so far ahead of the tortoise that he decided he could afford to stop and have a rest.\n**然後**：介紹主要角色遇到的障礙和挑戰。\n比賽一開始，野兔就飛奔而出，並且進展迅速。遠遠地把烏龜甩在後面，牠覺得自己可以停下來休息一下。",
-            },
-            {
-                "text": "**After**: Reach the climax or turning point of the story, where the main character confronts the central conflict head-on.\nHowever, the hare fell fast asleep, and as he lay sleeping, the tortoise continued to plod along at his slow pace. In time, he reached the finish-line and won the race.\n**之後**：到達故事的高潮或轉折點，主角正面對抗主要衝突。\n然而，野兔很快就睡著了，當牠在睡覺時，烏龜以緩慢的步伐繼續向前爬行。最終，烏龜到達了終點線，贏得了比賽。",
-            },
-            {
-                "text": "**Ending**: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n**結尾**：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。",
-            }
-        ]
+        # [
+        #     {
+        #         "text": "Office Meeting Analysis:\n- Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
+        #         "image_url": f"{url}/templates/0/cover2-1.jpg"
+        #     },
+        #     {
+        #         "text": "Negotiation in Meetings:\n- What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
+        #         "image_url": f"{url}/templates/0/cover2-1.jpg"
+        #     },
+        #     {
+        #         "text": "Traveler Concerns:\n- What concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對自己的計劃有什麼擔憂，如何在機場解決這些問題？",
+        #         "image_url": f"{url}/templates/0/cover2-3.jpg"
+        #     },
+        #     {
+        #         "text": "Flight Preparation:\n- How might passengers be preparing for their flights at the check-in counters?\n- 旅客可能如何在值機櫃檯為航班做準備？",
+        #         "image_url": f"{url}/templates/0/cover2-3.jpg"
+        #     },
+        #     {
+        #         "text": "Museum Exhibit Access:\n- How would you help a guest access information about the museum’s exhibits?\n- 你會如何幫助客人獲取有關博物館展品的訊息？",
+        #         "image_url": f"{url}/templates/0/cover2-5.jpg"
+        #     },
+        #     {
+        #         "text": "Art Display:\n- What kind of artwork is displayed in the museum?\n- 博物館裡展出的藝術品是什麼類型的？",
+        #         "image_url": f"{url}/templates/0/cover2-5.jpg"
+        #     },
+        #     {
+        #         "text": "Hotel Check-In:\n- What information might the guest provide to the front desk staff during check-in?\n- 客人在入住時可能會向前台工作人員提供哪些訊息？",
+        #         "image_url": f"{url}/templates/0/cover2-7.jpg"
+        #     },
+        #     {
+        #         "text": "Guest Services:\n- What additional services might a guest request during their stay?\n- 客人在入住期間可能會要求哪些額外的服務？",
+        #         "image_url": f"{url}/templates/0/cover2-7.jpg"
+        #     }
+        # ],  
+        # [
+        #     {
+        #         "text": "Beginning: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n開始：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
+        #     },
+        #     {
+        #         "text": "Then: Introduce obstacles and challenges main character encounters.\nWhen the race started, the hare bounded off in front, making good progress. He was so far ahead of the tortoise that he decided he could afford to stop and have a rest.\n然後：介紹主要角色遇到的障礙和挑戰。\n比賽一開始，野兔就飛奔而出，並且進展迅速。遠遠地把烏龜甩在後面，牠覺得自己可以停下來休息一下。",
+        #     },
+        #     {
+        #         "text": "After: Reach the climax or turning point of the story, where the main character confronts the central conflict head-on.\nHowever, the hare fell fast asleep, and as he lay sleeping, the tortoise continued to plod along at his slow pace. In time, he reached the finish-line and won the race.\n之後：到達故事的高潮或轉折點，主角正面對抗主要衝突。\n然而，野兔很快就睡著了，當牠在睡覺時，烏龜以緩慢的步伐繼續向前爬行。最終，烏龜到達了終點線，贏得了比賽。",
+        #     },
+        #     {
+        #         "text": "Ending: Resolve the conflict and provide closure for the story. Show how the main character has changed. \nWhen the hare woke up, he was annoyed at himself for falling asleep. So he ran off towards the finish-line as fast as his legs would carry him, but it was too late, as the tortoise had already won.\n結尾：解決衝突並為故事提供結局。展示主角的變化。\n當野兔醒來時，他對自己睡著了感到懊惱。於是牠全力奔向終點線，但為時已晚，烏龜已經贏得了比賽。",
+        #     }
+        # ]
     ],
     1: [
         [
@@ -252,7 +387,7 @@ qs = {
         ],
         [
             {
-                "text": "**What time does Bandaid Band perform?**\n - Bandaid Band 是在哪一個時間表演?",
+                "text": "What time does Bandaid Band perform?\n - Bandaid Band 是在哪一個時間表演?",
                 "image_url": f"{url}/templates/1/cover4-1.jpg",
                 "max_score": 4,
                 "assessment_standard": """
@@ -292,7 +427,7 @@ qs = {
                 """
             },
             {
-                "text": "**How much does the Beach Getaway to Cancun cost?**\n - Cancun 海灘度假的費用是多少？",
+                "text": "How much does the Beach Getaway to Cancun cost?\n - Cancun 海灘度假的費用是多少？",
                 "image_url": f"{url}/templates/1/cover4-2.jpg",
                 "max_score": 4,
                 "assessment_standard": """
@@ -331,7 +466,7 @@ qs = {
         ],
         [
             {
-                "text": "**Do you agree that people should limit their use of social media to improve their mental health?**\n - 你認為人們是否需限制社交媒體使用時間，以改善心裡健康？",
+                "text": "Do you agree that people should limit their use of social media to improve their mental health?\n - 你認為人們是否需限制社交媒體使用時間，以改善心裡健康？",
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I strongly agree that limiting social media use can significantly benefit mental health. Studies show that excessive social media use can lead to issues such as anxiety, depression, and low self-esteem, particularly among young people. Constant comparison with others' seemingly perfect lives creates unrealistic expectations and promotes negative self-image. By reducing time on social platforms, individuals can shift focus to real-life interactions, fostering genuine connections and reducing anxiety. Moreover, decreased social media use allows for increased productivity and personal development, as people can invest time in hobbies, exercise, or mindfulness practices, which all contribute positively to mental health."
@@ -356,7 +491,7 @@ qs = {
                 """
             },
             {
-                "text": "**Do you agree that animal testing should be banned in all cases?**\n - 你是否認為動物實驗應該被全面禁止？",
+                "text": "Do you agree that animal testing should be banned in all cases?\n - 你是否認為動物實驗應該被全面禁止？",
                 "assessment_standard": """
                 10 優異表達者
                 "Yes, I believe animal testing should be banned in all cases. While it has contributed to scientific and medical advancements, the harm and suffering inflicted on animals is unacceptable. With the development of alternative methods, such as computer modeling and cell cultures, we now have other ways to test the safety and effectiveness of products. Banning animal testing would encourage innovation in developing cruelty-free methods, ultimately leading to a more humane approach in science and technology. Although some argue that animal testing is necessary for complex studies, I believe modern technology can replace these practices."
@@ -792,7 +927,7 @@ async def carousel_message(user_id, unit):
             body=FlexBox(
                 contents=[
                     FlexText(
-                            text=f'前往下一單元\nNext Unit',
+                            text=f'前往下一單元\nNext',
                             weight='bold',
                             size='xl',
                         ),],
@@ -908,9 +1043,27 @@ async def create_rich_menu():
     if not rich_menu_id:
         rich_menu = await line_bot_api.create_rich_menu(
             rich_menu_request=RichMenuRequest(
-                # size=RichMenuSize(width=2500, height=843),
+                size=RichMenuSize(width=2500, height=857),
+                name="Menu",
+                chatBarText="CoachGPT",
+                selected=True,
+                areas=[
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=0, y=0, width=833, height=857),
+                        action=PostbackAction(label='Ex 1', data='action=unit&unit=1')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=833, y=0, width=833, height=857),
+                        action=PostbackAction(label='Ex 2', data='action=unit&unit=2')
+                    ),
+                    RichMenuArea(
+                        bounds=RichMenuBounds(x=1666, y=0, width=833, height=857),
+                        action=PostbackAction(label='Ex 3', data='action=unit&unit=3')
+                    ),
+                ]
+                # size=RichMenuSize(width=2500, height=1686),
                 # name="Menu",
-                # chatBarText="Exercises 1~3",
+                # chatBarText="CoachGPT",
                 # selected=True,
                 # areas=[
                 #     RichMenuArea(
@@ -925,33 +1078,15 @@ async def create_rich_menu():
                 #         bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
                 #         action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
                 #     ),
+                #     RichMenuArea(
+                #         bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
+                #         action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
+                #     ),
+                #     RichMenuArea(
+                #         bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
+                #         action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
+                #     ),
                 # ]
-                size=RichMenuSize(width=2500, height=1686),
-                name="Menu",
-                chatBarText="CoachGPT",
-                selected=True,
-                areas=[
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
-                        action=PostbackAction(label='Unit 1', data='action=unit&unit=1')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=833, y=0, width=833, height=843),
-                        action=PostbackAction(label='Unit 2', data='action=unit&unit=2')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=1666, y=0, width=833, height=843),
-                        action=PostbackAction(label='Unit 3', data='action=unit&unit=3')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
-                        action=PostbackAction(label='Unit 4', data='action=unit&unit=4')
-                    ),
-                    RichMenuArea(
-                        bounds=RichMenuBounds(x=833, y=843, width=833, height=843),
-                        action=PostbackAction(label='Unit 5', data='action=unit&unit=5')
-                    ),
-                ]
             ),
             async_req=True
         ).get()
@@ -962,7 +1097,7 @@ async def create_rich_menu():
         
         await line_bot_api_blob.set_rich_menu_image_with_http_info(
             rich_menu_id=rich_menu_id,
-            body=f'templates/richmenu-1.png',
+            body=f'templates/richmenu-2.png',
             _headers={"Content-Type": "image/png"},
             async_req=True
         ).get()
