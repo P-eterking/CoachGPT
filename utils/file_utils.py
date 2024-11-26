@@ -74,14 +74,14 @@ async def load_config():
     except FileNotFoundError:
         # 如果 CONFIG_FILE 不存在，則建立一個空的字典並儲存至檔案中
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
-            await file.write(json.dumps(config))
+            await file.write(json.dumps(config, indent=4))
             print("Config created successfully.")
 
 async def save_config():
     global config
     # 將 config 字典轉換為 JSON 字串，並儲存至 CONFIG_FILE 中
     async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
-        await file.write(json.dumps(config))
+        await file.write(json.dumps(config, indent=4))
         print("Config saved successfully.")
 
 # 非同步加載使用者資料
@@ -97,9 +97,9 @@ async def load_user_data():
     except FileNotFoundError:
         # 若找不到檔案，顯示訊息並初始化 user_data
         print("No previous data file found, starting fresh.")
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         # 若檔案無法解析，顯示訊息並重新初始化 user_data
-        print("Error decoding JSON, starting fresh.")
+        print("Error decoding JSON, starting fresh.",e)
 
 # 非同步儲存使用者資料
 async def save_user_data():
