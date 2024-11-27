@@ -59,6 +59,9 @@ async def handle_text_message(event):
     elif message.startswith('/數據'):
         await send_message(event, await data_message())
     elif message.startswith('/測驗類別'):
+        if ' ' not in message:
+            await send_text_message(event, "輸入格式錯誤！記得要加空格！\nFormat error! Don't forget the space!")
+            return
         category = int(message.split(' ')[1])
         set_category(category)
         await create_rich_menu()

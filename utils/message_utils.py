@@ -21,155 +21,154 @@ qs = {
     0:[
         [
             {
-                "text": "What does 'access' mean, and can you provide an example of its usage in daily life?\n - 「使用權」是什麼意思？你能舉例說明它在日常生活中的應用嗎？",
+                "text": "What is 'access' and how do you use it in your daily life?\n - 「使用權」是什麼？在日常生活中你會怎麼用到它？",
                 "assessment_standard": """
-                    10	Access refers to the ability or permission to use, enter, or retrieve something. For example, having access to a restricted area means being allowed to enter it. In the digital world, access often involves obtaining data or using online services, such as accessing a website or a cloud storage platform. The term is widely used in contexts like technology, transportation, and security.
-                    9	Access means the ability to use, enter, or reach something. For instance, having access to a computer allows you to use its programs and files. It can also mean permission to go to a place or obtain specific information, such as accessing private data.
-                    8	Access is the ability to use or enter something, like going into a building or opening a file on a computer. It can also refer to permission to get information or resources.
-                    7	Access means being able to go to a place or use something, like entering a room or opening a computer file. It helps people get what they need.
-                    6	Access is when you can use something or go to somewhere. For example, you have access to a computer or a door to enter.
-                    5	Access is when you can use or go into something, like a room or a computer.
-                    4	Access is when you can go in or use. It has something to do with doors or computers.
-                    3	Access is something you can use. It means go.
-                    2	Access is something. It can go.
-                    1	(No response or attempt to answer.)
-                """,
+                            10	Access refers to the ability or permission to use, enter, or retrieve something. For example, having access to a restricted area means being allowed to enter it. In the digital world, access often involves obtaining data or using online services, such as accessing a website or a cloud storage platform. The term is widely used in contexts like technology, transportation, and security.
+                            9	Access means the ability to use, enter, or reach something. For instance, having access to a computer allows you to use its programs and files. It can also mean permission to go to a place or obtain specific information, such as accessing private data.
+                            8	Access is the ability to use or enter something, like going into a building or opening a file on a computer. It can also refer to permission to get information or resources.
+                            7	Access means being able to go to a place or use something, like entering a room or opening a computer file. It helps people get what they need.
+                            6	Access is when you can use something or go to somewhere. For example, you have access to a computer or a door to enter.
+                            5	Access is when you can use or go into something, like a room or a computer.
+                            4	Access is when you can go in or use. It has something to do with doors or computers.
+                            3	Access is something you can use. It means go.
+                            2	Access is something. It can go.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "Can you explain 'negotiation' and describe where it might be used?\n - 「談判」是什麼？你能描述一個可能需要使用談判的場合嗎？",
+                "text": "What is 'negotiation'? Tell us about a time when you might need to negotiate.\n - 什麼是「談判」？說說什麼時候你可能需要談判。",
                 "assessment_standard": """
-                    10	Negotiation is the process of discussing and reaching an agreement between two or more parties, often to resolve a conflict or finalize a deal. It involves clear communication, compromise, and decision-making to achieve mutual benefits. Negotiations can occur in various contexts, such as business transactions, legal disputes, or personal arrangements, and often require strategic thinking and interpersonal skills.
-                    9	Negotiation refers to a discussion between two or more people to settle a disagreement or make an agreement. It is commonly used in business deals or problem-solving situations. The goal is to find a solution that benefits everyone involved.
-                    8	Negotiation is when people talk to each other to solve a problem or make a deal. It happens in places like businesses, and both sides try to agree on something.
-                    7	Negotiation means talking to someone to agree on something. For example, people negotiate prices when buying or selling things.
-                    6	Negotiation is when people talk about a problem to find a solution. It can happen in a business or between friends.
-                    5	Negotiation is talking to solve a problem or make a deal.
-                    4	Negotiation is when people talk about something and want to agree.
-                    3	Negotiation is people talking. They want to make a deal.
-                    2	Negotiation is talking about something.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Negotiation is the process of discussing and reaching an agreement between two or more parties, often to resolve a conflict or finalize a deal. It involves clear communication, compromise, and decision-making to achieve mutual benefits. Negotiations can occur in various contexts, such as business transactions, legal disputes, or personal arrangements, and often require strategic thinking and interpersonal skills.
+                            9	Negotiation refers to a discussion between two or more people to settle a disagreement or make an agreement. It is commonly used in business deals or problem-solving situations. The goal is to find a solution that benefits everyone involved.
+                            8	Negotiation is when people talk to each other to solve a problem or make a deal. It happens in places like businesses, and both sides try to agree on something.
+                            7	Negotiation means talking to someone to agree on something. For example, people negotiate prices when buying or selling things.
+                            6	Negotiation is when people talk about a problem to find a solution. It can happen in a business or between friends.
+                            5	Negotiation is talking to solve a problem or make a deal.
+                            4	Negotiation is when people talk about something and want to agree.
+                            3	Negotiation is people talking. They want to make a deal.
+                            2	Negotiation is talking about something.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "What does 'warranty' guarantee, and why is it important when buying products?\n - 「保固」是什麼？為什麼在購買產品時它很重要？",
+                "text": "What is a 'warranty'? Why do we care about it when buying things?\n - 「保固」是什麼？我們買東西時為什麼要在意它？",
                 "assessment_standard": """
-                    10	Warranty is a written guarantee provided by a manufacturer or seller, assuring the buyer that a product will meet specific quality standards or perform as promised. If the product fails within a certain period, the warranty allows the buyer to request a repair, replacement, or refund. Warranties are often included with appliances, electronics, and vehicles, serving as a form of consumer protection and building trust between businesses and customers.
-                    9	Warranty refers to a promise made by a company to fix or replace a product if it does not work as expected within a certain time. It is often provided for items like electronics or cars to ensure customer satisfaction and trust.
-                    8	Warranty is a guarantee from a seller or maker that a product will work well. If the product breaks within a set time, the company will fix or replace it. It is common for products like phones or cars.
-                    7	Warranty means a promise that if something you buy breaks, the company will fix it for free. It is usually for things like machines or gadgets.
-                    6	Warranty is when a company promises to fix something if it stops working. It is for products like a phone or a car.
-                    5	Warranty is a promise that a company will fix something if it breaks.
-                    4	Warranty is a promise to fix or change something if it doesn’t work.
-                    3	Warranty is a promise. It fixes things.
-                    2	Warranty is fixing something.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Warranty is a written guarantee provided by a manufacturer or seller, assuring the buyer that a product will meet specific quality standards or perform as promised. If the product fails within a certain period, the warranty allows the buyer to request a repair, replacement, or refund. Warranties are often included with appliances, electronics, and vehicles, serving as a form of consumer protection and building trust between businesses and customers.
+                            9	Warranty refers to a promise made by a company to fix or replace a product if it does not work as expected within a certain time. It is often provided for items like electronics or cars to ensure customer satisfaction and trust.
+                            8	Warranty is a guarantee from a seller or maker that a product will work well. If the product breaks within a set time, the company will fix or replace it. It is common for products like phones or cars.
+                            7	Warranty means a promise that if something you buy breaks, the company will fix it for free. It is usually for things like machines or gadgets.
+                            6	Warranty is when a company promises to fix something if it stops working. It is for products like a phone or a car.
+                            5	Warranty is a promise that a company will fix something if it breaks.
+                            4	Warranty is a promise to fix or change something if it doesn't work.
+                            3	Warranty is a promise. It fixes things.
+                            2	Warranty is fixing something.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "How would you describe 'insurance'? Mention one situation where insurance is helpful.\n - 「保險」該怎麼解釋？提到一個保險有用的情況。",
+                "text": "What is 'insurance'? Give an example of when it comes in handy.\n - 「保險」是什麼？舉個例子說明什麼時候它會派上用場。",
                 "assessment_standard": """
-                    10	Insurance is a financial arrangement in which an individual or organization pays regular premiums to an insurance company in exchange for protection against potential losses or damages. It provides coverage for various risks, such as accidents, health issues, or property damage. If an insured event occurs, the insurance company compensates the policyholder based on the terms of the agreement, offering financial security and peace of mind.
-                    9	Insurance is a service where people pay money to a company regularly so that the company will cover costs if something bad happens, like an accident or illness. It is a way to protect yourself from financial losses.
-                    8	Insurance is an agreement where you pay money to a company, and they help you if you lose something or have an accident. It can protect your car, house, or health.
-                    7	Insurance means paying money to a company so they will pay you back if something bad happens, like a car crash or a fire.
-                    6	Insurance is when you pay money to a company, and they help you if something bad happens, like a car accident.
-                    5	Insurance is paying money to a company, and they pay you if something happens.
-                    4	Insurance is something you pay for, and it helps if something bad happens.
-                    3	Insurance is something you buy. It helps with problems.
-                    2	Insurance is money for something bad.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Insurance is a financial arrangement in which an individual or organization pays regular premiums to an insurance company in exchange for protection against potential losses or damages. It provides coverage for various risks, such as accidents, health issues, or property damage. If an insured event occurs, the insurance company compensates the policyholder based on the terms of the agreement, offering financial security and peace of mind.
+                            9	Insurance is a service where people pay money to a company regularly so that the company will cover costs if something bad happens, like an accident or illness. It is a way to protect yourself from financial losses.
+                            8	Insurance is an agreement where you pay money to a company, and they help you if you lose something or have an accident. It can protect your car, house, or health.
+                            7	Insurance means paying money to a company so they will pay you back if something bad happens, like a car crash or a fire.
+                            6	Insurance is when you pay money to a company, and they help you if something bad happens, like a car accident.
+                            5	Insurance is paying money to a company, and they pay you if something happens.
+                            4	Insurance is something you pay for, and it helps if something bad happens.
+                            3	Insurance is something you buy. It helps with problems.
+                            2	Insurance is money for something bad.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "Define 'quarter' and give an example of its usage in business or everyday life.\n - 定義「四分之一」，並舉例說明它在商業或日常生活中的使用。",
+                "text": "What is a 'quarter'? How do we use it in business and daily life?\n - 「四分之一」是什麼？我們在商業和日常生活中怎麼用它？",
                 "assessment_standard": """
-                    10	Quarter has multiple meanings depending on the context. It can refer to one-fourth of something, such as a quarter of an hour (15 minutes) or a quarter of a dollar (25 cents in US currency). In business, it represents a three-month period used for financial reporting. Additionally, it can describe a specific area or district within a city, such as the French Quarter in New Orleans.
-                    9	Quarter means one-fourth of something, like 15 minutes in an hour or 25 cents in US money. In business, it also refers to a three-month period, like the first quarter of the year. It can also mean a section of a city, such as a historical area.
-                    8	Quarter is one-fourth of something. For example, it can mean 15 minutes, 25 cents, or a three-month period in business. It can also describe a part of a city.
-                    7	Quarter means a part that is one-fourth of something, like 15 minutes or 25 cents. It can also mean three months of a year.
-                    6	Quarter is one-fourth of something. It can mean a small amount of money or a short period of time.
-                    5	Quarter is one-fourth of something, like time or money.
-                    4	Quarter is one-fourth. It can mean time or money.
-                    3	Quarter is one-fourth. It’s small.
-                    2	Quarter is part of something.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Quarter has multiple meanings depending on the context. It can refer to one-fourth of something, such as a quarter of an hour (15 minutes) or a quarter of a dollar (25 cents in US currency). In business, it represents a three-month period used for financial reporting. Additionally, it can describe a specific area or district within a city, such as the French Quarter in New Orleans.
+                            9	Quarter means one-fourth of something, like 15 minutes in an hour or 25 cents in US money. In business, it also refers to a three-month period, like the first quarter of the year. It can also mean a section of a city, such as a historical area.
+                            8	Quarter is one-fourth of something. For example, it can mean 15 minutes, 25 cents, or a three-month period in business. It can also describe a part of a city.
+                            7	Quarter means a part that is one-fourth of something, like 15 minutes or 25 cents. It can also mean three months of a year.
+                            6	Quarter is one-fourth of something. It can mean a small amount of money or a short period of time.
+                            5	Quarter is one-fourth of something, like time or money.
+                            4	Quarter is one-fourth. It can mean time or money.
+                            3	Quarter is one-fourth. It's small.
+                            2	Quarter is part of something.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "What is a 'technician,' and what tasks do they perform?\n - 「技術人員」是什麼？他們負責什麼任務？",
+                "text": "What does a 'technician' do at work?\n - 「技術人員」在工作時都做些什麼？",
                 "assessment_standard": """
-                    10	A technician is a skilled professional who specializes in a specific technical field, such as engineering, electronics, or medical equipment. They are responsible for maintaining, repairing, and operating complex systems or machinery. Technicians often work alongside engineers or other professionals, applying their expertise to ensure that equipment and processes function efficiently and safely.
-                    9	A technician is someone with specialized skills who works in areas like machines, computers, or medical equipment. Their job is to fix, maintain, or operate these systems, helping things run smoothly. They often work closely with engineers or other experts.
-                    8	A technician is a person trained to work with machines or equipment. They repair, check, or operate things like computers or medical tools.
-                    7	A technician is someone who works with machines or equipment. They help fix and make sure things work properly.
-                    6	A technician is a person who fixes or works with machines, like computers or tools.
-                    5	A technician is someone who works with machines and fixes them.
-                    4	A technician is a person who fixes machines or equipment.
-                    3	A technician is someone who fixes things.
-                    2	A technician is a person for machines.
-                    1	(No response or attempt to answer.)
-
-                """
+                            10	A technician is a skilled professional who specializes in a specific technical field, such as engineering, electronics, or medical equipment. They are responsible for maintaining, repairing, and operating complex systems or machinery. Technicians often work alongside engineers or other professionals, applying their expertise to ensure that equipment and processes function efficiently and safely.
+                            9	A technician is someone with specialized skills who works in areas like machines, computers, or medical equipment. Their job is to fix, maintain, or operate these systems, helping things run smoothly. They often work closely with engineers or other experts.
+                            8	A technician is a person trained to work with machines or equipment. They repair, check, or operate things like computers or medical tools.
+                            7	A technician is someone who works with machines or equipment. They help fix and make sure things work properly.
+                            6	A technician is a person who fixes or works with machines, like computers or tools.
+                            5	A technician is someone who works with machines and fixes them.
+                            4	A technician is a person who fixes machines or equipment.
+                            3	A technician is someone who fixes things.
+                            2	A technician is a person for machines.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "Explain 'provide' and give an example of something you often provide to others.\n - 解釋「提供」，並舉例說明你經常提供的東西。",
+                "text": "What does it mean to 'provide'? What kind of things do you often provide to others?\n - 「提供」是什麼意思？你常常提供什麼給別人？",
                 "assessment_standard": """
-                    10	Provide means to supply or make something available that is needed or wanted. For example, parents provide food, shelter, and education for their children, while companies provide services or products to customers. It is commonly used in various contexts, such as offering assistance, resources, or opportunities.
-                    9	Provide means to give or supply something that people need or ask for. For example, a teacher provides knowledge to students, or a business provides goods to its customers. It is an essential action in everyday life.
-                    8	Provide means to give something that is needed. For instance, a company provides products, or a school provides education for children.
-                    7	Provide means to give something that people need, like food, help, or information.
-                    6	Provide is when you give something to someone, like help or things they need.
-                    5	Provide means to give something, like food or help.
-                    4	Provide is to give things to people, like food or help.
-                    3	Provide is to give something to people.
-                    2	Provide is giving.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Provide means to supply or make something available that is needed or wanted. For example, parents provide food, shelter, and education for their children, while companies provide services or products to customers. It is commonly used in various contexts, such as offering assistance, resources, or opportunities.
+                            9	Provide means to give or supply something that people need or ask for. For example, a teacher provides knowledge to students, or a business provides goods to its customers. It is an essential action in everyday life.
+                            8	Provide means to give something that is needed. For instance, a company provides products, or a school provides education for children.
+                            7	Provide means to give something that people need, like food, help, or information.
+                            6	Provide is when you give something to someone, like help or things they need.
+                            5	Provide means to give something, like food or help.
+                            4	Provide is to give things to people, like food or help.
+                            3	Provide is to give something to people.
+                            2	Provide is giving.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "What happens in a 'seminar', and can you name a topic you’d like to learn about in one?\n - 「研討會」中會發生什麼？你能舉出一個你想在研討會中學習的主題嗎？",
+                "text": "What happens in a 'seminar'? What topic would you like to learn about in one?\n - 「研討會」會做些什麼？你想在研討會上學什麼主題？",
                 "assessment_standard": """
-                    10	A seminar is a formal meeting or educational session where a small group of people discuss specific topics, often led by an expert or presenter. Seminars are commonly held in academic, professional, or corporate settings to share knowledge, exchange ideas, or provide training. For example, a marketing seminar may teach participants strategies to improve brand visibility.
-                    9	A seminar is a meeting or class where people learn about a specific topic. It is usually guided by a speaker or expert. For example, a seminar on business might include presentations and discussions about improving sales.
-                    8	A seminar is a meeting or class where people discuss and learn about a topic. It is often led by someone knowledgeable, like a teacher or professional.
-                    7	A seminar is a meeting where people talk about a topic and learn from a teacher or expert.
-                    6	A seminar is a small meeting where people learn about something from a speaker.
-                    5	A seminar is a meeting to learn about something.
-                    4	A seminar is a meeting for learning or talking.
-                    3	A seminar is a meeting to talk.
-                    2	A seminar is a meeting.
-                    1	(No response or attempt to answer.)
-                """
+                            10	A seminar is a formal meeting or educational session where a small group of people discuss specific topics, often led by an expert or presenter. Seminars are commonly held in academic, professional, or corporate settings to share knowledge, exchange ideas, or provide training. For example, a marketing seminar may teach participants strategies to improve brand visibility.
+                            9	A seminar is a meeting or class where people learn about a specific topic. It is usually guided by a speaker or expert. For example, a seminar on business might include presentations and discussions about improving sales.
+                            8	A seminar is a meeting or class where people discuss and learn about a topic. It is often led by someone knowledgeable, like a teacher or professional.
+                            7	A seminar is a meeting where people talk about a topic and learn from a teacher or expert.
+                            6	A seminar is a small meeting where people learn about something from a speaker.
+                            5	A seminar is a meeting to learn about something.
+                            4	A seminar is a meeting for learning or talking.
+                            3	A seminar is a meeting to talk.
+                            2	A seminar is a meeting.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "What does 'reservation' mean, and why is it useful when planning events?\n - 「預約」是什麼意思？在規劃活動時為什麼有用？",
+                "text": "What is a 'reservation'? Why is it helpful when planning events?\n - 「預約」是什麼？在規劃活動時為什麼有幫助？",
                 "assessment_standard": """
-                    10	A reservation is an arrangement made in advance to secure a place, service, or item, such as booking a table at a restaurant, a seat on a flight, or a hotel room. It ensures that the requested service will be available at a specific time. Additionally, the term can also refer to a doubt or hesitation about something, often used in discussions or agreements.
-                    9	A reservation is an advance booking for something, like a table at a restaurant, a hotel room, or a ticket for a flight. It helps secure a spot or service. It can also mean feeling unsure about something in a conversation.
-                    8	A reservation is when you book something in advance, like a hotel room or a table at a restaurant. It makes sure you have a spot or service ready.
-                    7	A reservation means booking something ahead of time, like a seat, a room, or a table.
-                    6	A reservation is when you save a spot, like a table at a restaurant or a hotel room.
-                    5	A reservation is booking a place like a hotel or restaurant.
-                    4	A reservation is when you book or save a place for later.
-                    3	A reservation is booking or saving a spot.
-                    2	A reservation is saving something.
-                    1	(No response or attempt to answer.)
-                """
+                            10	A reservation is an arrangement made in advance to secure a place, service, or item, such as booking a table at a restaurant, a seat on a flight, or a hotel room. It ensures that the requested service will be available at a specific time. Additionally, the term can also refer to a doubt or hesitation about something, often used in discussions or agreements.
+                            9	A reservation is an advance booking for something, like a table at a restaurant, a hotel room, or a ticket for a flight. It helps secure a spot or service. It can also mean feeling unsure about something in a conversation.
+                            8	A reservation is when you book something in advance, like a hotel room or a table at a restaurant. It makes sure you have a spot or service ready.
+                            7	A reservation means booking something ahead of time, like a seat, a room, or a table.
+                            6	A reservation is when you save a spot, like a table at a restaurant or a hotel room.
+                            5	A reservation is booking a place like a hotel or restaurant.
+                            4	A reservation is when you book or save a place for later.
+                            3	A reservation is booking or saving a spot.
+                            2	A reservation is saving something.
+                            1	(No response or attempt to answer.)
+                        """
             },
             {
-                "text": "What does 'previous' mean, and can you describe a previous experience that was important to you?\n - 「先前的」是什麼意思？你能描述一個對你重要的先前經歷嗎？",
+                "text": "What does 'previous' mean? Can you share an important experience from your past?\n - 「先前的」是什麼意思？能分享一個你過去重要的經驗嗎？",
                 "assessment_standard": """
-                    10	Previous means something that happened, existed, or occurred before a particular time or event. For example, a previous meeting refers to a meeting that took place earlier. It is often used to describe earlier experiences, events, or versions of something. In context, it might be said, “The previous version of this report was less detailed than the current one.”
-                    9	Previous refers to something that came before another in time or order. For instance, the previous week is the one before the current week, or a previous job refers to a job you had earlier.
-                    8	Previous means something that happened earlier. For example, a previous meeting or event refers to one that happened before now.
-                    7	Previous means something that was before now, like a meeting or a time that happened earlier.
-                    6	Previous is when something happened before, like last week or last time.
-                    5	Previous means before something, like last week.
-                    4	Previous is something before, like last time.
-                    3	Previous is before now.
-                    2	Previous is before.
-                    1	(No response or attempt to answer.)
-                """
+                            10	Previous means something that happened, existed, or occurred before a particular time or event. For example, a previous meeting refers to a meeting that took place earlier. It is often used to describe earlier experiences, events, or versions of something. In context, it might be said, "The previous version of this report was less detailed than the current one."
+                            9	Previous refers to something that came before another in time or order. For instance, the previous week is the one before the current week, or a previous job refers to a job you had earlier.
+                            8	Previous means something that happened earlier. For example, a previous meeting or event refers to one that happened before now.
+                            7	Previous means something that was before now, like a meeting or a time that happened earlier.
+                            6	Previous is when something happened before, like last week or last time.
+                            5	Previous means before something, like last week.
+                            4	Previous is something before, like last time.
+                            3	Previous is before now.
+                            2	Previous is before.
+                            1	(No response or attempt to answer.)
+                        """
             }
         ],
         # [
