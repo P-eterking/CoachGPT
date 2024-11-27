@@ -881,6 +881,8 @@ async def question_message(unit, sub):
     )
     
 async def carousel_message(user_id, unit):
+    if len(qs[get_category()]) < unit:
+        return None
     cols = []
     for sub,j in enumerate(qs[get_category()][unit-1]):
         body = FlexBox(

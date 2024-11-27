@@ -2,8 +2,8 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 class SpeechAssessment(BaseModel):
-    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion'] = Field(default_factory=lambda: "")  # 中文建議
-    eng_suggestion: Annotated[str, 'English suggestion'] = Field(default_factory=lambda: "")  # 英文建議
+    chi_suggestion: Annotated[str, 'Traditional Chinese suggestion'] = Field(default_factory=lambda: "無建議。")  # 中文建議
+    eng_suggestion: Annotated[str, 'English suggestion'] = Field(default_factory=lambda: "No suggestion.")  # 英文建議
     score: Annotated[int, '評量分數'] = Field(default_factory=lambda: 1)  # 分數
     transcript: Annotated[str, '轉錄後文本'] = Field(default_factory=lambda: "")  # 使用者回答的轉錄文本
     better_ans: Annotated[str, '改善後文本'] = Field(default_factory=lambda: "")  # 改進的回覆範例
