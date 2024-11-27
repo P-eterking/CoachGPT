@@ -65,6 +65,7 @@ async def handle_text_message(event):
         category = int(message.split(' ')[1])
         set_category(category)
         await create_rich_menu()
+        await save_config()
         await send_text_message(event, f"已設定測驗類別為{category}！\nCategory set to {category}!")
 
 user_data_enter = {}
