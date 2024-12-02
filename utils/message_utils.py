@@ -14,7 +14,8 @@ from utils.file_utils import (
     get_category
 )
 # 設定主網址和分類變數
-url  = f'https://{DOMAIN}'
+URL = f'https://{DOMAIN}'
+IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 
 # 定義問題集合
 qs = {
@@ -171,40 +172,88 @@ qs = {
                         """
             }
         ],
-        # [
-        #     {
-        #         "text": "Office Meeting Analysis:\n- Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
-        #         "image_url": f"{url}/templates/0/cover2-1.jpg"
-        #     },
-        #     {
-        #         "text": "Negotiation in Meetings:\n- What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
-        #         "image_url": f"{url}/templates/0/cover2-1.jpg"
-        #     },
-        #     {
-        #         "text": "Traveler Concerns:\n- What concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對自己的計劃有什麼擔憂，如何在機場解決這些問題？",
-        #         "image_url": f"{url}/templates/0/cover2-3.jpg"
-        #     },
-        #     {
-        #         "text": "Flight Preparation:\n- How might passengers be preparing for their flights at the check-in counters?\n- 旅客可能如何在值機櫃檯為航班做準備？",
-        #         "image_url": f"{url}/templates/0/cover2-3.jpg"
-        #     },
-        #     {
-        #         "text": "Museum Exhibit Access:\n- How would you help a guest access information about the museum’s exhibits?\n- 你會如何幫助客人獲取有關博物館展品的訊息？",
-        #         "image_url": f"{url}/templates/0/cover2-5.jpg"
-        #     },
-        #     {
-        #         "text": "Art Display:\n- What kind of artwork is displayed in the museum?\n- 博物館裡展出的藝術品是什麼類型的？",
-        #         "image_url": f"{url}/templates/0/cover2-5.jpg"
-        #     },
-        #     {
-        #         "text": "Hotel Check-In:\n- What information might the guest provide to the front desk staff during check-in?\n- 客人在入住時可能會向前台工作人員提供哪些訊息？",
-        #         "image_url": f"{url}/templates/0/cover2-7.jpg"
-        #     },
-        #     {
-        #         "text": "Guest Services:\n- What additional services might a guest request during their stay?\n- 客人在入住期間可能會要求哪些額外的服務？",
-        #         "image_url": f"{url}/templates/0/cover2-7.jpg"
-        #     }
-        # ],  
+        [
+            {
+                "text": "Office Meeting Analysis:\n- Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
+                "image_url": f"{URL}/templates/0/cover2-1.jpg",
+                "assessment_standard": """
+                    10	The team is discussing the company’s declining quarterly performance, analyzing financial trends such as reduced sales or increased costs. They are focusing on identifying issues and proposing solutions to improve performance, like reallocating budgets or revising strategies.
+                    9	The team is reviewing the company’s performance data, identifying reasons for the decline, and brainstorming possible solutions, such as adjusting budgets or improving operations.
+                    8	The team is analyzing performance charts to find out why results declined. They are discussing possible strategies, like cutting costs or improving sales efforts.
+                    7	The team is looking at charts to understand why the performance is worse. They are talking about ways to fix the problem.
+                    6	The team is talking about bad numbers. They are trying to find what caused it and how to fix it.
+                    5	The team talks about bad results and fixing them.
+                    4	The team talks about numbers going down.
+                    3	Bad numbers. Fix them.
+                    2	Bad charts.
+                    1	(No response or incomprehensible reply.)
+                """,
+                "extra_info": [[
+                    "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
+                    "您正在參加一場會議，並擔任團隊的會議紀錄員。團隊正在討論公司季度業績下滑的問題。團隊領導正在檢視財務圖表和數據趨勢，而站著的同事正在說明可能的原因。討論的重點是識別問題區域，例如銷售下降或成本上升，並集思廣益提出解決方案。協商內容可能包括重新分配預算、設定新優先事項或商定改善績效的下一步行動。"
+                ]]
+            },
+            {
+                "text": "Negotiation in Meetings:\n- What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
+                "image_url": f"{URL}/templates/0/cover2-1.jpg",
+                "assessment_standard": """
+                    10	The negotiation might involve deciding how to reallocate budgets to focus on profitable areas or agreeing on adjustments to marketing and operational strategies. Team members may also discuss setting realistic performance goals and timelines to address the quarterly decline effectively.
+                    9	The team might negotiate reallocating budgets or deciding on priorities for upcoming projects. They could also discuss changes to strategies for improving performance.
+                    8	The team might talk about shifting money to important areas or changing plans to improve results. They could also decide on new goals.
+                    7	The team might discuss where to spend money and what changes to make to fix the problem.
+                    6	The team might talk about budgets and plans to improve performance.
+                    5	The team talks about budgets and changes.
+                    4	The team talks about spending and fixing problems.
+                    3	Budget meeting.
+                    2	Money plans.
+                    1	(No response or incomprehensible reply.)
+                """,
+                "extra_info": [[
+                    "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
+                    "您正在參加一場會議，並擔任團隊的會議紀錄員。團隊正在討論公司季度業績下滑的問題。團隊領導正在檢視財務圖表和數據趨勢，而站著的同事正在說明可能的原因。討論的重點是識別問題區域，例如銷售下降或成本上升，並集思廣益提出解決方案。協商內容可能包括重新分配預算、設定新優先事項或商定改善績效的下一步行動。"
+                ]]
+            },
+            {
+                "text": "Museum Exhibit Access:\n- How would you help a guest access information about the museum’s exhibits?\n- 你會如何幫助客人獲取有關博物館展品的訊息？",
+                "image_url": f"{URL}/templates/0/cover2-3.jpg",
+                "assessment_standard": """
+                    10	I would guide the guest through each exhibit, providing detailed explanations of the artwork’s historical and cultural significance. I would also encourage them to read the information plaques and offer additional resources, such as audio guides or brochures, to deepen their understanding.
+                    9	I would explain the key details of each exhibit and suggest reading the information plaques. If the guest has questions, I would provide further explanations and recommend available museum resources like brochures or guides.
+                    8	I would give clear explanations about the exhibits and show the guest where to find the plaques with more information. If they are interested, I would mention the audio guide option.
+                    7	I would talk about the main details of the exhibits and show them the information plaques to learn more.
+                    6	I would tell the guest about the exhibits and show where to read more information.
+                    5	I explain a little and point to the plaques for more details.
+                    4	I say, “Look at the plaques for information.”
+                    3	I say, “Read there.”
+                    2	I point at the plaques.
+                    1	(No response or incomprehensible reply.)
+                """,
+                "extra_info": [[
+                    "You are a tour guide at a renowned museum known for its extensive collection of classical and historical artwork. The museum houses various exhibits, including sculptures and paintings from ancient to medieval times. In this scene, you are walking through the sculpture gallery with a guest, explaining the historical and cultural significance of the artwork. The gallery features detailed statues, ancient artifacts, and framed artworks displayed in a well-organized space.",
+                    "您是一位著名博物館的導覽員，該博物館以其豐富的古典與歷史藝術收藏聞名。館內展覽涵蓋雕塑與繪畫作品，從古代到中世紀時期不等。在這個場景中，您正帶著一位遊客參觀雕塑畫廊，向他們解說這些藝術品的歷史與文化意義。畫廊中展示了精緻的雕像、古代文物，以及精美的畫作，所有展品均整齊有序地排列於這優雅的空間中。"
+                ]]
+            },
+            {
+                "text": "Art Display:\n- What kind of artwork is displayed in the museum?\n- 博物館裡展出的藝術品是什麼類型的？",
+                "image_url": f"{URL}/templates/0/cover2-3.jpg",
+                "assessment_standard": """
+                    10	The museum showcases a variety of classical and historical artworks, including marble sculptures from ancient civilizations, intricately crafted artifacts, and framed paintings from the medieval period. These pieces highlight the evolution of art and culture over centuries.
+                    9	The museum features classical sculptures, ancient artifacts, and historical paintings, showing the rich cultural and artistic history of different periods.
+                    8	The museum has many classical sculptures and paintings, as well as historical artifacts from different times.
+                    7	The museum shows sculptures, paintings, and artifacts from history.
+                    6	The museum has old statues and paintings.
+                    5	There are statues and paintings.
+                    4	There are art and statues.
+                    3	Statues. Paintings.
+                    2	Art.
+                    1	(No response or incomprehensible reply.)
+                """,
+                "extra_info": [[
+                    "You are a tour guide at a renowned museum known for its extensive collection of classical and historical artwork. The museum houses various exhibits, including sculptures and paintings from ancient to medieval times. In this scene, you are walking through the sculpture gallery with a guest, explaining the historical and cultural significance of the artwork. The gallery features detailed statues, ancient artifacts, and framed artworks displayed in a well-organized space.",
+                    "您是一位著名博物館的導覽員，該博物館以其豐富的古典與歷史藝術收藏聞名。館內展覽涵蓋雕塑與繪畫作品，從古代到中世紀時期不等。在這個場景中，您正帶著一位遊客參觀雕塑畫廊，向他們解說這些藝術品的歷史與文化意義。畫廊中展示了精緻的雕像、古代文物，以及精美的畫作，所有展品均整齊有序地排列於這優雅的空間中。"
+                ]]
+            },
+        ],  
         # [
         #     {
         #         "text": "Beginning: Introduce the main character and setting.\nA hare was making fun of a tortoise for moving so slowly. The tortoise got tired of the hare making fun of how slow he was. So, he asked the hare to have a race.\n開始：介紹主要角色和場景。\n一隻野兔正在嘲笑一隻行動緩慢的烏龜。烏龜厭倦了野兔嘲笑牠動作慢的樣子。於是牠要求野兔和他進行一場比賽。",
@@ -276,7 +325,7 @@ qs = {
         [
             {
                 "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
-                "image_url": f"{url}/templates/1/cover2-1.jpg",
+                "image_url": f"{URL}/templates/1/cover2-1.jpg",
                 "assessment_standard": """
                 10 優異表達者
                 This picture shows a business meeting in a modern office with large windows overlooking the city. There are several professionals around a polished wooden table, engaged in discussion. Some are looking at reports, while one person is taking notes. The atmosphere feels serious, indicating important decisions are being made.
@@ -302,7 +351,7 @@ qs = {
             },
             {
                 "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
-                "image_url": f"{url}/templates/1/cover2-2.jpg",
+                "image_url": f"{URL}/templates/1/cover2-2.jpg",
                 "assessment_standard": """
                 10 優異表達者
                 This image shows a busy train station with lots of people waiting for trains. The station is modern, with tall ceilings and clear signs. A train is arriving, and everyone looks ready to travel. The scene captures the excitement of commuting in a big city.
@@ -330,7 +379,7 @@ qs = {
         [
             {
                 "text": "What activities do you think are taking place in the warehouse?\n - 你認為倉庫中正在進行的活動是什麼？",
-                "image_url": f"{url}/templates/1/cover3-1.jpg",
+                "image_url": f"{URL}/templates/1/cover3-1.jpg",
                 "assessment_standard": """
                 10優異表達者
                 The warehouse is likely bustling with activity. Workers are probably unloading shipments, checking inventory levels, and organizing products on shelves. Additionally, items might be prepared for delivery, ensuring that everything is correctly labeled and stored. Quality control checks are likely conducted to maintain standards.
@@ -356,7 +405,7 @@ qs = {
             },
             {
                 "text": "What considerations should hikers keep in mind to ensure a safe and enjoyable outing\n - 登山者應該考慮哪些因素，以確保安全且愉快的郊遊？",
-                "image_url": f"{url}/templates/1/cover3-2.jpg",
+                "image_url": f"{URL}/templates/1/cover3-2.jpg",
                 "assessment_standard": """
                 10 優異表達者
                 Hikers should prioritize safety by planning their routes carefully and ensuring they are well-prepared for theterrain. This includes checking weather conditions and dressing appropriately for the climate. Carrying
@@ -388,7 +437,7 @@ qs = {
         [
             {
                 "text": "What time does Bandaid Band perform?\n - Bandaid Band 是在哪一個時間表演?",
-                "image_url": f"{url}/templates/1/cover4-1.jpg",
+                "image_url": f"{URL}/templates/1/cover4-1.jpg",
                 "max_score": 4,
                 "assessment_standard": """
                 為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
@@ -428,7 +477,7 @@ qs = {
             },
             {
                 "text": "How much does the Beach Getaway to Cancun cost?\n - Cancun 海灘度假的費用是多少？",
-                "image_url": f"{url}/templates/1/cover4-2.jpg",
+                "image_url": f"{URL}/templates/1/cover4-2.jpg",
                 "max_score": 4,
                 "assessment_standard": """
                 為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
@@ -669,7 +718,7 @@ def get_question(unit, sub):
     return qs[get_category()][unit][sub]
 
 def get_context_url():
-    return f'{url}/templates/example_context.png'
+    return f'{URL}/templates/example_context.png'
 
 async def send_message(event, msg):
     if msg is None:
@@ -819,6 +868,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
     )
 
 async def question_message(unit, sub):
+    messages = []
     question = get_question(unit, sub)
     contents = [
         FlexText(
@@ -852,10 +902,8 @@ async def question_message(unit, sub):
             aspect_mode='cover',
             margin='md'
         ))
-
-    return FlexMessage(
-        altText='口語練習',
-        contents=FlexBubble(   
+        
+    messages.append(FlexBubble(   
             size='giga', 
             body=FlexBox(
                 layout='vertical',
@@ -878,6 +926,37 @@ async def question_message(unit, sub):
                 ]
             )
         )
+    )
+    
+    if question.get('extra_info'):
+        for obj in question['extra_info']:
+            if isinstance(obj, str):
+                obj = [obj]
+            messages.append(FlexBubble(
+                size='giga',
+                body=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    contents=[
+                        FlexText(
+                            text=i.strip(),
+                            wrap=True,
+                            size='md',
+                        ) if not i.lower().endswith(IMG_EXT) else 
+                        FlexImage(
+                            url=i,
+                            size='full',
+                            aspect_ratio='20:13',
+                            aspect_mode='cover',
+                        )
+                        for i in obj
+                    ]
+                )
+            ))
+    
+    return FlexMessage(
+        altText='口語練習',
+        contents=FlexCarousel(contents=messages)
     )
     
 async def carousel_message(user_id, unit):
@@ -919,7 +998,7 @@ async def carousel_message(user_id, unit):
             )
         cols.append(FlexBubble(
             hero=FlexImage(
-                url=f'{url}/templates/{get_category()}/cover{unit}-{sub+1}.jpg',
+                url=f'{URL}/templates/{get_category()}/cover{unit}-{sub+1}.jpg',
                 size='full',
                 aspect_ratio='20:13',
                 aspect_mode='cover',
