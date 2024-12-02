@@ -81,6 +81,7 @@ def getHistory(user_id, key) -> SpeechAssessment | None:
     # 獲取指定使用者的指定歷史紀錄
     return user_data[user_id].history.get(key,None)
 
+# 非同步加載設定
 async def load_config():
     global config
     try:
@@ -96,12 +97,19 @@ async def load_config():
             await file.write(json.dumps(config, indent=4))
             print("Config created successfully.")
 
+# 非同步儲存設定
 async def save_config():
     global config
     # 將 config 字典轉換為 JSON 字串，並儲存至 CONFIG_FILE 中
     async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
         await file.write(json.dumps(config, indent=4))
         print("Config saved successfully.")
+
+# 儲存所有資料
+async def save_all():
+    await save_config()
+    await save_user_data()
+    return 'All data saved.'
 
 # 非同步加載使用者資料
 async def load_user_data():

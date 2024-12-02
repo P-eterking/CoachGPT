@@ -2,7 +2,7 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from routes import callback
-from utils.file_utils import load_user_data, save_config, save_user_data, user_data_task, load_config
+from utils.file_utils import load_user_data, save_all, save_config, save_user_data, user_data_task, load_config
 from utils.message_utils import create_rich_menu
 from contextlib import asynccontextmanager
 
@@ -21,4 +21,5 @@ app = FastAPI(lifespan=lifespan)
 
 # 註冊路由
 app.post("/callback")(callback)
+app.get("/saveall")(save_all)
 app.mount('/templates', StaticFiles(directory='templates'))
