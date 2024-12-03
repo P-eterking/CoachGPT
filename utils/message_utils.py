@@ -6,6 +6,7 @@ from linebot.v3.messaging import (
     FlexText, FlexBox, FlexButton
 )
 from linebot.v3.messaging.exceptions import ApiException
+from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import SpeechAssessment
 import json
 from PIL import Image
@@ -1075,14 +1076,19 @@ async def data_message():
     max_score = float('-inf')
     min_score = float('inf')
     users_with_history = 0
-    users_with_10plus = 0
+    users_with_all = 0
 
+    total_questions = sum([len(i) for i in qs[get_category()]])
+    
     for user in user_data.values():
-        if user.history:
+        user_history = [key.startswith(f'{get_category()}-') for key in user.history.keys()]
+        if user.history and len(user_history) > 0:
             users_with_history += 1
-            if len(user.history) >= 10:
-                users_with_10plus += 1
-        for assessment in user.history.values():
+            if len(user_history) >= total_questions:
+                users_with_all += 1
+        for str, assessment in user.history.items():
+            if not str.startswith(f'{get_category()}-'):
+                continue
             total_history_score += assessment.score
             total_history_count += 1
             if assessment.score > max_score:
@@ -1102,7 +1108,7 @@ async def data_message():
                 spacing='lg',
                 contents=[
                     FlexText(
-                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_10plus}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
+                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_all}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
                         wrap=True,
                         size='md',
                      ),
@@ -1110,7 +1116,6 @@ async def data_message():
             ),
         )
     )
-
 
 async def handle_rich_menu(user_id):
     rich_menu_id = get_rich_menu_id(get_category())
@@ -1123,6 +1128,7 @@ async def handle_rich_menu(user_id):
 
 async def create_rich_menu():
     rich_menu_id = get_rich_menu_id(get_category())
+    await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     if not rich_menu_id:
         # Load image and get dimensions
         path = f'templates/richmenu-{get_category()}.png'
