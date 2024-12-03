@@ -4,7 +4,7 @@ services:
     network_mode: host
     restart: unless-stopped
     container_name: cloudflared-tunnel
-    command: tunnel --no-autoupdate run --token eyJhIjoiMjBhYWU3OWZjZjI4MmYwZWE5YjAyMTEyNzhkNDEwNDAiLCJ0IjoiNWNhM2NlZjAtNTM2OC00NDJmLTgzNDQtYTU3OTNiZTlkYzk2IiwicyI6IlltTXpNV1l4TlRJdE1qTXhOUzAwTkRJM0xXRXdZell0T1RVM01UY3hPRGt3TUdReSJ9
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_AUTHTOKEN}
   service:
     build: .
     container_name: linebot-service
