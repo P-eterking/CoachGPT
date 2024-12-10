@@ -3,8 +3,11 @@ services:
     image: cloudflare/cloudflared:latest
     network_mode: host
     restart: unless-stopped
+    env_file:
+      - .env
+    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "run", "--token", "eyJhIjoiMjBhYWU3OWZjZjI4MmYwZWE5YjAyMTEyNzhkNDEwNDAiLCJ0IjoiYmUzY2E1MDUtMDIxOS00MDM2LWFlZjUtY2Y5NWRhMGM1Nzg5IiwicyI6IlpHWmxPR013TmpFdE5UUmhNaTAwWlRZMExUaGhNMlF0T0RSaFl6RmtaakUzWVRFMiJ9"]
     container_name: cloudflared-tunnel
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_AUTHTOKEN}
+
   service:
     build: .
     container_name: linebot-service

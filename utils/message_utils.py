@@ -175,19 +175,20 @@ qs = {
         ],
         [
             {
-                "text": "Office Meeting Analysis:\n- Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
+                "text": "Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
                 "image_url": f"{URL}/templates/0/cover2-1.jpg",
                 "assessment_standard": """
-                    10	The team is discussing the company’s declining quarterly performance, analyzing financial trends such as reduced sales or increased costs. They are focusing on identifying issues and proposing solutions to improve performance, like reallocating budgets or revising strategies.
-                    9	The team is reviewing the company’s performance data, identifying reasons for the decline, and brainstorming possible solutions, such as adjusting budgets or improving operations.
+                    10	The team might be discussing the causes of the company’s declining quarterly performance, and analyzing financial trends such as reduced sales or increased costs. They could be focusing on identifying issues and proposing solutions to improve performance, like reallocating budgets or revising strategies.
+                    9	The team might be reviewing the company’s performance data, identifying reasons for the decline, and brainstorming possible solutions, such as adjusting budgets or improving operations.
                     8	The team is analyzing performance charts to find out why results declined. They are discussing possible strategies, like cutting costs or improving sales efforts.
                     7	The team is looking at charts to understand why the performance is worse. They are talking about ways to fix the problem.
                     6	The team is talking about bad numbers. They are trying to find what caused it and how to fix it.
                     5	The team talks about bad results and fixing them.
-                    4	The team talks about numbers going down.
+                    4	Talk about numbers going down.
                     3	Bad numbers. Fix them.
                     2	Bad charts.
-                    1	(No response or incomprehensible reply.)
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
                 """,
                 "extra_info": [[
                     "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
@@ -195,19 +196,20 @@ qs = {
                 ]]
             },
             {
-                "text": "Negotiation in Meetings:\n- What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
+                "text": "What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
                 "image_url": f"{URL}/templates/0/cover2-1.jpg",
                 "assessment_standard": """
                     10	The negotiation might involve deciding how to reallocate budgets to focus on profitable areas or agreeing on adjustments to marketing and operational strategies. Team members may also discuss setting realistic performance goals and timelines to address the quarterly decline effectively.
                     9	The team might negotiate reallocating budgets or deciding on priorities for upcoming projects. They could also discuss changes to strategies for improving performance.
-                    8	The team might talk about shifting money to important areas or changing plans to improve results. They could also decide on new goals.
-                    7	The team might discuss where to spend money and what changes to make to fix the problem.
-                    6	The team might talk about budgets and plans to improve performance.
+                    8	The team can talk about shifting money to important areas or changing plans to improve results. They could also decide on new goals.
+                    7	The team is discussing where to spend money and what changes to make to fix the problem.
+                    6	The team is talking about budgets and plans to improve performance.
                     5	The team talks about budgets and changes.
-                    4	The team talks about spending and fixing problems.
+                    4	Talk about spending and fixing problems.
                     3	Budget meeting.
                     2	Money plans.
-                    1	(No response or incomprehensible reply.)
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
                 """,
                 "extra_info": [[
                     "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
@@ -215,43 +217,87 @@ qs = {
                 ]]
             },
             {
-                "text": "Museum Exhibit Access:\n- How would you help a guest access information about the museum’s exhibits?\n- 你會如何幫助客人獲取有關博物館展品的訊息？",
-                "image_url": f"{URL}/templates/0/cover2-3.jpg",
-                "assessment_standard": """
-                    10	I would guide the guest through each exhibit, providing detailed explanations of the artwork’s historical and cultural significance. I would also encourage them to read the information plaques and offer additional resources, such as audio guides or brochures, to deepen their understanding.
-                    9	I would explain the key details of each exhibit and suggest reading the information plaques. If the guest has questions, I would provide further explanations and recommend available museum resources like brochures or guides.
-                    8	I would give clear explanations about the exhibits and show the guest where to find the plaques with more information. If they are interested, I would mention the audio guide option.
-                    7	I would talk about the main details of the exhibits and show them the information plaques to learn more.
-                    6	I would tell the guest about the exhibits and show where to read more information.
-                    5	I explain a little and point to the plaques for more details.
-                    4	I say, “Look at the plaques for information.”
-                    3	I say, “Read there.”
-                    2	I point at the plaques.
-                    1	(No response or incomprehensible reply.)
+                "text": "What concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對他們的計劃有哪些擔憂，這些擔憂可以在機場如何解決？",
+                "image_url": f'{URL}/templates/0/cover2-3.jpg',
+                'assessment_standard': """
+                    10	Travelers may be concerned about flight delays, cancellations, lost luggage, or unexpected travel restrictions. These concerns can be addressed by utilizing airport services such as real-time updates on flight boards, luggage assistance desks, and travel insurance counters for last-minute coverage.
+                    9	Travelers might worry about delays, missing their connections, or baggage issues. The airport can assist with information boards, customer service desks, and insurance kiosks for last-minute needs.
+                    8	Some passengers may worry about delayed flights or lost luggage. The airport staff and service desks can help address these problems.
+                    7	They might worry about late flights or losing their bags. Staff at the airport can help solve these problems.
+                    6	They are worried about their flights or bags. They can ask for help.
+                    5	They worry about flights and bags.
+                    4	Worry about flight, ask staff help.
+                    3	Flight bad. Help.
+                    2	Flight.
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
                 """,
                 "extra_info": [[
-                    "You are a tour guide at a renowned museum known for its extensive collection of classical and historical artwork. The museum houses various exhibits, including sculptures and paintings from ancient to medieval times. In this scene, you are walking through the sculpture gallery with a guest, explaining the historical and cultural significance of the artwork. The gallery features detailed statues, ancient artifacts, and framed artworks displayed in a well-organized space.",
-                    "您是一位著名博物館的導覽員，該博物館以其豐富的古典與歷史藝術收藏聞名。館內展覽涵蓋雕塑與繪畫作品，從古代到中世紀時期不等。在這個場景中，您正帶著一位遊客參觀雕塑畫廊，向他們解說這些藝術品的歷史與文化意義。畫廊中展示了精緻的雕像、古代文物，以及精美的畫作，所有展品均整齊有序地排列於這優雅的空間中。"
+                    "You are observing activities in a busy airport terminal. Passengers are checking in or exchanging currency, and some are considering buying insurance for their travel plans.",
+                    "您正在觀察繁忙的機場航廈內的活動。乘客正在辦理登機手續或兌換貨幣，有些人正在考慮為旅行計劃購買保險。",
                 ]]
             },
             {
-                "text": "Art Display:\n- What kind of artwork is displayed in the museum?\n- 博物館裡展出的藝術品是什麼類型的？",
-                "image_url": f"{URL}/templates/0/cover2-3.jpg",
-                "assessment_standard": """
-                    10	The museum showcases a variety of classical and historical artworks, including marble sculptures from ancient civilizations, intricately crafted artifacts, and framed paintings from the medieval period. These pieces highlight the evolution of art and culture over centuries.
-                    9	The museum features classical sculptures, ancient artifacts, and historical paintings, showing the rich cultural and artistic history of different periods.
-                    8	The museum has many classical sculptures and paintings, as well as historical artifacts from different times.
-                    7	The museum shows sculptures, paintings, and artifacts from history.
-                    6	The museum has old statues and paintings.
-                    5	There are statues and paintings.
-                    4	There are art and statues.
-                    3	Statues. Paintings.
-                    2	Art.
-                    1	(No response or incomprehensible reply.)
+                "text": "How might passengers be preparing for their flights at the check-in counters?\n- 旅客可能會如何在登機櫃檯為航班做準備？",
+                "image_url": f'{URL}/templates/0/cover2-3.jpg',
+                'assessment_standard': """
+                    10	Passengers might confirm their travel documents, check in their luggage, select seats, and verify any special requests, such as meal preferences or additional assistance. They may also inquire about flight updates or connecting flights.
+                    9	Passengers may be preparing for their flights by checking their tickets, dropping off luggage, and confirming their seats. They might also ask about meal preferences or travel details.
+                    8	Passengers could check in their bags, show their tickets, and talk to staff about their flights.
+                    7	They check tickets and bags and ask questions at the counter.
+                    6	They prepare tickets and bags for their flight.
+                    5	They check bags and tickets.
+                    4	Check bags and tickets.
+                    3	Bag check.
+                    2	Ticket.
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
                 """,
                 "extra_info": [[
-                    "You are a tour guide at a renowned museum known for its extensive collection of classical and historical artwork. The museum houses various exhibits, including sculptures and paintings from ancient to medieval times. In this scene, you are walking through the sculpture gallery with a guest, explaining the historical and cultural significance of the artwork. The gallery features detailed statues, ancient artifacts, and framed artworks displayed in a well-organized space.",
-                    "您是一位著名博物館的導覽員，該博物館以其豐富的古典與歷史藝術收藏聞名。館內展覽涵蓋雕塑與繪畫作品，從古代到中世紀時期不等。在這個場景中，您正帶著一位遊客參觀雕塑畫廊，向他們解說這些藝術品的歷史與文化意義。畫廊中展示了精緻的雕像、古代文物，以及精美的畫作，所有展品均整齊有序地排列於這優雅的空間中。"
+                    "You are observing activities in a busy airport terminal. Passengers are checking in or exchanging currency, and some are considering buying insurance for their travel plans.",
+                    "您正在觀察繁忙的機場航廈內的活動。乘客正在辦理登機手續或兌換貨幣，有些人正在考慮為旅行計劃購買保險。",
+                ]]
+            },
+            {
+                "text": "What information might the guests be providing to the front desk staff during check-in?\n- 客人在辦理入住手續時可能向前台人員提供什麼資訊？",
+                "image_url": f"{URL}/templates/0/cover2-5.jpg",
+                "assessment_standard": """
+                    10	The guests might be providing their reservation details, valid IDs, and payment information. They may also confirm the duration of their stay, specify room preferences, and mention any special needs, such as early check-in or accessibility requirements.
+                    9	The guests might share their reservation confirmation, ID, and payment details. They may also indicate specific room preferences or mention their length of stay.
+                    8	The guests provide their reservation number, ID, and payment. They might also mention their check-in and check-out dates.
+                    7	The guests give their ID and booking information and tell how long they are staying.
+                    6	The guests give their name and ID for check-in.
+                    5	The guests give their name and booking.
+                    4	Give name, booking
+                    3	Name.
+                    2	ID.
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
+                """,
+                "extra_info": [[
+                    "You are observing interactions at the front desk of a busy hotel. Guests are checking in and asking for additional services during their stay.",
+                    "您正在觀察一家繁忙飯店前台的互動。客人正在辦理入住手續並詢問住宿期間的其他服務。",
+                ]]
+            },
+            {
+                "text": "What additional services might guests request during their stay?\n- 客人在住宿期間可能會要求哪些額外服務？",
+                "image_url": f"{URL}/templates/0/cover2-5.jpg",
+                "assessment_standard": """
+                    10	Guests might request room service, access to the gym or spa, laundry services, or assistance with booking local tours and transportation. They may also inquire about late check-out or upgrading their room.
+                    9	The guests might ask for room service, laundry, or help with booking transportation and tours. They might also request late check-out or room upgrades.
+                    8	The guests might ask for room service, access to the gym, or help with tours.
+                    7	The guests ask for food in their room or help with transportation.
+                    6	They ask for room service or help with booking.
+                    5	They want room service and help.
+                    4	Ask for food, help.
+                    3	Food.
+                    2	Room.
+                    1	(Incomprehensible reply.)
+                    0	(No response.)
+                """,
+                "extra_info": [[
+                    "You are observing interactions at the front desk of a busy hotel. Guests are checking in and asking for additional services during their stay.",
+                    "您正在觀察一家繁忙飯店前台的互動。客人正在辦理入住手續並詢問住宿期間的其他服務。",
                 ]]
             },
         ],  
@@ -566,7 +612,304 @@ qs = {
                 """
             },
         ],
-    ]
+    ],
+    2: [
+        [
+            {
+                "text": "What is a 'brochure'? Could you provide an example and explain it?\n - 什麼是「宣傳冊」？試著舉一個例子解釋",
+                "assessment_standard": """
+                10 優異表達者
+                A brochure is a printed document that provides detailed information about a specific topic, product, or service. It is often used for marketing purposes to attract potential customers by highlighting key features and benefits. Brochures can be found in various formats, including tri-folds and booklets, and are designed to be visually appealing to engage readers effectively.
+                9 優良表達者
+                A brochure is a promotional document that offers information about a product, service, or event. It typically includes attractive images and concise text to inform potential customers. Brochures are commonly distributed at conventions or events to provide attendees with valuable details about what is being offered.
+                8 良好表達者
+                A brochure is a type of printed material that gives information about something, such as a service or a place. It often has pictures and a layout designed to catch people’s attention. Brochures are used by businesses and organizations to promote their offerings.
+                7 基礎表達者
+                A brochure is a small booklet that contains information. It can be about a place or a service, and it usually has some pictures. People use brochures to learn more about different things.
+                6 有限表達者
+                A brochure is a paper that tells about something. It has some words and pictures to help people understand. It is used by companies to share information.
+                5 簡單表達者
+                A brochure is a paper with information. It shows pictures and tells about things. It helps people know more about products.
+                4 有限互動能力者
+                A brochure is a type of paper with stuff on it. It has pictures. It gives some information, but it is not clear.
+                3 極度有限的表達者
+                A brochure is paper. It has pictures. I don’t know much more.
+                2 極低表達能力者
+                A brochure is paper. It has something.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
+            },
+            {
+                "text": "Explain 'convention' and what are its main functions?\n - 「會議」是什麼？它的主要功能是什麼？",
+                "assessment_standard": """
+                10 優異表達者
+                A convention is a formal gathering or meeting of individuals who share a common interest or profession. These events often include presentations, workshops, and discussions aimed at exchanging knowledge, networking, and addressing issues relevant to the group. Conventions can be organized around specific themes, such as education, technology, or health, and typically attract participants from various regions or fields.
+                9 優良表達者
+                A convention is a large meeting where people with similar interests come together to discuss topics and share ideas. These gatherings usually include speakers, workshops, and networking opportunities. Conventions are common in various fields, such as science, business, and arts, and provide a platform for collaboration.
+                8 良好表達者
+                A convention is a meeting of a group of people who come together to talk about certain topics. It often includes presentations and activities related to a specific theme. Conventions allow attendees to learn and network with others in their field.
+                7 基礎表達者
+                A convention is a big meeting. People come together to talk about something important. They have speakers and discussions.
+                6 有限表達者
+                A convention is a place where people meet. They talk about things and share information. It can be big.
+                5 簡單表達者
+                A convention is a meeting. People go there to talk and learn.
+                4 有限互動能力者
+                A convention is a type of meeting. People gather, but I don’t know what they do.
+                3 極度有限的表達者
+                A convention is a meeting. People are there.
+                2 極低表達能力者
+                A convention is a meeting of people.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
+            },
+        ],
+        [
+            {
+                "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
+                "image_url": f"{URL}/templates/1/cover2-1.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                This picture shows a business meeting in a modern office with large windows overlooking the city. There are several professionals around a polished wooden table, engaged in discussion. Some are looking at reports, while one person is taking notes. The atmosphere feels serious, indicating important decisions are being made.
+                9 優良表達者
+                The image depicts a business meeting happening in a high-rise office. People are sitting around a table, reviewing documents and charts. One person is writing notes, and the others are discussing strategies. The setting looks professional and focused.
+                8 良好表達者
+                This image features a meeting in an office. There are several people at a table with papers and charts. One person is writing while others seem to be talking about important topics.
+                7 基礎表達者
+                The picture shows a meeting in an office. People are gathered around a table with documents. It looks like they are discussing something serious.
+                6 有限表達者
+                This image has a group of people in a meeting. They have papers on the table, and one person is writing. It seems important.
+                5 簡單表達者
+                There are people in a meeting. They are looking at papers.
+                4 有限互動能力者
+                Meeting. People with papers. They look serious.
+                3 極度有限的表達者
+                Meeting with papers. People are there.
+                2 極低表達能力者
+                Meeting. Not clear.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
+            },
+            {
+                "text": "Describe the picture in as much detail as you can\n根據圖片，詳細描述圖片中的人物、場景及所發生的事。",
+                "image_url": f"{URL}/templates/1/cover2-2.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                This image shows a busy train station with lots of people waiting for trains. The station is modern, with tall ceilings and clear signs. A train is arriving, and everyone looks ready to travel. The scene captures the excitement of commuting in a big city.
+                9 優良表達者
+                The picture depicts a crowded train station. There are many people waiting for trains, and a train is at the platform. The place looks lively and organized.
+                8 良好表達者
+                This image features a train station with many passengers. A train is arriving, and it looks busy with people moving around.
+                7 基礎表達者
+                The picture shows a train station. There are lots of people, and a train is there.
+                6 有限表達者
+                There are people at a train station. A train is there.
+                5 簡單表達者
+                Train station with many people.
+                4 有限互動能力者
+                Train station. People are waiting.
+                3 極度有限的表達者
+                Train station. I see many people.
+                2 極低表達能力者
+                Train.
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """,
+            },
+        ],
+        [
+            {
+                "text": "What activities do you think are taking place in the warehouse?\n - 你認為倉庫中正在進行的活動是什麼？",
+                "image_url": f"{URL}/templates/1/cover3-1.jpg",
+                "assessment_standard": """
+                10優異表達者
+                The warehouse is likely bustling with activity. Workers are probably unloading shipments, checking inventory levels, and organizing products on shelves. Additionally, items might be prepared for delivery, ensuring that everything is correctly labeled and stored. Quality control checks are likely conducted to maintain standards.
+                9優良表達者
+                Various tasks are likely taking place in the warehouse. Employees may be unloading boxes, organizing products, and packing orders for shipment. Inventory checks might also be happening to keep track of stock levels.
+                8良好表達者
+                People in the warehouse seem to be involved in packing and sorting items. They may also be checking what products are available and getting them ready to send out.
+                7基礎表達者
+                Activities in the warehouse probably include packing boxes and organizing items. Inventory checks may also take place to see what is in stock.
+                6有限表達者
+                Workers seem to be packing and moving items around in the warehouse. They might be checking some products, but it’s not clear.
+                5簡單表達者
+                There are workers in the warehouse packing items and moving boxes. It looks busy, but not much detail is available.
+                4有限互動能力者
+                It seems like people are working in the warehouse. They might be packing and moving items, but it’s difficult to know exactly what they are doing.
+                3極度有限的表達者
+                Some workers are busy moving things in the warehouse. Packing might be happening, but it’s not very clear.
+                2極低表達能力者
+                There are people working. Boxes are being moved around, and maybe some packing is happening.
+                1無表達能力者
+                (No response or attempt to answer.)
+                """
+            },
+            {
+                "text": "What considerations should hikers keep in mind to ensure a safe and enjoyable outing\n - 登山者應該考慮哪些因素，以確保安全且愉快的郊遊？",
+                "image_url": f"{URL}/templates/1/cover3-2.jpg",
+                "assessment_standard": """
+                10 優異表達者
+                Hikers should prioritize safety by planning their routes carefully and ensuring they are well-prepared for theterrain. This includes checking weather conditions and dressing appropriately for the climate. Carrying
+                essential gear, such as a first aid kit, sufficient water, and nutritious snacks, is crucial. Additionally, informing someone about their hiking plans and estimated return time can enhance safety. Practicing Leave No
+                Trace principles also helps preserve the environment for future hikers.
+                9 優良表達者
+                To ensure a safe and enjoyable hiking experience, it's important for hikers to choose suitable trails that match their skill levels. They should check the weather
+                forecast and pack necessary items like water, snacks, and a map. Wearing appropriate footwear and clothing can also prevent injuries and discomfort. It’s a good idea to hike with a friend and let someone know the planned route and return time for added safety.
+                8 良好表達者
+                Hikers should consider planning their hike based on the trail difficulty and checking the weather. Bringing enough water and snacks is important to stay energized.
+                Wearing the right shoes and clothes can help prevent injuries, and it’s better to hike with others for safety.
+                7 基礎表達者
+                When hiking, it’s good to pick a trail that is not too hard. Checking the weather and bringing water and snacks can make the hike better. Wearing proper shoes is also important for safety.
+                6 有限表達者
+                Hikers need to think about the trail they choose and check the weather. Bringing water and snacks is important to stay safe.
+                5 簡單表達者
+                Hiking safely means picking the right trail and bringing enough water. Wearing good shoes helps too.
+                4 有限互動能力者
+                Hikers should remember to check the weather and bring supplies. It seems like knowing the trail is important for safety.
+                3 極度有限的表達者
+                Safety is important when hiking, but it’s hard to say what to do exactly.
+                2 極低表達能力者
+                Um... just be careful? Bring water?
+                1 無表達能力者
+                (No response or attempt to answer.)
+                """
+            }
+        ],
+        [
+            {
+                "text": "What time does Bandaid Band perform?\n - Bandaid Band 是在哪一個時間表演?",
+                "image_url": f"{URL}/templates/1/cover4-1.jpg",
+                "max_score": 4,
+                "assessment_standard": """
+                為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
+                3分：鼓勵學生繼續保持正確性和流利度。
+                2分：指導學生在句子結構或細節準確性上進行改善。
+                1分：提供更基礎的建議，幫助他們增強語法和句子結構的理解。
+                
+                4 回答完整且正確
+                • 使用完整句子，且回答內容完全正確，無語法或內容錯誤。
+                • 例子：學生完整且正確地表達所要求的資訊，語法與用詞準確。
+                3 回答部分正確或語法不完整，但仍表達主要資訊
+                • 情況1：回答內容大部分正確，但有些小錯誤或不完整，影響回答的全面性。
+                • 情況2：回答為完整句子，但內容部分不正確。
+                • 例子：學生表達了主要資訊，但在細節或語法上 存在小錯誤。
+                2 回答不完整且不正確
+                • 回答內容部分不正確且未使用完整句子，或只表達非常有限的資訊。
+                • 例子：學生的回答僅包含少量正確資訊，且句子不完整或語法錯誤嚴重。
+                1 (No response or attempt to answer.)
+                
+                4:
+                - Bandaid Band performs at 1:00 PM on Stage B.
+                - Bandaid Band is scheduled to play at 1:00 PM.
+                - Bandaid Band plays at 1:00 PM.
+                - Bandaid Band is on at 1 PM.
+                
+                3:
+                - Bandaid Band performs at 1.
+                - Bandaid Band is at 1 PM.
+                - Bandaid Band plays at 1.
+
+                2:
+                - Bandaid Band at 1.
+                - 1 PM.
+                
+                1: (No response.)
+                """
+            },
+            {
+                "text": "How much does the Beach Getaway to Cancun cost?\n - Cancun 海灘度假的費用是多少？",
+                "image_url": f"{URL}/templates/1/cover4-2.jpg",
+                "max_score": 4,
+                "assessment_standard": """
+                為使評分標準更具指導性，可以根據每個分數提供具體的反饋。例如：
+                3分：鼓勵學生繼續保持正確性和流利度。
+                2分：指導學生在句子結構或細節準確性上進行改善。
+                1分：提供更基礎的建議，幫助他們增強語法和句子結構的理解。
+                
+                4 回答完整且正確
+                • 使用完整句子，且回答內容完全正確，無語法或內容錯誤。
+                • 例子：學生完整且正確地表達所要求的資訊，語法與用詞準確。
+                3 回答部分正確或語法不完整，但仍表達主要資訊
+                • 情況1：回答內容大部分正確，但有些小錯誤或不完整，影響回答的全面性。
+                • 情況2：回答為完整句子，但內容部分不正確。
+                • 例子：學生表達了主要資訊，但在細節或語法上 存在小錯誤。
+                2 回答不完整且不正確
+                • 回答內容部分不正確且未使用完整句子，或只表達非常有限的資訊。
+                • 例子：學生的回答僅包含少量正確資訊，且句子不完整或語法錯誤嚴重。
+                1 (No response or attempt to answer.)
+                
+                4:
+                - The 7-day trip to Cancun costs $999.
+                - The price for the 7-day Cancun trip is $999.
+                - The 7-day Cancun trip is priced at $999.
+                - A 7-day trip to Cancun costs $999.
+                3:
+                - It is $999 for Cancun.
+                - The Cancun trip is $999.
+                - Cancun is $999.
+                2:
+                - $999.
+                - Cancun $999.
+                1: (No response.)
+                """
+            },
+        ],
+        [
+            {
+                "text": "Do you agree that people should limit their use of social media to improve their mental health?\n - 你認為人們是否需限制社交媒體使用時間，以改善心裡健康？",
+                "assessment_standard": """
+                10 優異表達者
+                "Yes, I strongly agree that limiting social media use can significantly benefit mental health. Studies show that excessive social media use can lead to issues such as anxiety, depression, and low self-esteem, particularly among young people. Constant comparison with others' seemingly perfect lives creates unrealistic expectations and promotes negative self-image. By reducing time on social platforms, individuals can shift focus to real-life interactions, fostering genuine connections and reducing anxiety. Moreover, decreased social media use allows for increased productivity and personal development, as people can invest time in hobbies, exercise, or mindfulness practices, which all contribute positively to mental health."
+                9 優良表達者 
+                "Yes, I agree that people should limit social media usage for better mental health. Many studies highlight that too much time on social media can lead to issues like anxiety and feeling inadequate. Social media often shows only the highlights of people’s lives, which makes others feel they are not doing enough. By cutting down on social media, people can focus more on their personal lives and relationships, reducing stress and negativity. Also, using less social media can increase time for other meaningful activities, such as spending time with friends, exercising, or learning new skills."
+                8 良好表達者 
+                "Yes, I think people should try to reduce their use of social media for mental health. Many people feel anxious or stressed after looking at social media because they compare themselves to others. When people spend too much time online, it can make them feel bad about themselves. By spending less time on social media, they might feel happier and can focus on things they enjoy in real life. Also, it could give people more time to be with friends or family, which is also good for mental health."
+                7 基礎表達者
+                "I think it is a good idea for people to use less social media to feel better. Social media can sometimes make people feel bad because they compare their lives to others. If they don’t use it so much, they might feel happier and focus on other things like family or hobbies. Also, they can spend more time outside or with friends, which is good for health."
+                6 有限表達者 
+                "I think people should use social media less. It makes people feel bad because they look at other people’s lives. When they don’t use it so much, they can feel better. They can spend more time with family or do fun things."
+                5 簡單表達者
+                "People should not use too much social media. It is not good. They feel sad because they look at others. If they use less, they can be happier and do other things."
+                4 有限互動能力者
+                "Social media is not good for people. They feel bad. Less is better."
+                3 極度有限的表達者 
+                "Social media… not good. People feel sad. Less… better."
+                2 極低表達能力者 
+                "Social media… not… good. People… sad."
+                1 無表達能力者 
+                (No response or attempt to answer.)
+                """
+            },
+            {
+                "text": "Do you agree that animal testing should be banned in all cases?\n - 你是否認為動物實驗應該被全面禁止？",
+                "assessment_standard": """
+                10 優異表達者
+                "Yes, I believe animal testing should be banned in all cases. While it has contributed to scientific and medical advancements, the harm and suffering inflicted on animals is unacceptable. With the development of alternative methods, such as computer modeling and cell cultures, we now have other ways to test the safety and effectiveness of products. Banning animal testing would encourage innovation in developing cruelty-free methods, ultimately leading to a more humane approach in science and technology. Although some argue that animal testing is necessary for complex studies, I believe modern technology can replace these practices."
+                9 優良表達者
+                "Yes, I think animal testing should be banned because it causes unnecessary suffering. Many new technologies, like computer simulations, offer alternative ways to test products safely. If we stop animal testing, it will push scientists to find more humane methods. While some believe animal testing is still needed, I think we can find other solutions."
+                8 良好表達者
+                "I agree that animal testing should be banned. Testing causes animals pain, and now we have other ways to do research, like using computers. If we stop testing on animals, we can find kinder ways to do research. Some people think it’s needed, but I think there are other options."
+                7 基礎表達者
+                "I think animal testing should be banned. Testing causes animals to suffer, which isn’t fair. We have other options for testing, like using computers, so animal testing isn’t needed anymore."
+                6 有限表達者
+                "Yes, I think animal testing should stop because it hurts animals. We can use other ways to test products now, like computer models, which are better."
+                5 簡單表達者
+                "Animal testing is bad because it hurts animals. We can use other methods instead of testing on animals."
+                4 有限互動能力者
+                "Animal testing is not good because it causes pain. We should use different ways to test things."
+                3 極度有限的表達者
+                "Animal testing is bad. We should find other ways."
+                2極低表達能力者
+                "Animal testing is bad. Use other ways."
+                1 無表達能力者 
+                (No response or attempt to answer.)
+                """
+            },
+        ],
+    ],
 }
 
 # 系統評估提示語，指導如何進行回答分析
