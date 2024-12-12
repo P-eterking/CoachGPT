@@ -175,7 +175,7 @@ qs = {
         ],
         [
             {
-                "text": "Can you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\nCan you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
                 "image_url": f"{URL}/templates/0/cover2-1.jpg",
                 "assessment_standard": """
                     10	The team might be discussing the causes of the company’s declining quarterly performance, and analyzing financial trends such as reduced sales or increased costs. They could be focusing on identifying issues and proposing solutions to improve performance, like reallocating budgets or revising strategies.
@@ -196,7 +196,7 @@ qs = {
                 ]]
             },
             {
-                "text": "What kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\nWhat kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
                 "image_url": f"{URL}/templates/0/cover2-1.jpg",
                 "assessment_standard": """
                     10	The negotiation might involve deciding how to reallocate budgets to focus on profitable areas or agreeing on adjustments to marketing and operational strategies. Team members may also discuss setting realistic performance goals and timelines to address the quarterly decline effectively.
@@ -217,7 +217,7 @@ qs = {
                 ]]
             },
             {
-                "text": "What concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對他們的計劃有哪些擔憂，這些擔憂可以在機場如何解決？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\nWhat concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對他們的計劃有哪些擔憂，這些擔憂可以在機場如何解決？",
                 "image_url": f'{URL}/templates/0/cover2-3.jpg',
                 'assessment_standard': """
                     10	Travelers may be concerned about flight delays, cancellations, lost luggage, or unexpected travel restrictions. These concerns can be addressed by utilizing airport services such as real-time updates on flight boards, luggage assistance desks, and travel insurance counters for last-minute coverage.
@@ -238,7 +238,7 @@ qs = {
                 ]]
             },
             {
-                "text": "How might passengers be preparing for their flights at the check-in counters?\n- 旅客可能會如何在登機櫃檯為航班做準備？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\now might passengers be preparing for their flights at the check-in counters?\n- 旅客可能會如何在登機櫃檯為航班做準備？",
                 "image_url": f'{URL}/templates/0/cover2-3.jpg',
                 'assessment_standard': """
                     10	Passengers might confirm their travel documents, check in their luggage, select seats, and verify any special requests, such as meal preferences or additional assistance. They may also inquire about flight updates or connecting flights.
@@ -259,7 +259,7 @@ qs = {
                 ]]
             },
             {
-                "text": "What information might the guests be providing to the front desk staff during check-in?\n- 客人在辦理入住手續時可能向前台人員提供什麼資訊？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\nWhat information might the guests be providing to the front desk staff during check-in?\n- 客人在辦理入住手續時可能向前台人員提供什麼資訊？",
                 "image_url": f"{URL}/templates/0/cover2-5.jpg",
                 "assessment_standard": """
                     10	The guests might be providing their reservation details, valid IDs, and payment information. They may also confirm the duration of their stay, specify room preferences, and mention any special needs, such as early check-in or accessibility requirements.
@@ -280,7 +280,7 @@ qs = {
                 ]]
             },
             {
-                "text": "What additional services might guests request during their stay?\n- 客人在住宿期間可能會要求哪些額外服務？",
+                "text": "請先閱讀右方情境說明再答題 Read the scenario instructions on the right before answering.\nWhat additional services might guests request during their stay?\n- 客人在住宿期間可能會要求哪些額外服務？",
                 "image_url": f"{URL}/templates/0/cover2-5.jpg",
                 "assessment_standard": """
                     10	Guests might request room service, access to the gym or spa, laundry services, or assistance with booking local tours and transportation. They may also inquire about late check-out or upgrading their room.
@@ -428,25 +428,25 @@ qs = {
                 "text": "What activities do you think are taking place in the warehouse?\n - 你認為倉庫中正在進行的活動是什麼？",
                 "image_url": f"{URL}/templates/1/cover3-1.jpg",
                 "assessment_standard": """
-                10優異表達者
+                10 優異表達者
                 The warehouse is likely bustling with activity. Workers are probably unloading shipments, checking inventory levels, and organizing products on shelves. Additionally, items might be prepared for delivery, ensuring that everything is correctly labeled and stored. Quality control checks are likely conducted to maintain standards.
-                9優良表達者
+                9 優良表達者
                 Various tasks are likely taking place in the warehouse. Employees may be unloading boxes, organizing products, and packing orders for shipment. Inventory checks might also be happening to keep track of stock levels.
-                8良好表達者
+                8 良好表達者
                 People in the warehouse seem to be involved in packing and sorting items. They may also be checking what products are available and getting them ready to send out.
-                7基礎表達者
+                7 基礎表達者
                 Activities in the warehouse probably include packing boxes and organizing items. Inventory checks may also take place to see what is in stock.
-                6有限表達者
+                6 有限表達者
                 Workers seem to be packing and moving items around in the warehouse. They might be checking some products, but it’s not clear.
-                5簡單表達者
+                5 簡單表達者
                 There are workers in the warehouse packing items and moving boxes. It looks busy, but not much detail is available.
-                4有限互動能力者
+                4 有限互動能力者
                 It seems like people are working in the warehouse. They might be packing and moving items, but it’s difficult to know exactly what they are doing.
-                3極度有限的表達者
+                3 極度有限的表達者
                 Some workers are busy moving things in the warehouse. Packing might be happening, but it’s not very clear.
-                2極低表達能力者
+                2 極低表達能力者
                 There are people working. Boxes are being moved around, and maybe some packing is happening.
-                1無表達能力者
+                1 無表達能力者
                 (No response or attempt to answer.)
                 """
             },
