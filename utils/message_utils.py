@@ -376,7 +376,6 @@ async def question_message(unit, sub):
     )
     
 async def carousel_message(user_id, unit):
-    print(question_manager.get_category(get_category()))
     if len(question_manager.get_category(get_category())) < unit:
         return None
     cols = []
