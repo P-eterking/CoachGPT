@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List, Optional
 from pydantic import BaseModel, Field
 
 class SpeechAssessment(BaseModel):
@@ -21,3 +21,9 @@ class User(BaseModel):
     
     def to_dict(self) -> dict:
         return self.model_dump()
+
+class Question(BaseModel):
+    text: Annotated[str, '問題文本']  # 問題文本
+    assessment_standard: Annotated[str, '評量標準']   # 評量標準
+    image_url: Optional[Annotated[str, '圖片網址']] = Field(default=None) # 圖片網址
+    extra_info: Optional[Annotated[List[List[str]], '額外資訊']] = Field(default=None) # 額外資訊

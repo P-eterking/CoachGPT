@@ -1,9 +1,9 @@
 from calendar import c
-from config import line_bot_api, line_bot_api_blob, client
+from config import line_bot_api, line_bot_api_blob, client, question_manager
 import asyncio
 from utils.message_utils import (
     create_rich_menu, data_message, info_hint_message, result_message, send_message, send_text_message,
-    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message, get_question
+    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
@@ -67,6 +67,9 @@ async def handle_text_message(event):
         await create_rich_menu()
         await save_config()
         await send_text_message(event, f"已設定測驗類別為{category}！\nCategory set to {category}!")
+    elif message.startswith('/更新題目'):
+        question_manager.load_questions()
+        await send_text_message(event, "已更新題目！\nQuestions updated!")
 
 user_data_enter = {}
 
@@ -134,7 +137,7 @@ async def handle_audio_message(event):
         # 獲取使用者的練習單元和題目
         unit = user_state[user_id]['unit']
         sub = user_state[user_id]['sub']
-        question = get_question(unit, sub)
+        question = question_manager.get_question(get_category(), unit, sub)
         
         try:
             while result.status == 'processing':
