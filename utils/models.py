@@ -27,3 +27,4 @@ class Question(BaseModel):
     assessment_standard: Optional[Annotated[str, '評量標準']] = Field(default=None)   # 評量標準
     image_url: Optional[Annotated[str, '圖片網址']] = Field(default=None) # 圖片網址
     extra_info: Optional[Annotated[List[List[str]], '額外資訊']] = Field(default=None) # 額外資訊
+    max_score: Optional[Annotated[int, '最高分']] = Field(default=None) # 最高分

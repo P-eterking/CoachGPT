@@ -160,6 +160,7 @@ async def send_text_message(event, text):
     )
 
 async def result_message(result: SpeechAssessment, unit, sub):
+    q = question_manager.get_question(get_category(),unit,sub)
     return FlexMessage(
         altText=f'{unit+1}-{sub+1} 口語練習結果',
         quickReply=QuickReply(items=[
@@ -187,7 +188,7 @@ async def result_message(result: SpeechAssessment, unit, sub):
                                 margin='md',
                                 contents=[
                                     FlexText(
-                                        text=f'評分 Score: {result.score}/{question_manager.get_question(get_category(),unit,sub).get("max_score",10)}',
+                                        text=f'評分 Score: {result.score}/{q.max_score if q.max_score else 10}',
                                         color='#5b5b5b',
                                         size='xl',
                                         wrap=True,
