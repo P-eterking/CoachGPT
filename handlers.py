@@ -51,7 +51,7 @@ async def handle_text_message(event):
             await send_text_message(event, "已退出測驗模式！\nTest mode deactivated!")
         await save_config()
     elif message.startswith('/切換'):
-        if switch_answerable():
+        if not switch_answerable():
             await send_text_message(event, "已切換為不可回答模式！\nAnswerable mode deactivated!")
         else:
             await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
@@ -197,7 +197,7 @@ async def handle_audio_message(event):
                 },
                 {
                     "role": "user",
-                    "content": f"<question>{question['text']}</question>{"<standard>"+question['assessment_standard'].replace('\n','').strip()+"</standard>" if question.get('assessment_standard') else ""}<userAnswer>{text}</userAnswer>",
+                    "content": f"<question>{question.text}</question>{"<standard>"+question.assessment_standard.replace('\n','').strip()+"</standard>" if question.assessment_standard else ""}<userAnswer>{text}</userAnswer>",
                 }
             ],
         )
