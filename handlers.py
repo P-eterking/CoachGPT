@@ -158,12 +158,13 @@ async def handle_audio_message(event):
             f.seek(0)
             f.flush()
                 
-            # 使用 Whisper 進行音訊轉錄
             # transcript = await groq.audio.transcriptions.create(
             #     model="whisper-large-v3",
             #     file=(f.name,f.read()),
             #     language="en",
             # )
+            
+            # 使用 Whisper 進行音訊轉錄
             transcript = await client.audio.transcriptions.create(
                 model="whisper-1",
                 file=(f.name, f.read()),
@@ -183,7 +184,7 @@ async def handle_audio_message(event):
             await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
             print('No text found in audio')
             return
-         
+        
         # 使用 GPT 模型進行回應分析與評估
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Analytics Dashboard{% endblock %}
+
+{% block styles %}
+<style>
+    /* Dark Theme Styles */
+    body { 
+        background-color: #121212; 
+        color: #e0e0e0;
+    }
+    .card { 
+        background-color: #1e1e1e; 
+        color: #e0e0e0; 
+        transition: transform 0.2s; 
+        box-shadow: 0 4px 6px rgba(255,255,255,0.1); 
+    }
+    .card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 6px 8px rgba(255,255,255,0.15); 
+    }
+    .stat-card { 
+        border-radius: 15px; 
+        margin-bottom: 20px; 
+    }
+    .chart-container { 
+        background: #1e1e1e; 
+        padding: 20px; 
+        border-radius: 15px; 
+        box-shadow: 0 4px 6px rgba(255,255,255,0.1); 
+    }
+    .table { 
+        background-color: #1e1e1e; 
+        color: #e0e0e0; 
+        box-shadow: 0 4px 6px rgba(255,255,255,0.1); 
+        --bs-table-hover-color: #c2c2c2;
+    }
+
+    .table thead {
+        background-color: #333333;
+    }
+    .table tbody tr:nth-child(even) {
+        background-color: #2a2a2a;
+    }
+    .badge.bg-primary {
+        background-color: #3a86ff;
+    }
+    .badge.bg-success {
+        background-color: #28a745;
+    }
+
+    /* New Badge for Max Score */
+    .badge.bg-info {
+        background-color: #17a2b8; /* Define a new color for max_score badges */
+    }
+
+    /* Updated Detailed Analysis Section */
+    .detailed-analysis {
+        background-color: #1e1e1e; /* Dark background */
+        color: #e0e0e0; /* Light text */
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+    }
+    .detailed-analysis h3 {
+        color: #ffffff; /* Ensure the heading stands out */
+    }
+
+    /* New Latest History Section */
+    .latest-history {
+        background-color: #1e1e1e; /* Consistent dark background */
+        color: #e0e0e0; /* Light text */
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+        margin-top: 30px;
+    }
+    .latest-history h3 {
+        color: #ffffff; /* Standout heading */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="text-center mb-4">Learning Analytics Dashboard</h1>
+    
+    <div class="row g-4">
+        <!-- Summary Cards -->
+        <div class="col-12">
+            <div class="row">
+                {% for card in summary_cards %}
+                <div class="col-md-3 col-sm-6">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-{{ card.icon }} fa-2x text-primary mb-3"></i>
+                            <h5 class="card-title">{{ card.title }}</h5>
+                            <h3 class="card-text">{{ card.value }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="col-12 col-lg-8">
+            <div class="chart-container mb-4">
+                <h3>Average Scores by Unit</h3>
+                <canvas id="averageScoresChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Completion Rate by Unit</h3>
+                <canvas id="completionRateChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="col-12 col-lg-4">
+            <!-- Updated Detailed Analysis Container -->
+            <div class="detailed-analysis">
+                <h3>Detailed Analysis</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Unit</th>
+                                <th>Score</th>
+                                <th>Completed</th>
+                                <th>Max Score</th> <!-- New column header -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in category_analysis %}
+                                {% for unit in category.units %}
+                                <tr>
+                                    <td>Category {{ category.category }} - Unit {{ unit.unit }}</td>
+                                    <td><span class="badge bg-primary">{{ "%.2f"|format(unit.average_score) }}</span></td>
+                                    <td><span class="badge bg-success">{{ unit.users_completed }}</span></td>
+                                    <td><span class="badge bg-info">{{ "%.2f"|format(unit.max_score) }}</span></td> <!-- New cell for Max Score -->
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Latest 10 History Section -->
+            <div class="latest-history">
+                <h3>Latest 10 History</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th> <!-- Updated header -->
+                                <th>EX</th>     <!-- Updated header -->
+                                <th>Q</th> <!-- Updated header -->
+                                <th>Score</th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Class Time</th>
+                                <th>Timestamp</th> <!-- New column header -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for history in latest_histories %}
+                            <tr>
+                                <td>{{ history.category }}</td> <!-- Updated field -->
+                                <td>{{ history.unit }}</td>     <!-- Updated field -->
+                                <td>{{ history.question }}</td> <!-- Updated field -->
+                                <td><span class="badge bg-primary">{{ history.score }}</span></td>
+                                <td>{{ history.user_id }}</td>
+                                <td>{{ history.name }}</td>
+                                <td>{{ history.class_time }}</td>
+                                <td>{{ history.timestamp }}</td> <!-- New field -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- ...existing code... -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const analysisData = {{ analysis_data|tojson|safe }};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        createScoresChart(analysisData);
+        createCompletionChart(analysisData);
+
+        console.log(analysisData);
+    });
+
+    function createScoresChart(data) {
+        const ctx = document.getElementById('averageScoresChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Average Score',
+                    data: data.average_scores,
+                    backgroundColor: 'rgba(58, 134, 255, 0.6)', /* Updated for better contrast */
+                    borderColor: 'rgba(58, 134, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { 
+                        labels: { 
+                            color: '#e0e0e0' /* Light text for legends */
+                        },
+                        position: 'top' 
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#e0e0e0' } /* Light x-axis labels */
+                    },
+                    y: {
+                        ticks: { color: '#e0e0e0' } /* Light y-axis labels */
+                    }
+                }
+            }
+        });
+    }
+
+    function createCompletionChart(data) {
+        const ctx = document.getElementById('completionRateChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Completion Rate (%)',
+                    data: data.completion_rates,
+                    fill: true,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { 
+                        labels: { 
+                            color: '#e0e0e0' /* Light text for legends */
+                        },
+                        position: 'top' 
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#e0e0e0' } /* Light x-axis labels */
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { color: '#e0e0e0' } /* Light y-axis labels */
+                    },
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from routes import callback
+from routes import callback, index
 from config import question_manager
 from utils.file_utils import load_user_data, save_all, save_config, save_user_data, user_data_task, load_config
 from utils.message_utils import create_rich_menu
@@ -25,6 +25,7 @@ app.post("/callback")(callback)
 app.get("/saveall")(save_all)
 app.get("/qreload")(question_manager.load_questions)
 app.mount('/templates', StaticFiles(directory='templates'))
+app.get("/")(index)
 
 @app.middleware("http")
 async def add_cache_headers(request, call_next):
