@@ -1,9 +1,8 @@
-from calendar import c
 from config import line_bot_api, line_bot_api_blob, client, question_manager
 import asyncio
 from utils.message_utils import (
-    create_rich_menu, data_message, info_hint_message, result_message, send_message, send_text_message,
-    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message
+    create_rich_menu, info_hint_message, result_message, send_message, send_text_message,
+    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message, progress_message
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
@@ -38,6 +37,8 @@ async def handle_text_message(event):
         await send_message(event, await carousel_message(user_id,2))
     elif message.startswith('口語練習三'):
         await send_message(event, await carousel_message(user_id,3))
+    elif message.startswith('答題狀況'):
+        await send_message(event, await progress_message(user_id))
     elif message.startswith('/儲存'):
         await save_user_data()
         await send_text_message(event, "儲存成功！\nSaved!")
@@ -56,8 +57,6 @@ async def handle_text_message(event):
         else:
             await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
         await save_config()
-    elif message.startswith('/數據'):
-        await send_message(event, await data_message())
     elif message.startswith('/測驗類別'):
         if ' ' not in message:
             await send_text_message(event, "輸入格式錯誤！記得要加空格！\nFormat error! Don't forget the space!")
@@ -272,4 +271,5 @@ async def handle_postback(event):
         result = getHistory(user_id, f'{get_category()}-{unit}-{sub}')
         if not result:
             await send_text_message(event, '查無紀錄！\nNo history found!')
+            return
         await send_message(event, await result_message(result, unit, sub))

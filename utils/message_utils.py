@@ -11,8 +11,7 @@ from utils.models import SpeechAssessment
 import json
 from PIL import Image
 from utils.file_utils import (
-    get_test_mode, getData, get_category, getHistory, get_rich_menu_id, set_rich_menu_id, save_config,
-    get_category
+    get_test_mode, get_category, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, get_category
 )
 # 設定主網址和分類變數
 URL = f'https://{DOMAIN}'
@@ -137,6 +136,15 @@ SYSTEM_INSTRUCTION = f"""
     """
     
 async def send_message(event, msg):
+    """
+    發送訊息給使用者。
+    
+    Sends a message to the user.
+
+    Args:
+        event: 事件物件，包含回覆token。
+        msg: 要發送的訊息，可以是單一訊息或訊息列表。
+    """
     if msg is None:
         return
     if not isinstance(msg, list):
@@ -149,20 +157,88 @@ async def send_message(event, msg):
     )
     
 async def text_message(text):
+    """
+    建立文字訊息物件。
+    
+    Creates a text message object.
+
+    Args:
+        text: 要發送的文字內容。
+    
+    Returns:
+        TextMessage: 文字訊息物件。
+    """
     return TextMessage(text=text)
 
 async def send_text_message(event, text):
+    """
+    發送文字訊息給使用者。
+    
+    Sends a text message to the user.
+
+    Args:
+        event: 事件物件，包含回覆token。
+        text: 要發送的文字內容。
+    """
     await line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
             messages=[TextMessage(text=text)]
         )
     )
+    
+async def progress_message(user_id):
+    """
+    生成使用者未回答問題的進度訊息。
+    
+    Generates a progress message for unanswered questions for the user.
 
+    Args:
+        user_id: 使用者ID。
+    
+    Returns:
+        TextMessage: 進度訊息物件。
+    """
+    questions = question_manager.questions  # Assume this function retrieves all categories
+    progress : list[str] = []
+    total = 0
+    
+    for category, units in enumerate(questions):
+        if category == 2:
+            break
+        for unit, sub in enumerate(units):
+            for num, _ in enumerate(sub):
+                total += 1
+                if getHistory(user_id, f'{category}-{unit}-{num}'):
+                    continue
+                progress.append(f'{category}-{unit}-{num}')
+    
+    # Create a formatted message
+    message = f"您尚未回答 Unanswered Questions ({total - len(progress)}/{total}):\n"
+    for q in progress:
+        category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
+        message += f"\n{'實驗 Intervention' if category == 0 else '前測 Pre-test'} - Q{unit+1}-{sub+1}"
+    
+    return TextMessage(text=message)
+    
+    
 async def result_message(result: SpeechAssessment, unit, sub):
-    q = question_manager.get_question(get_category(),unit,sub)
+    """
+    生成口語評估結果訊息。
+    
+    Generates a speech assessment result message.
+
+    Args:
+        result: 口語評估結果物件。
+        unit: 單元編號。
+        sub: 子單元編號。
+    
+    Returns:
+        FlexMessage: 口語評估結果訊息物件。
+    """
+    q = question_manager.get_question(get_category(), unit, sub)
     return FlexMessage(
-        altText=f'{unit+1}-{sub+1} 口語練習結果',
+        altText=f'{unit+1}-{sub+1} 口語練習結果 Result',
         quickReply=QuickReply(items=[
             QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&unit={unit}&sub={sub}')),
             QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(question_manager.get_unit(get_category(),unit))-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
@@ -285,6 +361,18 @@ async def result_message(result: SpeechAssessment, unit, sub):
     )
 
 async def question_message(unit, sub):
+    """
+    生成問題訊息。
+    
+    Generates a question message.
+
+    Args:
+        unit: 單元編號。
+        sub: 子單元編號。
+    
+    Returns:
+        FlexMessage: 問題訊息物件。
+    """
     messages = []
     question = question_manager.get_question(get_category(), unit, sub)
     contents = [
@@ -377,6 +465,18 @@ async def question_message(unit, sub):
     )
     
 async def carousel_message(user_id, unit):
+    """
+    生成單元導覽訊息。
+    
+    Generates a unit navigation message.
+
+    Args:
+        user_id: 使用者ID。
+        unit: 單元編號。
+    
+    Returns:
+        FlexMessage: 單元導覽訊息物件。
+    """
     if len(question_manager.get_category(get_category())) < unit:
         return None
     cols = []
@@ -461,6 +561,17 @@ ENG_HINT =[
 ]
 
 async def info_hint_message(index: int):
+    """
+    生成資料綁定提示訊息。
+    
+    Generates an information binding hint message.
+
+    Args:
+        index: 提示訊息的索引。
+    
+    Returns:
+        FlexMessage: 資料綁定提示訊息物件。
+    """
     return FlexMessage(
         altText='資料綁定提示',
         contents=FlexBubble(
@@ -483,57 +594,15 @@ async def info_hint_message(index: int):
         )
     )
 
-async def data_message():
-    user_data = getData()
-
-    user_count = len(user_data)
-    total_history_score = 0
-    total_history_count = 0
-    max_score = float('-inf')
-    min_score = float('inf')
-    users_with_history = 0
-    users_with_all = 0
-
-    total_questions = sum([len(i) for i in question_manager.get_category(get_category())])
-    
-    for user in user_data.values():
-        user_history = [key.startswith(f'{get_category()}-') for key in user.history.keys()]
-        if user.history and len(user_history) > 0:
-            users_with_history += 1
-            if len(user_history) >= total_questions:
-                users_with_all += 1
-        for str, assessment in user.history.items():
-            if not str.startswith(f'{get_category()}-'):
-                continue
-            total_history_score += assessment.score
-            total_history_count += 1
-            if assessment.score > max_score:
-                max_score = assessment.score
-            if assessment.score < min_score:
-                min_score = assessment.score
-
-    average_history_score = total_history_score / total_history_count if total_history_count > 0 else 0
-    average_history_per_user = total_history_count / users_with_history if users_with_history > 0 else 0
-
-    return FlexMessage(
-        altText="User data analysis",
-        contents=FlexBubble(
-            size='mega',
-            body=FlexBox(
-                layout='vertical',
-                spacing='lg',
-                contents=[
-                    FlexText(
-                        text=f"用戶總數: {user_count}\n有歷史紀錄的用戶數: {users_with_history}\n答完題目的用戶數: {users_with_all}\n每個用戶平均歷史紀錄數: {average_history_per_user:.2f}\n歷史紀錄平均分數: {average_history_score:.2f}\n歷史紀錄最高分: {max_score}\n歷史紀錄最低分: {min_score}",
-                        wrap=True,
-                        size='md',
-                     ),
-                ],
-            ),
-        )
-    )
-
 async def handle_rich_menu(user_id):
+    """
+    處理使用者的Rich Menu。
+    
+    Handles the user's rich menu.
+
+    Args:
+        user_id: 使用者ID。
+    """
     rich_menu_id = get_rich_menu_id(get_category())
     try:
         oldId = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
@@ -543,6 +612,11 @@ async def handle_rich_menu(user_id):
         await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
 
 async def create_rich_menu():
+    """
+    創建Rich Menu。
+    
+    Creates a rich menu.
+    """
     rich_menu_id = get_rich_menu_id(get_category())
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     if not rich_menu_id:
