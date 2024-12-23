@@ -270,6 +270,6 @@ async def handle_postback(event):
         sub = int(vars.get('sub', 0))
         result = getHistory(user_id, f'{get_category()}-{unit}-{sub}')
         if not result:
-            await send_text_message(event, '查無紀錄！\nNo history found!')
+            await send_text_message(event, f'Q{unit+1}-{sub+1} 查無紀錄！\nNo history found in Q{unit+1}-{sub+1}!')
             return
         await send_message(event, await result_message(result, unit, sub))
