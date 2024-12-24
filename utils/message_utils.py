@@ -217,12 +217,12 @@ async def progress_message(user_id):
     message = f"您尚未回答 Unanswered Questions ({total - len(progress)}/{total}):\n"
     for q in progress:
         category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
-        message += f"\n{'實驗 Intervention' if category == 0 else '前測 Pre-test'} - Q{unit+1}-{sub+1}"
+        message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測'} - Q{unit+1}-{sub+1}"
     
     return TextMessage(text=message)
     
     
-async def result_message(result: SpeechAssessment, unit, sub):
+async def result_message(result: SpeechAssessment, category: int, unit: int, sub: int):
     """
     生成口語評估結果訊息。
     
@@ -236,14 +236,9 @@ async def result_message(result: SpeechAssessment, unit, sub):
     Returns:
         FlexMessage: 口語評估結果訊息物件。
     """
-    q = question_manager.get_question(get_category(), unit, sub)
-    return FlexMessage(
+    q = question_manager.get_question(category, unit, sub)
+    msg = FlexMessage(
         altText=f'{unit+1}-{sub+1} 口語練習結果 Result',
-        quickReply=QuickReply(items=[
-            QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&unit={unit}&sub={sub}')),
-            QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(question_manager.get_unit(get_category(),unit))-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
-            QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
-        ]),
         contents=FlexCarousel(
             contents=[
                 FlexBubble(
@@ -359,6 +354,13 @@ async def result_message(result: SpeechAssessment, unit, sub):
             ]
         )
     )
+    if category is get_category():
+        msg.quick_reply = QuickReply(items=[
+            QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&unit={unit}&sub={sub}')),
+            QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(question_manager.get_unit(category,unit))-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
+            QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
+        ])
+    return msg
 
 async def question_message(unit, sub):
     """
@@ -477,10 +479,11 @@ async def carousel_message(user_id, unit):
     Returns:
         FlexMessage: 單元導覽訊息物件。
     """
-    if len(question_manager.get_category(get_category())) < unit:
+    category = get_category()
+    if len(question_manager.get_category(category)) < unit:
         return None
     cols = []
-    for sub,j in enumerate(question_manager.get_unit(get_category(),unit-1)):
+    for sub,j in enumerate(question_manager.get_unit(category,unit-1)):
         body = FlexBox(
             layout='vertical',
             spacing='lg',
@@ -502,12 +505,12 @@ async def carousel_message(user_id, unit):
                 ),
             ]
         )
-        if getHistory(user_id, f'{get_category()}-{unit-1}-{sub}'):
+        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
             body.contents.append(
                 FlexButton(
                     action=PostbackAction(
                         label='查看結果 Result',
-                        data=f'action=result&unit={unit-1}&sub={sub}'
+                        data=f'action=result&category={category}&unit={unit-1}&sub={sub}'
                     ),
                     height='sm',
                     style='secondary',
@@ -515,14 +518,14 @@ async def carousel_message(user_id, unit):
             )
         cols.append(FlexBubble(
             hero=FlexImage(
-                url=f'{URL}/templates/{get_category()}/cover{unit}-{sub+1}.jpg',
+                url=f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg',
                 size='full',
                 aspect_ratio='20:13',
                 aspect_mode='cover',
             ),
             body=body
         ))
-    if len(question_manager.get_category(get_category())) > unit:
+    if len(question_manager.get_category(category)) > unit:
         cols.append(FlexBubble(
             body=FlexBox(
                 contents=[

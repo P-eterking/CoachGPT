@@ -1,3 +1,4 @@
+from httpx import get
 from config import line_bot_api, line_bot_api_blob, client, question_manager
 import asyncio
 from utils.message_utils import (
@@ -132,11 +133,12 @@ async def handle_audio_message(event):
         # 取得音訊訊息內容並等待處理完成
         result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
         text = None
+        category = get_category()
         
         # 獲取使用者的練習單元和題目
         unit = user_state[user_id]['unit']
         sub = user_state[user_id]['sub']
-        question = question_manager.get_question(get_category(), unit, sub)
+        question = question_manager.get_question(category, unit, sub)
         
         try:
             while result.status == 'processing':
@@ -228,10 +230,10 @@ async def handle_audio_message(event):
         result.transcript = text
         result.timestamp = time.time()
         
-        updateHistory(user_id, f'{get_category()}-{unit}-{sub}', result)
+        updateHistory(user_id, f'{category}-{unit}-{sub}', result)
         
         # 發送評估結果給使用者
-        await send_message(event, await result_message(result, unit, sub))
+        await send_message(event, await result_message(result, category, unit, sub))
     except Exception as e:
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
         print(e)
@@ -266,10 +268,11 @@ async def handle_postback(event):
     elif action == 'result':
         if get_test_mode():
             return
+        category = int(vars.get('category', get_category()))
         unit = int(vars.get('unit', 0))
         sub = int(vars.get('sub', 0))
-        result = getHistory(user_id, f'{get_category()}-{unit}-{sub}')
+        result = getHistory(user_id, f'{category}-{unit}-{sub}')
         if not result:
             await send_text_message(event, f'Q{unit+1}-{sub+1} 查無紀錄！\nNo history found in Q{unit+1}-{sub+1}!')
             return
-        await send_message(event, await result_message(result, unit, sub))
+        await send_message(event, await result_message(result, category, unit, sub))
