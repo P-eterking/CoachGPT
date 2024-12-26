@@ -1,3 +1,4 @@
+from typing import Text
 from config import line_bot_api, line_bot_api_blob, DOMAIN, question_manager
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
@@ -212,6 +213,9 @@ async def progress_message(user_id):
                 if getHistory(user_id, f'{category}-{unit}-{num}'):
                     continue
                 progress.append(f'{category}-{unit}-{num}')
+                
+    if len(progress) == total:
+        return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
     
     # Create a formatted message
     message = f"您尚未回答 Questions Unanswered ({total - len(progress)}):\n"
