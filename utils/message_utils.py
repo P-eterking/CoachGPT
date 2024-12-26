@@ -129,7 +129,7 @@ SYSTEM_INSTRUCTION = f"""
         你需要以4個步驟執行任務，Think step by step:
         1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
         2. 根據提供之評分標準，為學生的口說回答評分(It's okay to give out a full marks)。
-        3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文與英文回傳。
+        3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文(zh-TW)與英文(en-US)回傳。
         4. 依照學生回答文本，延伸或改進其回答，以英文回覆。
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
@@ -214,7 +214,7 @@ async def progress_message(user_id):
                 progress.append(f'{category}-{unit}-{num}')
     
     # Create a formatted message
-    message = f"您尚未回答 Unanswered Questions ({total - len(progress)}/{total}):\n"
+    message = f"您尚未回答 Questions Unanswered ({total - len(progress)}):\n"
     for q in progress:
         category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
         message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測'} - Q{unit+1}-{sub+1}"
