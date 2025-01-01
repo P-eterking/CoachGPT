@@ -39,5 +39,5 @@ RUN chmod +x /app/start.sh
 EXPOSE 8000
 
 # 使用 bash 執行啟動腳本來啟動 FastAPI 和 Ngrok
-CMD ["uvicorn", "app:app" ,"--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 # CMD ["bash", "./start.sh"]

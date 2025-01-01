@@ -38,7 +38,7 @@ async def handle_text_message(event):
         await send_message(event, await carousel_message(user_id,2))
     elif message.startswith('口語練習三'):
         await send_message(event, await carousel_message(user_id,3))
-    elif message.startswith('答題狀況') or message.startswith('progress'):
+    elif message.startswith('答題狀況') or message.startswith('progress') or message.startswith('Progress'):
         await send_message(event, await progress_message(user_id))
     elif message.startswith('/儲存'):
         await save_user_data()
