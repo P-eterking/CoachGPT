@@ -201,7 +201,7 @@ async def progress_message(user_id):
         TextMessage: 進度訊息物件。
     """
     questions = question_manager.questions  # Assume this function retrieves all categories
-    progress : list[str] = []
+    progress : list[str] = [] # 未回答的題目
     total = 0
     
     for category, units in enumerate(questions):
@@ -214,11 +214,11 @@ async def progress_message(user_id):
                     continue
                 progress.append(f'{category}-{unit}-{num}')
                 
-    if len(progress) == total:
+    if len(progress) == 0:
         return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
     
     # Create a formatted message
-    message = f"您尚未回答 Questions Unanswered ({total - len(progress)}):\n"
+    message = f"您尚未回答 Questions Unanswered ({len(progress)}):\n"
     for q in progress:
         category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
         message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測'} - Q{unit+1}-{sub+1}"

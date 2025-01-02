@@ -57,5 +57,5 @@ async def index(request: Request):
         "request": request,
         "category_analysis": analysis["category_analysis"],
         "analysis_data": analysis_data,
-        "latest_histories": analysis["latest_histories"]  # Pass latest_histories to template
+        "latest_histories": latest_histories  # Pass latest_histories to template
     })
