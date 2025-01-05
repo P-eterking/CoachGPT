@@ -205,8 +205,6 @@ async def progress_message(user_id):
     total = 0
     
     for category, units in enumerate(questions):
-        if category == 2:
-            break
         for unit, sub in enumerate(units):
             for num, _ in enumerate(sub):
                 total += 1
@@ -221,7 +219,7 @@ async def progress_message(user_id):
     message = f"您尚未回答 Questions Unanswered ({len(progress)}):\n"
     for q in progress:
         category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
-        message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測'} - Q{unit+1}-{sub+1}"
+        message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測' if category == 1 else 'Post-test 後測'} - Q{unit+1}-{sub+1}"
     
     return TextMessage(text=message)
     
