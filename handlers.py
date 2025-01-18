@@ -199,7 +199,7 @@ async def handle_audio_message(event):
                 },
                 {
                     "role": "user",
-                    "content": f"<question>{question.text}</question>{"<standard>"+question.assessment_standard.replace('\n','').strip()+"</standard>" if question.assessment_standard else ""}<userAnswer>{text}</userAnswer>",
+                    "content": f"<question>{question.text}</question>{"<standard>"+question.assessment_standard.replace('\n','').strip()+"</standard>" if question.assessment_standard else ""}<userAnswer>{text}</userAnswer>{f"<maxScore>{question.max_score}</maxScore>" if question.max_score else ""}",
                 }
             ],
         )
