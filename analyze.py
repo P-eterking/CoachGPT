@@ -235,11 +235,73 @@ def bonus(users: list[User], question_manager: QuestionManager):
                         ]
                     writer.writerow(row)
 
+def score_print(users, question_manager: QuestionManager):
+    import csv
+    classes : dict[str, list[User]]= {}
+    for user in users:
+        classes.setdefault(user.class_time, []).append(user)
+        
+    for class_time, subs in classes.items():
+        if not os.path.exists(class_time):
+            os.mkdir(class_time)
+        with open(f'{class_time}/score.csv', 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            header = ['學號', '姓名', '系所']
+            for category in range(3):
+                for unit in range(len(question_manager.get_category(category))):
+                    for question in range(len(question_manager.get_unit(category, unit))):
+                        header.append(f'{category}-{unit}-{question}')
+            writer.writerow(header)
+            for user in subs:
+                row = [user.id.strip(), user.name.strip(), user.dep.strip()]
+                for category in range(3):
+                    for unit in range(len(question_manager.get_category(category))):
+                        for question in range(len(question_manager.get_unit(category, unit))):
+                            key = f'{category}-{unit}-{question}'
+                            if key in user.history:
+                                row.append(user.history[key].score)
+                            else:
+                                row.append('')
+                writer.writerow(row)
+                
+def answer_print(users, question_manager: QuestionManager):
+    import csv
+    classes : dict[str, list[User]]= {}
+    for user in users:
+        classes.setdefault(user.class_time, []).append(user)
+    
+    for class_time, subs in classes.items():
+        if not os.path.exists(class_time):
+            os.mkdir(class_time)
+        subs = sorted(subs, key=lambda x: x.id)
+        with open(f'{class_time}/answers.csv', 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['學號', '題號', '分數', '學生答案'])
+            for user in subs:
+                for k,v in sorted(user.history.items(), key=lambda x: x[0]):
+                    writer.writerow([user.id, k, v.score, v.transcript])
+        with open(f'{class_time}/idtostu.csv', 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['學號', '姓名', '系所'])
+            for user in sorted(subs, key=lambda x: x.id):
+                writer.writerow([user.id, user.name, user.dep])
+    
+    # 題號對問題的對照表
+    with open('question.csv', 'w', encoding='utf-8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['題號', '問題'])
+        for category in range(3):
+            for unit in range(len(question_manager.get_category(category))):
+                for question in range(len(question_manager.get_unit(category, unit))):
+                    writer.writerow([f'{category}-{unit}-{question}', question_manager.get_question(category, unit, question).text])
+    
 if __name__ == "__main__":
     user_data_path = Path("user_data.json")
     users = load_user_data(user_data_path)
     question_manager = QuestionManager('./category')
     
-    bonus(users, question_manager)    
+    # bonus(users, question_manager)    
+    # score_print(users, question_manager)
+    answer_print(users,question_manager)
     # analysis_result = analyze_by_question(users, question_manager)
     # print(json.dumps(analysis_result, indent=2))
