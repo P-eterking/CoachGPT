@@ -1,0 +1,31 @@
+{
+  "rich_menus": {
+        "Menu": {
+            "file": "rich_menu_1.png",
+            "chat_bar_text": "CoachGPT",
+            "selected": true,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "message", "label": "Greet", "text": "Hello" },
+                { "type": "uri", "label": "Visit", "uri": "https://example.com" },
+                { "type": "message", "label": "Info", "text": "Welcome" },
+                { "type": "message", "label": "Ping", "text": "Ping" },
+                { "type": "uri", "label": "Help", "uri": "https://help.example.com" },
+                { "type": "message", "label": "Bye", "text": "Goodbye" }
+            ]
+        },
+        "Secondary": {
+            "file": "rich_menu_2.png",
+            "chat_bar_text": "Secondary Chat",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "message", "label": "Hello", "text": "Hi" },
+                { "type": "uri", "label": "Web", "uri": "https://secondary.example.com" },
+                { "type": "message", "label": "More", "text": "More Info" },
+                { "type": "message", "label": "Ping", "text": "Ping" },
+                { "type": "uri", "label": "Help", "uri": "https://help.secondary.com" },
+                { "type": "message", "label": "Farewell", "text": "Goodbye" }
+            ]
+        }
+    }
+}
