@@ -1,13 +1,14 @@
 from httpx import get
-from config import line_bot_api, line_bot_api_blob, client, question_manager
+from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
+from manager.richmenu import RichMenuBuilder
 from utils.message_utils import (
-    create_rich_menu, info_hint_message, result_message, send_message, send_text_message,
-    question_message, carousel_message, handle_rich_menu, SYSTEM_INSTRUCTION, text_message, progress_message
+    info_hint_message, result_message, send_message, send_text_message,
+    question_message, carousel_message, SYSTEM_INSTRUCTION, text_message, progress_message,
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
-    get_answerable, get_test_mode, save_config, switch_answerable, user_state, save_user_data, hasData,
+    get_answerable, get_rich_menu_id, get_test_mode, save_config, switch_answerable, user_state, save_user_data, hasData,
     updateHistory, getHistory, initData, delData, switch_test_mode, get_category, set_category
 )
 import tempfile
@@ -19,13 +20,13 @@ async def handle_text_message(event):
     # 獲取使用者 ID
     user_id = event.source.user_id
 
-    # 若訊息以「清除」開頭，取消使用者的 rich menu 綁定
+    # 若訊息以「清除」開頭，取消使用者的 rich menu 綁定 using new framework
     if message.startswith('清除'):
-        await line_bot_api.unlink_rich_menu_id_from_user(user_id)
+        rich_menu_manager.unlink_rich_menu_from_user(user_id)
         return
     
-    # 處理使用者的 rich menu
-    await handle_rich_menu(user_id)
+    # 處理使用者的 rich menu (handled internally by the new rich menu framework if needed)
+    # (Note: Old handle_rich_menu has been removed; integration can be added here if necessary)
     
     # 檢查使用者是否登入，若未登入則結束
     if not await check_user_login(event, message):
@@ -33,11 +34,11 @@ async def handle_text_message(event):
 
     # 根據訊息內容執行不同的口語練習
     if message.startswith('口語練習一'):
-        await send_message(event, await carousel_message(user_id,1))
+        await send_message(event, await carousel_message(user_id, 1))
     elif message.startswith('口語練習二'):
-        await send_message(event, await carousel_message(user_id,2))
+        await send_message(event, await carousel_message(user_id, 2))
     elif message.startswith('口語練習三'):
-        await send_message(event, await carousel_message(user_id,3))
+        await send_message(event, await carousel_message(user_id, 3))
     elif message.startswith('答題狀況') or message.startswith('progress') or message.startswith('Progress'):
         await send_message(event, await progress_message(user_id))
     elif message.startswith('/儲存'):
@@ -64,7 +65,9 @@ async def handle_text_message(event):
             return
         category = int(message.split(' ')[1])
         set_category(category)
-        await create_rich_menu()
+        rich_menu_manager.unlink_rich_menu_from_user(user_id)
+        rich_menu_id = get_rich_menu_id(category)
+        rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
         await save_config()
         await send_text_message(event, f"已設定測驗類別為{category}！\nCategory set to {category}!")
     elif message.startswith('/更新題目'):
@@ -107,7 +110,7 @@ async def check_user_login(event, message: str = None) -> bool:
             del user_data_enter[user_id]
             await send_message(event, [
                 await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message} !"), 
-                await carousel_message(user_id,1)
+                await carousel_message(user_id, 1)
             ])
             return True
 
@@ -158,12 +161,6 @@ async def handle_audio_message(event):
             f.write(message_content)
             f.seek(0)
             f.flush()
-                
-            # transcript = await groq.audio.transcriptions.create(
-            #     model="whisper-large-v3",
-            #     file=(f.name,f.read()),
-            #     language="en",
-            # )
             
             # 使用 Whisper 進行音訊轉錄
             transcript = await client.audio.transcriptions.create(
@@ -175,7 +172,6 @@ async def handle_audio_message(event):
             text = transcript.text.strip()
             
             f.close()
-            # text = base64.b64encode(message_content).decode('utf-8')
         except Exception as e:
             await send_text_message(event, "文字轉錄發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
             print(e)
@@ -186,23 +182,6 @@ async def handle_audio_message(event):
             print('No text found in audio')
             return
         
-        # 使用 GPT 模型進行回應分析與評估
-        completion = await client.beta.chat.completions.parse(
-            model="gpt-4o",
-            response_format=SpeechAssessment,
-            max_completion_tokens=2048,
-            temperature=1,
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_INSTRUCTION,
-                },
-                {
-                    "role": "user",
-                    "content": f"<question>{question.text}</question>{"<standard>"+question.assessment_standard.replace('\n','').strip()+"</standard>" if question.assessment_standard else ""}<userAnswer>{text}</userAnswer>{f"<maxScore>{question.max_score}</maxScore>" if question.max_score else ""}",
-                }
-            ],
-        )
         # completion = await client.beta.chat.completions.parse(
         #     model="gpt-4o-audio-preview",
         #     # response_format={ "type": "json_object" },
@@ -225,6 +204,27 @@ async def handle_audio_message(event):
         #     ],
         # )
         
+        # 使用 GPT 模型進行回應分析與評估
+        completion = await client.beta.chat.completions.parse(
+            model="gpt-4o",
+            response_format=SpeechAssessment,
+            max_completion_tokens=2048,
+            temperature=1,
+            messages=[
+                {
+                    "role": "system",
+                    "content": SYSTEM_INSTRUCTION,
+                },
+                {
+                    "role": "user",
+                    "content": f"<question>{question.text}</question>" \
+                               f"{'<standard>'+question.assessment_standard.replace('\n','').strip()+'</standard>' if question.assessment_standard else ''}" \
+                               f"<userAnswer>{text}</userAnswer>" \
+                               f"{f'<maxScore>{question.max_score}</maxScore>' if question.max_score else ''}",
+                }
+            ],
+        )
+        
         # 將分析結果轉換為 SpeechAssessment 物件並儲存歷史紀錄
         result: SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
         result.transcript = text
@@ -244,7 +244,7 @@ async def handle_postback(event):
         return
     user_id = event.source.user_id
     
-    await handle_rich_menu(user_id)
+    # 舊的 rich menu 處理已移除，請使用新框架進行相應的操作
     
     # 解析 postback 資料
     data: str = event.postback.data

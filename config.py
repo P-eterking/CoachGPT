@@ -4,7 +4,7 @@ from linebot.v3.webhook import WebhookParser
 from openai import AsyncOpenAI
 from groq import AsyncGroq
 from manager import QuestionManager
-
+from manager.richmenu import RichMenuManager
 # 環境變數設定
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
@@ -16,6 +16,7 @@ parser = WebhookParser(LINE_CHANNEL_SECRET)
 async_api_client = AsyncApiClient(configuration)
 line_bot_api = AsyncMessagingApi(async_api_client)
 line_bot_api_blob = AsyncMessagingApiBlob(async_api_client)
+rich_menu_manager = RichMenuManager(line_bot_api, line_bot_api_blob)
 
 # OpenAI 和 Groq 配置
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))

@@ -1,16 +1,16 @@
-from typing import Text
-from config import line_bot_api, line_bot_api_blob, DOMAIN, question_manager
+from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
-    QuickReplyItem, RichMenuRequest, RichMenuSize, RichMenuArea,
-    RichMenuBounds, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
+    QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
     FlexText, FlexBox, FlexButton
 )
+from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import SpeechAssessment
 import json
 from PIL import Image
+import asyncio
 from utils.file_utils import (
     get_test_mode, get_category, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, get_category
 )
@@ -624,53 +624,60 @@ async def create_rich_menu():
     """
     rich_menu_id = get_rich_menu_id(get_category())
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
-    if not rich_menu_id:
-        # Load image and get dimensions
-        path = f'templates/richmenu-{get_category()}.png'
-        width, height = Image.open(path).size
+    # if not rich_menu_id:s
+    #     # Load image and get dimensions
+    #     path = f'templates/richmenu-{get_category()}.png'
+    #     width, height = Image.open(path).size
 
-        # Calculate rows and columns
-        rows = height // 843
-        cols = width // 3
-        area_height = height // rows
+    #     # Calculate rows and columns
+    #     rows = height // 843
+    #     cols = width // 3
+    #     area_height = height // rows
 
-        # Create RichMenuRequest with areas
-        request = RichMenuRequest(
-            size=RichMenuSize(width=width, height=height),
-            name="Menu",
-            chatBarText="CoachGPT",
-            selected=True,
-            areas=[
-                RichMenuArea(
-                    bounds=RichMenuBounds(
-                        x=(i % 3) * cols,
-                        y=(i // 3) * area_height,
-                        width=cols,
-                        height=area_height
-                    ),
-                    action=PostbackAction(label=f'Ex {i+1}', data=f'action=unit&unit={i+1}')
-                )
-                for i in range(3 * rows)
-            ]
-        )
-        rich_menu = await line_bot_api.create_rich_menu(
-            rich_menu_request=request,
-            async_req=True
-        ).get()
+    #     # Create RichMenuRequest with areas
+    #     request = RichMenuRequest(
+    #         size=RichMenuSize(width=width, height=height),
+    #         name="Menu",
+    #         chatBarText="CoachGPT",
+    #         selected=True,
+    #         areas=[
+    #             RichMenuArea(
+    #                 bounds=RichMenuBounds(
+    #                     x=(i % 3) * cols,
+    #                     y=(i // 3) * area_height,
+    #                     width=cols,
+    #                     height=area_height
+    #                 ),
+    #                 action=PostbackAction(label=f'Ex {i+1}', data=f'action=unit&unit={i+1}')
+    #             )
+    #             for i in range(3 * rows)
+    #         ]
+    #     )
+    #     rich_menu = await line_bot_api.create_rich_menu(
+    #         rich_menu_request=request,
+    #         async_req=True
+    #     ).get()
 
-        rich_menu_id = rich_menu.to_dict().get('richMenuId')
-        set_rich_menu_id(rich_menu_id, get_category())
-        await save_config()
+    #     rich_menu_id = rich_menu.to_dict().get('richMenuId')
+    #     set_rich_menu_id(rich_menu_id, get_category())
+    #     await save_config()
         
-        await line_bot_api_blob.set_rich_menu_image_with_http_info(
-            rich_menu_id=rich_menu_id,
-            body=path,
-            _headers={"Content-Type": "image/png"},
-            async_req=True
-        ).get()
-        await line_bot_api.set_default_rich_menu_with_http_info(
-            rich_menu_id=rich_menu_id,
-            async_req=True
-        ).get()
-        
-    print(f'Rich Menu ID: {rich_menu_id}')
+    #     await line_bot_api_blob.set_rich_menu_image_with_http_info(
+    #         rich_menu_id=rich_menu_id,
+    #         body=path,
+    #         _headers={"Content-Type": "image/png"},
+    #         async_req=True
+    #     ).get()
+    #     await line_bot_api.set_default_rich_menu_with_http_info(
+    #         rich_menu_id=rich_menu_id,
+    #         async_req=True
+    #     ).get()
+    configs = load_rich_menu_configs()
+    for menu_name, config in configs['rich_menus'].items():
+        builder = build_rich_menu_from_config(menu_name, config)
+        rich_menu_id = await asyncio.to_thread(rich_menu_manager.create_rich_menu, builder)
+        image_file = config.get("file")
+        if image_file:
+            image_path = os.path.join("./templates", image_file)
+            await asyncio.to_thread(rich_menu_manager.upload_rich_menu_image, rich_menu_id, image_path)
+        print(f'Rich Menu {menu_name} crated with ID: {rich_menu_id}')
