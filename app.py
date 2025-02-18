@@ -27,9 +27,9 @@ app.get("/qreload")(question_manager.load_questions)
 app.mount('/templates', StaticFiles(directory='templates'))
 app.get("/")(index)
 
-@app.middleware("http")
-async def add_cache_headers(request, call_next):
-    response = await call_next(request)
-    if request.url.path.startswith("/templates"):
-        response.headers["Cache-Control"] = "public, max-age=600"
-    return response
+# @app.middleware("http")
+# async def add_cache_headers(request, call_next):
+#     response = await call_next(request)
+#     if request.url.path.startswith("/templates"):
+#         response.headers["Cache-Control"] = "public, max-age=600"
+#     return response
