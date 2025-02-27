@@ -1,7 +1,7 @@
 {
   "rich_menus": {
-        "Menu": {
-            "file": "rich_menu_1.png",
+        "menu": {
+            "file": "menu.png",
             "chat_bar_text": "CoachGPT",
             "selected": true,
             "grid": { "rows": 2, "columns": 3 },
@@ -14,9 +14,22 @@
                 { "type": "message", "label": "Bye", "text": "Goodbye" }
             ]
         },
-        "Secondary": {
-            "file": "rich_menu_2.png",
-            "chat_bar_text": "Secondary Chat",
+        "pretest":{
+            "file": "preposttest.png",
+            "chat_bar_text": "CoachGPT Pre-test",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "message", "label": "Hello", "text": "Hi" },
+                { "type": "uri", "label": "Web", "uri": "https://example.com" },
+                { "type": "message", "label": "More", "text": "More Info" },
+                { "type": "message", "label": "Ping", "text": "Ping" },
+                { "type": "uri", "label": "Help", "uri": "https://help.example.com" },
+                { "type": "message", "label": "Farewell", "text": "Goodbye" }
+            ]
+        },
+        "posttest": {
+            "file": "preposttest.png",
+            "chat_bar_text": "CoachGPT Post-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "message", "label": "Hello", "text": "Hi" },

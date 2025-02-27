@@ -1,6 +1,7 @@
 from utils.models import Question
 from typing import List
 import aiofiles
+import asyncio
 import json
 import os
 
@@ -23,7 +24,10 @@ class QuestionManager(object):
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    questions.append([[Question(**q) for q in unit] for unit in data['content']])
+                    if 'content' not in data:
+                        continue
+                    category_questions = [([Question(**q) for q in unit] if isinstance(unit, list) else Question(**unit)) for unit in data['content']]
+                    questions.append(category_questions)
         self.questions = questions
         return questions
     
@@ -39,10 +43,14 @@ class QuestionManager(object):
         # 返回指定的類別
         return self.questions[category]
     
+    async def _save_category(self, index: int, category) -> None:
+        file_path = os.path.join(self.data_source, f'{index}.json')
+        async with aiofiles.open(file_path, 'w', encoding='utf-8') as file:
+            await file.write(json.dumps(category, indent=4))
+        print(f"Category {index} saved successfully.")
+    
     async def save_questions(self):
         # 儲存問題
-        for i, cate in enumerate(self.questions):
-            async with aiofiles.open(f'{self.data_source}/{i}.json', 'w', encoding='utf-8') as file:
-                await file.write(json.dumps(cate, indent=4))
-                print(f"Category {i} saved successfully.")
+        tasks = [self._save_category(i, cate) for i, cate in enumerate(self.questions)]
+        await asyncio.gather(*tasks)
 
