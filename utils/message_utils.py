@@ -609,15 +609,14 @@ async def handle_rich_menu(user_id):
         user_id: 使用者ID。
     """
     try:
-        response = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
-        rich_menu_id = response.rich_menu_id
+        rich_menu_id = await rich_menu_manager.get_rich_menu_id(user_id)
         category = get_rich_menu_category_from_id(rich_menu_id)
         if not category:
             raise ApiException('No rich menu category found.')
         set_user_menu(user_id, get_rich_menu_category_from_id(rich_menu_id))
     except ApiException as e:
         rich_menu_id = get_rich_menu_id('menu')
-        await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
+        await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id=rich_menu_id)
         set_user_menu(user_id, 'menu')
     except Exception as e:
         print(e)
@@ -678,10 +677,6 @@ async def create_rich_menu():
     #         async_req=True
     #     ).get()
     configs = load_rich_menu_configs()
-    response = await rich_menu_manager.get_all_rich_menus()
-    for r in response:
-        await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
-        print("deleted " + r.rich_menu_id)
     for menu_name, config in configs['rich_menus'].items():
         if get_rich_menu_id(menu_name):
             continue
@@ -691,7 +686,15 @@ async def create_rich_menu():
         if image_file:
             image_path = os.path.join("./templates/richmenu", image_file)
             await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-        await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
         set_rich_menu_id(rich_menu_id, menu_name)
-        print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+        try:
+            await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
+        except Exception as e:
+            print(f'Error creating alias for {menu_name}: {e}')
+            response = await rich_menu_manager.get_rich_menu_by_alises(menu_name)
+            await rich_menu_manager.delete_rich_menu(response.rich_menu_id)
+            print(f"Deleted rich menu for alias {menu_name} ({response.rich_menu_id})")
+            await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
+        finally:
+            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
     await save_config()
