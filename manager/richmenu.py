@@ -150,13 +150,20 @@ class RichMenuManager:
         result = await self.line_bot_api.get_rich_menu_list(async_req=True).get()
         return result.richmenus
     
+    async def get_rich_menu_by_alises(self, alias: str) -> str:
+        """
+        Get a rich menu by its alias.
+        """
+        result = await self.line_bot_api.get_rich_menu_alias(rich_menu_alias_id=alias, async_req=True).get()
+        return result.rich_menu_id
+    
     async def delete_rich_menu(self, rich_menu_id: str):
         """
         Delete a rich menu by its ID.
         """
         await self.line_bot_api.delete_rich_menu(rich_menu_id,async_req=True).get()
 
-    def link_rich_menu_to_user(self, user_id: str, rich_menu_id: str):
+    async def link_rich_menu_to_user(self, user_id: str, rich_menu_id: str):
         """
         Link a rich menu to a specific user.
         
@@ -164,18 +171,30 @@ class RichMenuManager:
             user_id (str): The user's ID.
             rich_menu_id (str): The rich menu's ID.
         """
-        result = self.line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id, async_req=True)
-        return result.get()
+        await self.line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id, async_req=True).get()
 
-    def unlink_rich_menu_from_user(self, user_id: str):
+    async def unlink_rich_menu_from_user(self, user_id: str):
         """
         Unlink the rich menu from a specific user.
         
         Args:
             user_id (str): The user's ID.
         """
-        result = self.line_bot_api.unlink_rich_menu_id_from_user(user_id, async_req=True)
-        return result.get()
+        await self.line_bot_api.unlink_rich_menu_id_from_user(user_id, async_req=True).get()
+        return
+
+    async def get_rich_menu_id(self, user_id: str) -> str:
+        """
+        Get the rich menu ID linked to a specific user.
+        
+        Args:
+            user_id (str): The user's ID.
+        
+        Returns:
+            str: The ID of the linked rich menu.
+        """
+        result = await self.line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
+        return result.rich_menu_id
 
 def load_rich_menu_configs():
     """
