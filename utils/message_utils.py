@@ -12,7 +12,7 @@ import json
 from PIL import Image
 import asyncio
 from utils.file_utils import (
-    get_test_mode, get_category, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, get_category
+    get_test_mode, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, set_user_menu, get_user_menu, get_rich_menu_category_from_id
 )
 # 設定主網址和分類變數
 URL = f'https://{DOMAIN}'
@@ -552,14 +552,14 @@ async def carousel_message(user_id, unit):
     return msg
 
 CHI_HINT = [
-    '請輸入你的上課時段\n如：1-34',
+    '請輸入你的上課時段\n1 代表英聽課(建築)\n2 代表英聽課(商設)\n3 代表英國課(1-56)\n4 代表英國課(1-78)',
     '接著，請輸入你的系級\n如：資管一乙',
     '接著，請輸入你的學號\n如：11352237',
     '接著，請輸入你的姓名\n如：王聰明',
 ]
 
 ENG_HINT =[
-    'What is your class period?\nFor example: 1-34',
+    'Enter your class time\n\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)',
     'Next, what is your department?\nFor example: Information Management',
     'Next, what is your student ID?\nFor example: 11352237',
     'Next, what is your name?\nFor example: Paul Wang',
@@ -608,13 +608,19 @@ async def handle_rich_menu(user_id):
     Args:
         user_id: 使用者ID。
     """
-    rich_menu_id = get_rich_menu_id(get_category())
     try:
-        oldId = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
-        if oldId.rich_menu_id is not rich_menu_id:
-            await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
+        response = await line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
+        rich_menu_id = response.rich_menu_id
+        category = get_rich_menu_category_from_id(rich_menu_id)
+        if not category:
+            raise ApiException('No rich menu category found.')
+        set_user_menu(user_id, get_rich_menu_category_from_id(rich_menu_id))
     except ApiException as e:
+        rich_menu_id = get_rich_menu_id('menu')
         await line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id=rich_menu_id, async_req=True).get()
+        set_user_menu(user_id, 'menu')
+    except Exception as e:
+        print(e)
 
 async def create_rich_menu():
     """
@@ -622,7 +628,6 @@ async def create_rich_menu():
     
     Creates a rich menu.
     """
-    rich_menu_id = get_rich_menu_id(get_category())
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     # if not rich_menu_id:s
     #     # Load image and get dimensions
@@ -673,11 +678,20 @@ async def create_rich_menu():
     #         async_req=True
     #     ).get()
     configs = load_rich_menu_configs()
+    response = await rich_menu_manager.get_all_rich_menus()
+    for r in response:
+        await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
+        print("deleted " + r.rich_menu_id)
     for menu_name, config in configs['rich_menus'].items():
+        if get_rich_menu_id(menu_name):
+            continue
         builder = build_rich_menu_from_config(menu_name, config)
-        rich_menu_id = await asyncio.to_thread(rich_menu_manager.create_rich_menu, builder)
+        rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
         image_file = config.get("file")
         if image_file:
-            image_path = os.path.join("./templates", image_file)
-            await asyncio.to_thread(rich_menu_manager.upload_rich_menu_image, rich_menu_id, image_path)
-        print(f'Rich Menu {menu_name} crated with ID: {rich_menu_id}')
+            image_path = os.path.join("./templates/richmenu", image_file)
+            await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
+        await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
+        set_rich_menu_id(rich_menu_id, menu_name)
+        print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+    await save_config()

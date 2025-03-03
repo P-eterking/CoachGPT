@@ -1,15 +1,13 @@
-from httpx import get
 from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
-from manager.richmenu import RichMenuBuilder
 from utils.message_utils import (
-    info_hint_message, result_message, send_message, send_text_message,
+    handle_rich_menu, info_hint_message, result_message, send_message, send_text_message,
     question_message, carousel_message, SYSTEM_INSTRUCTION, text_message, progress_message,
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
-    get_answerable, get_rich_menu_id, get_test_mode, save_config, switch_answerable, user_state, save_user_data, hasData,
-    updateHistory, getHistory, initData, delData, switch_test_mode, get_category, set_category
+    get_answerable, get_rich_menu_id, get_test_mode, get_user_menu, save_config, switch_answerable, user_state, save_user_data, hasData,
+    updateHistory, getHistory, initData, delData, switch_test_mode, 
 )
 import tempfile
 import time
@@ -25,8 +23,7 @@ async def handle_text_message(event):
         rich_menu_manager.unlink_rich_menu_from_user(user_id)
         return
     
-    # 處理使用者的 rich menu (handled internally by the new rich menu framework if needed)
-    # (Note: Old handle_rich_menu has been removed; integration can be added here if necessary)
+    await handle_rich_menu(user_id)
     
     # 檢查使用者是否登入，若未登入則結束
     if not await check_user_login(event, message):
@@ -59,17 +56,6 @@ async def handle_text_message(event):
         else:
             await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
         await save_config()
-    elif message.startswith('/測驗類別'):
-        if ' ' not in message:
-            await send_text_message(event, "輸入格式錯誤！記得要加空格！\nFormat error! Don't forget the space!")
-            return
-        category = int(message.split(' ')[1])
-        set_category(category)
-        rich_menu_manager.unlink_rich_menu_from_user(user_id)
-        rich_menu_id = get_rich_menu_id(category)
-        rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
-        await save_config()
-        await send_text_message(event, f"已設定測驗類別為{category}！\nCategory set to {category}!")
     elif message.startswith('/更新題目'):
         question_manager.load_questions()
         await send_text_message(event, "已更新題目！\nQuestions updated!")
@@ -91,15 +77,29 @@ async def check_user_login(event, message: str = None) -> bool:
         # 以下依序確認使用者輸入格式
         # 上課時段
         if len(info) == 0:
-            if '-' not in message:
+            if not message.isdigit():
+                await send_text_message(event, "格式錯誤！\nFormat error!")
+                return False
+            try:
+                option = int(message)
+                if option < 1 or option > 4:
+                    await send_text_message(event, "輸入格式錯誤！\nFormat error!")
+                    return False
+            except ValueError:
                 await send_text_message(event, "輸入格式錯誤！\nFormat error!")
                 return False
+            except Exception as e:
+                await send_text_message(event, "處理時發生錯誤，請稍後再試。\nAn error occurred during processing, please try again later.")
+                print(e)
         # 系級
         elif len(info) == 1:
             pass
         # 學號
         elif len(info) == 2:
             if not message.isdigit():
+                await send_text_message(event, "學號格式錯誤！\nFormat error!")
+                return False
+            elif len(message) > 8:
                 await send_text_message(event, "學號格式錯誤！\nFormat error!")
                 return False
         # 姓名
@@ -110,7 +110,6 @@ async def check_user_login(event, message: str = None) -> bool:
             del user_data_enter[user_id]
             await send_message(event, [
                 await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message} !"), 
-                await carousel_message(user_id, 1)
             ])
             return True
 
@@ -136,7 +135,11 @@ async def handle_audio_message(event):
         # 取得音訊訊息內容並等待處理完成
         result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
         text = None
-        category = get_category()
+        category = get_user_menu(user_id)
+        
+        if not category or category in ['menu', 'admin']:
+            await send_text_message(event, "請先選擇練習單元！\nPlease select a practice unit first!")
+            return 
         
         # 獲取使用者的練習單元和題目
         unit = user_state[user_id]['unit']
@@ -244,7 +247,7 @@ async def handle_postback(event):
         return
     user_id = event.source.user_id
     
-    # 舊的 rich menu 處理已移除，請使用新框架進行相應的操作
+    await handle_rich_menu(user_id)
     
     # 解析 postback 資料
     data: str = event.postback.data

@@ -6,39 +6,66 @@
             "selected": true,
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "message", "label": "Greet", "text": "Hello" },
-                { "type": "uri", "label": "Visit", "uri": "https://example.com" },
-                { "type": "message", "label": "Info", "text": "Welcome" },
+                { "type": "switch", "label": "pretest", "alias_id": "pretest", "data": "pretest"},
+                { "type": "switch", "label": "exercises", "alias_id": "exercises", "data": "exercises" },
+                { "type": "switch", "label": "posttest", "alias_id": "posttest", "data": "posttest" },
                 { "type": "message", "label": "Ping", "text": "Ping" },
                 { "type": "uri", "label": "Help", "uri": "https://help.example.com" },
-                { "type": "message", "label": "Bye", "text": "Goodbye" }
+                { "type": "switch", "label": "admin", "alias_id": "admin"}
             ]
         },
         "pretest":{
             "file": "preposttest.png",
-            "chat_bar_text": "CoachGPT Pre-test",
+            "chat_bar_text": "Pre-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "message", "label": "Hello", "text": "Hi" },
-                { "type": "uri", "label": "Web", "uri": "https://example.com" },
-                { "type": "message", "label": "More", "text": "More Info" },
-                { "type": "message", "label": "Ping", "text": "Ping" },
-                { "type": "uri", "label": "Help", "uri": "https://help.example.com" },
-                { "type": "message", "label": "Farewell", "text": "Goodbye" }
+                { "type": "postback", "label": "q1", "data": "action=q&q=1" },
+                { "type": "postback", "label": "q2", "data": "action=q&q=2" },
+                { "type": "postback", "label": "q3", "data": "action=q&q=3" },
+                { "type": "postback", "label": "q4", "data": "action=q&q=4" },
+                { "type": "postback", "label": "q5", "data": "action=q&q=5" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
         "posttest": {
             "file": "preposttest.png",
-            "chat_bar_text": "CoachGPT Post-test",
+            "chat_bar_text": "Post-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "message", "label": "Hello", "text": "Hi" },
-                { "type": "uri", "label": "Web", "uri": "https://secondary.example.com" },
-                { "type": "message", "label": "More", "text": "More Info" },
-                { "type": "message", "label": "Ping", "text": "Ping" },
-                { "type": "uri", "label": "Help", "uri": "https://help.secondary.com" },
-                { "type": "message", "label": "Farewell", "text": "Goodbye" }
+                { "type": "postback", "label": "q1", "data": "action=q&q=1" },
+                { "type": "postback", "label": "q2", "data": "action=q&q=2" },
+                { "type": "postback", "label": "q3", "data": "action=q&q=3" },
+                { "type": "postback", "label": "q4", "data": "action=q&q=4" },
+                { "type": "postback", "label": "q5", "data": "action=q&q=5" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
+            ]
+        },
+        "admin": {
+            "file": "admin.png",
+            "chat_bar_text": "Admin",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=answerable" },
+                { "type": "postback", "label": "q2", "data": "action=q&q=2" },
+                { "type": "postback", "label": "q3", "data": "action=q&q=3" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
+            ]
+        },
+        "exercises": {
+            "file": "exercises.png",
+            "chat_bar_text": "Exercises",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=q&q=1" },
+                { "type": "postback", "label": "q2", "data": "action=q&q=2" },
+                { "type": "postback", "label": "q3", "data": "action=q&q=3" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         }
+        
     }
 }

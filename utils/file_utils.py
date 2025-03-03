@@ -5,15 +5,15 @@ from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
 from utils.models import User, SpeechAssessment  # 使用者和評分資料的模型
 
 # 使用者狀態和資料
+user_menu = {}  # 儲存每個使用者的選單狀態
 user_state = {}  # 儲存每個使用者的即時狀態
-user_data : dict[str,User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
+user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
 
 # 預設設定
 DEFAULT_CONFIG = {
     'test_mode': False,
     'answerable': True,
-    'category': 0,
-    'rich_menu_id': {},
+    'rich_menu_ids': {},
 }
 
 # 設定檔案
@@ -37,24 +37,28 @@ def switch_test_mode() -> bool:
 def get_test_mode() -> bool:
     return config['test_mode']
 
-def get_rich_menu_id(category: int) -> str | None:
-    return config.get('rich_menu_id').get(category)
+def get_rich_menu_id(category: str) -> str | None:
+    return config.get('rich_menu_ids').get(category)
 
-def set_rich_menu_id(rich_menu_id: str, category: int):
-    config['rich_menu_id'][category] = rich_menu_id
+def get_rich_menu_category_from_id(rich_menu_id: str) -> str | None:    
+    for category, id in config.get('rich_menu_ids').items():
+        if id == rich_menu_id:
+            return category
+    return None
 
-# 設定測試類別
-def set_category(category: int):
-    config['category'] = category
+def set_rich_menu_id(rich_menu_id: str, category: str):
+    config['rich_menu_ids'][category] = rich_menu_id
 
-# 設定測試類別 
-def get_category() -> int:
-    return config['category']
+def get_user_menu(user_id: str) -> str | None:
+    return user_menu.get(user_id)
+
+def set_user_menu(user_id: str, rich_menu_id: str):
+    user_menu[user_id] = rich_menu_id
 
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
     # 將新的使用者資料加入 user_data 字典，並初始化歷史紀錄為空字典
-    user_data[user_id] = User(dep=dep, id=id, name=name, class_time=classTime, history={})
+    user_data[user_id] = User(dep=dep, id=id, name=name, class_time=classTime, history={}, chat={})
 
 # 刪除使用者資料
 def delData(user_id):

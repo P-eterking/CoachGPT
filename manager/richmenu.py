@@ -10,16 +10,14 @@ Classes:
 """
 
 from linebot.v3.messaging import AsyncMessagingApi, AsyncMessagingApiBlob
-from linebot.v3.messaging.models import CreateRichMenuAliasRequest
-from linebot.models import (
-    RichMenu,
-    RichMenuSize,
-    RichMenuArea,
-    RichMenuBounds,
+from linebot.v3.messaging.models import CreateRichMenuAliasRequest, RichMenuRequest
+from linebot.v3.messaging.models.rich_menu_area import RichMenuArea, RichMenuBounds
+from linebot.v3.messaging.models.rich_menu_size import RichMenuSize
+from linebot.v3.messaging.models import (
     URIAction,
     MessageAction,
     RichMenuSwitchAction,
-    PostbackAction  # New import for postback actions
+    PostbackAction
 )
 import json
 import os
@@ -83,11 +81,11 @@ class RichMenuBuilder:
         self.areas.append(area)
         return self
 
-    def build(self) -> RichMenu:
+    def build(self) -> RichMenuRequest:
         """
         Build and return a RichMenu object.
         """
-        return RichMenu(
+        return RichMenuRequest(
             size=self.size,
             selected=self.selected,
             name=self.name,
@@ -109,8 +107,9 @@ class RichMenuManager:
         self.line_bot_api = api
         self.line_bot_api_blob = api_blob
         self.rich_menus = {}
+            
         
-    def create_rich_menu(self, builder: RichMenuBuilder) -> str:
+    async def create_rich_menu(self, builder: RichMenuBuilder) -> str:
         """
         Create a rich menu from a RichMenuBuilder instance.
         
@@ -118,11 +117,12 @@ class RichMenuManager:
             str: The ID of the created rich menu.
         """
         rich_menu_object = builder.build()
-        rich_menu_id = self.line_bot_api.create_rich_menu_alias(create_rich_menu_alias_request=rich_menu_object)
+        response = await self.line_bot_api.create_rich_menu(rich_menu_request=rich_menu_object, async_req=True).get()
+        rich_menu_id = response.rich_menu_id
         self.rich_menus[rich_menu_id] = rich_menu_object
         return rich_menu_id
 
-    def upload_rich_menu_image(self, rich_menu_id: str, image_path: str):
+    async def upload_rich_menu_image(self, rich_menu_id: str, image_path: str):
         """
         Upload an image file to be associated with the rich menu.
         It automatically fetches the image's width and height before uploading.
@@ -132,22 +132,29 @@ class RichMenuManager:
             image_path (str): The file path to the image.
         """
         with open(image_path, 'rb') as f:
-            self.line_bot_api_blob.set_rich_menu_image(rich_menu_id, body=f, _headers={"Content-Type": "image/png"})
+            await self.line_bot_api_blob.set_rich_menu_image(rich_menu_id, body=f.read(), _headers={"Content-Type": "image/png"}, async_req=True).get()
 
-    def create_alias_rich_menu(self, rich_menu_id: str, alias: str):
+    async def create_alias_rich_menu(self, rich_menu_id: str, alias: str):
         """
         Create a rich menu alias.
         """
-        self.line_bot_api.create_rich_menu_alias(create_rich_menu_alias_request=CreateRichMenuAliasRequest(
-            rich_menu_alias_id=alias,
-            rich_menu_id=rich_menu_id
-        ))
+        await self.line_bot_api.create_rich_menu_alias(create_rich_menu_alias_request=CreateRichMenuAliasRequest(
+            richMenuAliasId=alias,
+            richMenuId=rich_menu_id,
+        ),async_req=True).get()
     
-    def delete_rich_menu(self, rich_menu_id: str):
+    async def get_all_rich_menus(self) -> list:
+        """
+        Get a list of all rich menus.
+        """
+        result = await self.line_bot_api.get_rich_menu_list(async_req=True).get()
+        return result.richmenus
+    
+    async def delete_rich_menu(self, rich_menu_id: str):
         """
         Delete a rich menu by its ID.
         """
-        self.line_bot_api.delete_rich_menu(rich_menu_id)
+        await self.line_bot_api.delete_rich_menu(rich_menu_id,async_req=True).get()
 
     def link_rich_menu_to_user(self, user_id: str, rich_menu_id: str):
         """
@@ -192,7 +199,7 @@ def build_rich_menu_from_config(name, rich_menu_config) -> RichMenuBuilder:
     """
     image_file = rich_menu_config.get("file")
     if image_file:
-        image_path = os.path.join("./templates", image_file)
+        image_path = os.path.join("./templates/richmenu", image_file)
         with Image.open(image_path) as img:
             width, height = img.size
 
@@ -203,7 +210,7 @@ def build_rich_menu_from_config(name, rich_menu_config) -> RichMenuBuilder:
 
     builder = RichMenuBuilder(name)\
         .set_size(width, height)\
-        .set_selected(rich_menu_config["selected"])\
+        .set_selected(rich_menu_config["selected"] if "selected" in rich_menu_config else False)\
         .set_chat_bar_text(rich_menu_config["chat_bar_text"])
 
     for index, action_cfg in enumerate(rich_menu_config["actions"]):
@@ -214,18 +221,18 @@ def build_rich_menu_from_config(name, rich_menu_config) -> RichMenuBuilder:
         x = col * cell_width
         y = row * cell_height
         if action_cfg["type"] == "message":
-            act = MessageAction(action_cfg["label"], action_cfg["text"])
+            act = MessageAction(label=action_cfg["label"], text=action_cfg["text"])
         elif action_cfg["type"] == "uri":
-            act = URIAction(action_cfg["label"], action_cfg["uri"])
+            act = URIAction(label=action_cfg["label"], uri=action_cfg["uri"])
         elif action_cfg["type"] == "switch":
             act = RichMenuSwitchAction(
-                action_cfg["label"],
-                action_cfg["rich_menu_alias_id"],
-                action_cfg["data"])
+                label=action_cfg["label"],
+                rich_menu_alias_id=action_cfg["alias_id"],
+                data=f"action=switch&to={action_cfg["alias_id"]}")
         elif action_cfg["type"] == "postback":
             act = PostbackAction(
-                action_cfg["label"],
-                action_cfg["data"])
+                label=action_cfg["label"],
+                data=action_cfg["data"])
         else:
             raise ValueError(f"Unknown action type: {action_cfg['type']} at index {index} in menu {name}")
         builder.add_area(x, y, cell_width, cell_height, act)
