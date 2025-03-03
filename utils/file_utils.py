@@ -52,8 +52,8 @@ def set_rich_menu_id(rich_menu_id: str, category: str):
 def get_user_menu(user_id: str) -> str | None:
     return user_menu.get(user_id)
 
-def set_user_menu(user_id: str, rich_menu_id: str):
-    user_menu[user_id] = rich_menu_id
+def set_user_menu(user_id: str, rich_menu_name: str):
+    user_menu[user_id] = rich_menu_name
 
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):

@@ -150,12 +150,19 @@ class RichMenuManager:
         result = await self.line_bot_api.get_rich_menu_list(async_req=True).get()
         return result.richmenus
     
-    async def get_rich_menu_by_alises(self, alias: str) -> str:
+    async def get_all_rich_menu_aliases(self) -> list:
+        """
+        Get a list of all rich menu aliases.
+        """
+        result = await self.line_bot_api.get_rich_menu_alias_list(async_req=True).get()
+        return result.aliases
+    
+    async def get_rich_menu_by_alias(self, alias: str) -> str:
         """
         Get a rich menu by its alias.
         """
         result = await self.line_bot_api.get_rich_menu_alias(rich_menu_alias_id=alias, async_req=True).get()
-        return result.rich_menu_id
+        return result
     
     async def delete_rich_menu(self, rich_menu_id: str):
         """
@@ -163,6 +170,13 @@ class RichMenuManager:
         """
         await self.line_bot_api.delete_rich_menu(rich_menu_id,async_req=True).get()
 
+    async def delete_rich_menu_alias(self, alias: str):
+        """
+        Delete a rich menu alias.
+        """
+        await self.line_bot_api.delete_rich_menu_alias(alias, async_req=True).get()
+        
+    
     async def link_rich_menu_to_user(self, user_id: str, rich_menu_id: str):
         """
         Link a rich menu to a specific user.
@@ -171,7 +185,7 @@ class RichMenuManager:
             user_id (str): The user's ID.
             rich_menu_id (str): The rich menu's ID.
         """
-        await self.line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id, async_req=True).get()
+        await self.line_bot_api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=rich_menu_id, async_req=True).get()
 
     async def unlink_rich_menu_from_user(self, user_id: str):
         """
