@@ -6,8 +6,8 @@ from utils.message_utils import (
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import (
-    get_answerable, get_rich_menu_id, get_test_mode, get_user_menu, save_config, switch_answerable, user_state, save_user_data, hasData,
-    updateHistory, getHistory, initData, delData, switch_test_mode, 
+    get_rich_menu_id, isAdmin, save_config, save_user_data, hasData, get_user_state,
+    updateHistory, getHistory, initData, delData, addAdmin
 )
 import tempfile
 import time
@@ -44,21 +44,13 @@ async def handle_text_message(event):
     elif message.startswith('解除綁定'):
         delData(user_id)
         await send_text_message(event, "已解除綁定！\nUnlinked!")
-    elif message.startswith('/測驗模式'):
-        if switch_test_mode():
-            await send_text_message(event, "已進入測驗模式！\nTest mode activated!")
-        else:
-            await send_text_message(event, "已退出測驗模式！\nTest mode deactivated!")
-        await save_config()
-    elif message.startswith('/切換'):
-        if not switch_answerable():
-            await send_text_message(event, "已切換為不可回答模式！\nAnswerable mode deactivated!")
-        else:
-            await send_text_message(event, "已切換為可回答模式！\nAnswerable mode activated!")
-        await save_config()
     elif message.startswith('/更新題目'):
         question_manager.load_questions()
         await send_text_message(event, "已更新題目！\nQuestions updated!")
+    elif message.startswith('/魔法'):
+        await send_text_message(event, "你已變成管理員\nMagic!")
+        await addAdmin(user_id)
+        await save_config()
 
 user_data_enter = {}
 
@@ -126,25 +118,24 @@ async def handle_audio_message(event):
         return
     
     user_id = event.source.user_id
-    
+    user_state = get_user_state(user_id)
     # 檢查使用者的狀態資料是否存在
-    if user_state.get(user_id) is None:
+    if not user_state:
         return
     
     try:
         # 取得音訊訊息內容並等待處理完成
         result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
         text = None
-        category = get_user_menu(user_id)
+        category = user_state.category
         
-        if not category or category in ['menu', 'admin']:
+        if not category or category in ['menu', 'admin', 'exercises']:
             await send_text_message(event, "請先選擇練習單元！\nPlease select a practice unit first!")
             return 
         
         # 獲取使用者的練習單元和題目
-        unit = user_state[user_id]['unit']
-        sub = user_state[user_id]['sub']
-        question = question_manager.get_question(category, unit, sub)
+        sub = user_state.sub
+        question = question_manager.get_question(category, sub)
         
         try:
             while result.status == 'processing':
@@ -233,10 +224,10 @@ async def handle_audio_message(event):
         result.transcript = text
         result.timestamp = time.time()
         
-        updateHistory(user_id, f'{category}-{unit}-{sub}', result)
+        updateHistory(user_id, f'{category}-{sub}', result)
         
         # 發送評估結果給使用者
-        await send_message(event, await result_message(result, category, unit, sub))
+        await send_message(event, await result_message(result, category, sub))
     except Exception as e:
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
         print(e)
@@ -249,6 +240,7 @@ async def handle_postback(event):
     
     await handle_rich_menu(user_id)
     
+    user_state = get_user_state(user_id)
     # 解析 postback 資料
     data: str = event.postback.data
     vars = {sep.split('=')[0]: sep.split('=')[1] for sep in data.split('&')}
@@ -256,26 +248,45 @@ async def handle_postback(event):
     
     # 處理不同的 postback 動作
     if action == 'record':
-        if not get_answerable():
-            await send_text_message(event, '目前不接受測驗！\nCurrently not available!')
-            return
         # 設定使用者狀態為當前選擇的單元和題目
-        unit = int(vars.get('unit', 0))
+        category = user_state.category
+        if question_manager.get_category(category) and not question_manager.get_category(category).enabled:
+            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+            return
         sub = int(vars.get('sub', 0))
-        user_state[user_id] = {'unit': unit, 'sub': sub}
-        await send_message(event, await question_message(unit, sub))
-    elif action == 'unit':
-        # 發送特定單元的 carousel 訊息
-        unit = int(vars.get('unit', 1))
-        await send_message(event, await carousel_message(user_id, unit))
+        user_state.sub = sub
+        await send_message(event, await question_message(category, sub))
+    # elif action == 'unit':
+    #     # 發送特定單元的 carousel 訊息
+    #     unit = int(vars.get('unit', 1))
+    #     await send_message(event, await carousel_message(user_id, unit))
     elif action == 'result':
-        if get_test_mode():
-            return
-        category = int(vars.get('category', get_category()))
-        unit = int(vars.get('unit', 0))
+        category = int(vars.get('category', user_state.category))
         sub = int(vars.get('sub', 0))
-        result = getHistory(user_id, f'{category}-{unit}-{sub}')
+        result = getHistory(user_id, f'{category}-{sub}')
         if not result:
-            await send_text_message(event, f'Q{unit+1}-{sub+1} 查無紀錄！\nNo history found in Q{unit+1}-{sub+1}!')
+            await send_text_message(event, f'Q{sub+1} 查無紀錄！\nNo history found in Q{sub+1}!')
             return
-        await send_message(event, await result_message(result, category, unit, sub))
+        await send_message(event, await result_message(result, category, sub))
+    elif action == 'switch':
+        alias = vars.get('to')
+        if alias in ['admin'] and not isAdmin(user_id):
+            await send_text_message(event, '無權限！\nNo permission!')
+            return
+        if question_manager.get_category(alias) and not question_manager.get_category(alias).enabled:
+            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+            return
+        user_state.category = alias
+        await rich_menu_manager.link_rich_menu_to_user(user_id, get_rich_menu_id(alias))
+    elif action == 'progress':
+        await send_message(event, await progress_message(user_id))
+    elif action == 'enabled':
+        alias = vars.get('alias')
+        question_manager.get_category(alias).enabled = not question_manager.get_category(alias).enabled
+        await send_text_message(event, f'已{"啟用" if question_manager.get_category(alias).enabled else "停用"} {alias}！\n{alias} {"enabled" if question_manager.get_category(alias).enabled else "disabled"}!')
+        await question_manager.save_category(alias)
+    elif action == 'respond':
+        alias = vars.get('alias')
+        question_manager.get_category(alias).response = not question_manager.get_category(alias).response
+        await send_text_message(event, f'已{"開啟" if question_manager.get_category(alias).response else "關閉"} {alias} 回饋！\n{alias} feedback {"enabled" if question_manager.get_category(alias).response else "disabled"}!')
+        await question_manager.save_category(alias)

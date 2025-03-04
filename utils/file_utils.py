@@ -2,40 +2,28 @@ import json
 import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
 from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
-from utils.models import User, SpeechAssessment  # 使用者和評分資料的模型
+from utils.models import User, SpeechAssessment, UserState  # 使用者和評分資料的模型
 
 # 使用者狀態和資料
-user_menu = {}  # 儲存每個使用者的選單狀態
-user_state = {}  # 儲存每個使用者的即時狀態
+user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
 user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
 
 # 預設設定
 DEFAULT_CONFIG = {
-    'test_mode': False,
-    'answerable': True,
+    'admin': [],
     'rich_menu_ids': {},
 }
 
 # 設定檔案
 config = DEFAULT_CONFIG.copy()
 
-# 切換答題模式
-def switch_answerable() -> bool:
-    config['answerable'] = not(config['answerable'])
-    return config['answerable']
+def get_user_state(user_id: str) -> UserState | None:
+    if user_state.get(user_id) is None:
+        user_state[user_id] = UserState()
+    return user_state.get(user_id)
 
-# 獲取答題模式狀態
-def get_answerable() -> bool:
-    return config['answerable']
-
-# 切換測試模式
-def switch_test_mode() -> bool:
-    config['test_mode'] = not(config['test_mode'])
-    return config['test_mode'] 
-
-# 獲取測試模式
-def get_test_mode() -> bool:
-    return config['test_mode']
+def clear_rich_menu_id():
+    config['rich_menu_ids'] = {}
 
 def get_rich_menu_id(category: str) -> str | None:
     return config.get('rich_menu_ids').get(category)
@@ -48,12 +36,6 @@ def get_rich_menu_category_from_id(rich_menu_id: str) -> str | None:
 
 def set_rich_menu_id(rich_menu_id: str, category: str):
     config['rich_menu_ids'][category] = rich_menu_id
-
-def get_user_menu(user_id: str) -> str | None:
-    return user_menu.get(user_id)
-
-def set_user_menu(user_id: str, rich_menu_name: str):
-    user_menu[user_id] = rich_menu_name
 
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
@@ -78,12 +60,21 @@ def getData() -> dict:
 # 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):
     # 將指定的歷史紀錄（history）新增或更新到 user_data 中該使用者的歷史紀錄
-    user_data[user_id].history[key] = history
+    if key not in user_data[user_id].history:
+        user_data[user_id].history[key] = []
+    user_data[user_id].history[key].append(history)
 
 # 獲取使用者的歷史紀錄
-def getHistory(user_id, key) -> SpeechAssessment | None:
+def getHistory(user_id, key) -> list[SpeechAssessment] | None:
     # 獲取指定使用者的指定歷史紀錄
     return user_data[user_id].history.get(key,None)
+
+def isAdmin(user_id) -> bool:
+    return user_id in config['admin']
+
+async def addAdmin(user_id):
+    config['admin'].append(user_id)
+    config['admin'] = list(set(config['admin']))
 
 # 非同步加載設定
 async def load_config():

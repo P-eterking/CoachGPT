@@ -9,10 +9,8 @@ from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import SpeechAssessment
 import json
-from PIL import Image
-import asyncio
 from utils.file_utils import (
-    get_test_mode, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, set_user_menu, get_user_menu, get_rich_menu_category_from_id
+    get_user_state, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
 )
 # 設定主網址和分類變數
 URL = f'https://{DOMAIN}'
@@ -129,7 +127,7 @@ SYSTEM_INSTRUCTION = f"""
         
         你需要以4個步驟執行任務，Think step by step:
         1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
-        2. 根據提供之評分標準，為學生的口說回答評分(It's okay to give out a full marks)。
+        2. 根據提供之評分標準，為學生的口說回答評分，注意最高分(It's okay to give out a full marks)。
         3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文(zh-TW)與英文(en-US)回傳。
         4. 依照學生回答文本，延伸或改進其回答，以英文回覆。
         
@@ -201,30 +199,33 @@ async def progress_message(user_id):
         TextMessage: 進度訊息物件。
     """
     questions = question_manager.questions  # Assume this function retrieves all categories
-    progress : list[str] = [] # 未回答的題目
+    progress: dict[str: list[int]] = {}
     total = 0
     
-    for category, units in enumerate(questions):
-        for unit, sub in enumerate(units):
-            for num, _ in enumerate(sub):
-                total += 1
-                if getHistory(user_id, f'{category}-{unit}-{num}'):
-                    continue
-                progress.append(f'{category}-{unit}-{num}')
+    for category, question in questions.items():
+        for num, _ in enumerate(question.content):
+            total += 1
+            if getHistory(user_id, f'{category}-{num}'):
+                continue
+            if category not in progress:
+                progress[category] = []
+            progress[category].append(num)
                 
     if len(progress) == 0:
         return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
     
     # Create a formatted message
-    message = f"您尚未回答 Questions Unanswered ({len(progress)}):\n"
-    for q in progress:
-        category, unit, sub = map(lambda s: int(s), q.split('-')[:3])
-        message += f"\n{'Excercise 練習' if category == 0 else 'Pre-test 前測' if category == 1 else 'Post-test 後測'} - Q{unit+1}-{sub+1}"
+    message = f"您尚未回答 Questions Unanswered ({total - sum(len(v) for v in progress.values())}):\n"
+    for category, subs in progress.items():
+        if len(subs) > 0:
+            message += f"\nCategory {category}:\n"
+        for sub in subs:
+            message += f"\n - Q{sub+1}"
     
     return TextMessage(text=message)
     
     
-async def result_message(result: SpeechAssessment, category: int, unit: int, sub: int):
+async def result_message(result: SpeechAssessment, category: int, sub: int):
     """
     生成口語評估結果訊息。
     
@@ -238,9 +239,9 @@ async def result_message(result: SpeechAssessment, category: int, unit: int, sub
     Returns:
         FlexMessage: 口語評估結果訊息物件。
     """
-    q = question_manager.get_question(category, unit, sub)
+    q = question_manager.get_question(category, sub)
     msg = FlexMessage(
-        altText=f'{unit+1}-{sub+1} 口語練習結果 Result',
+        altText=f'Q{sub+1} 口語練習結果 Result',
         contents=FlexCarousel(
             contents=[
                 FlexBubble(
@@ -251,7 +252,7 @@ async def result_message(result: SpeechAssessment, category: int, unit: int, sub
                         alignItems='center',
                         contents=[
                             FlexText(
-                                text=f'Q{unit+1}-{sub+1} 練習結果 Result',
+                                text=f'Q{sub+1} 練習結果 Result',
                                 wrap=True,
                                 weight='bold',
                                 size='xxl',
@@ -336,7 +337,7 @@ async def result_message(result: SpeechAssessment, category: int, unit: int, sub
                         ],
                     ),
                 )
-            ] if not get_test_mode() else [
+            ] if not question_manager.get_category(category).response else [
                 FlexBubble(
                     size='giga',
                     body=FlexBox(
@@ -345,7 +346,7 @@ async def result_message(result: SpeechAssessment, category: int, unit: int, sub
                         alignItems='center',
                         contents=[
                             FlexText(
-                                text=f'Q{unit+1}-{sub+1} 作答完成 Complete',
+                                text=f'Q{sub+1} 作答完成 Complete',
                                 wrap=True,
                                 weight='bold',
                                 size='xxl',
@@ -356,15 +357,15 @@ async def result_message(result: SpeechAssessment, category: int, unit: int, sub
             ]
         )
     )
-    if category is get_category():
-        msg.quick_reply = QuickReply(items=[
-            QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&unit={unit}&sub={sub}')),
-            QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=unit&unit={unit+1}' if len(question_manager.get_unit(category,unit))-1 == sub else f'action=record&unit={unit}&sub={sub+1}')),
-            QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
-        ])
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&sub={sub}')),
+        # QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
+    ])
+    if len(question_manager.get_all_questions(category))-1 > sub:
+        msg.quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=record&sub={sub+1}')))
     return msg
 
-async def question_message(unit, sub):
+async def question_message(category, sub):
     """
     生成問題訊息。
     
@@ -378,10 +379,10 @@ async def question_message(unit, sub):
         FlexMessage: 問題訊息物件。
     """
     messages = []
-    question = question_manager.get_question(get_category(), unit, sub)
+    question = question_manager.get_question(category, sub)
     contents = [
         FlexText(
-            text=f'Q{unit+1}-{sub+1}',
+            text=f'Q{sub+1}',
             wrap=True,
             weight='bold',
             size='xxl',
@@ -468,7 +469,7 @@ async def question_message(unit, sub):
         contents=FlexCarousel(contents=messages)
     )
     
-async def carousel_message(user_id, unit):
+async def carousel_message(user_id, category, unit):
     """
     生成單元導覽訊息。
     
@@ -481,8 +482,7 @@ async def carousel_message(user_id, unit):
     Returns:
         FlexMessage: 單元導覽訊息物件。
     """
-    category = get_category()
-    if len(question_manager.get_category(category)) < unit:
+    if len(question_manager.get_all_questions(category)) < unit:
         return None
     cols = []
     for sub,j in enumerate(question_manager.get_unit(category,unit-1)):
@@ -527,7 +527,7 @@ async def carousel_message(user_id, unit):
             ),
             body=body
         ))
-    if len(question_manager.get_category(category)) > unit:
+    if len(question_manager.get_all_questions(category)) > unit:
         cols.append(FlexBubble(
             body=FlexBox(
                 contents=[
@@ -608,18 +608,19 @@ async def handle_rich_menu(user_id):
     Args:
         user_id: 使用者ID。
     """
-    if get_user_menu(user_id):
+    user_state = get_user_state(user_id)
+    if user_state.category:
         return
     try:
         rich_menu_id = await rich_menu_manager.get_rich_menu_id(user_id)
         category = get_rich_menu_category_from_id(rich_menu_id)
         if not category:
             raise ApiException('No rich menu category found.')
-        set_user_menu(user_id, category)
+        user_state.category = category
     except ApiException as e:
         rich_menu_id = get_rich_menu_id('menu')
         await rich_menu_manager.link_rich_menu_to_user(user_id=user_id, rich_menu_id=rich_menu_id)
-        set_user_menu(user_id, 'menu')
+        user_state.category = 'menu'
     except Exception as e:
         print(e)
 
@@ -632,13 +633,11 @@ async def create_rich_menu():
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
     response = await rich_menu_manager.get_all_rich_menus()
-    if len(response) != len(configs['rich_menus']):
+    if len(response) != len(configs['rich_menus'].items()):
         print("Deleting all rich menus...")
         for r in response:
             await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
-        response = await rich_menu_manager.get_all_rich_menu_aliases()
-        for r in response:
-            await rich_menu_manager.delete_rich_menu_alias(r.rich_menu_alias_id)
+        clear_rich_menu_id()
     for menu_name, config in configs['rich_menus'].items():
         if get_rich_menu_id(menu_name):
             continue
@@ -648,15 +647,8 @@ async def create_rich_menu():
         if image_file:
             image_path = os.path.join("./templates/richmenu", image_file)
             await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
+        if builder.selected:
+            await rich_menu_manager.set_default_rich_menu(rich_menu_id)
         set_rich_menu_id(rich_menu_id, menu_name)
-        try:
-            await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
-        except Exception as e:
-            print(f'Error creating alias for {menu_name}: {e}')
-            response = await rich_menu_manager.get_rich_menu_by_alias(menu_name)
-            await rich_menu_manager.delete_rich_menu_alias(response.rich_menu_alias_id)
-            await rich_menu_manager.delete_rich_menu(response.rich_menu_id)
-            print(f"Deleted rich menu for alias {menu_name} ({response})")
-            await rich_menu_manager.create_alias_rich_menu(rich_menu_id, menu_name)
         print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
     await save_config()

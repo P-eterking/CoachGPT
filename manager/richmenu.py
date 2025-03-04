@@ -209,7 +209,16 @@ class RichMenuManager:
         """
         result = await self.line_bot_api.get_rich_menu_id_of_user(user_id, async_req=True).get()
         return result.rich_menu_id
-
+    
+    async def set_default_rich_menu(self, rich_menu_id: str):
+        """
+        Set a rich menu as the default.
+        
+        Args:
+            rich_menu_id (str): The ID of the rich menu.
+        """
+        await self.line_bot_api.set_default_rich_menu(rich_menu_id, async_req=True).get()
+        
 def load_rich_menu_configs():
     """
     Loads rich menu configurations from the JSON file.
@@ -258,9 +267,8 @@ def build_rich_menu_from_config(name, rich_menu_config) -> RichMenuBuilder:
         elif action_cfg["type"] == "uri":
             act = URIAction(label=action_cfg["label"], uri=action_cfg["uri"])
         elif action_cfg["type"] == "switch":
-            act = RichMenuSwitchAction(
+            act = PostbackAction(
                 label=action_cfg["label"],
-                rich_menu_alias_id=action_cfg["alias_id"],
                 data=f"action=switch&to={action_cfg["alias_id"]}")
         elif action_cfg["type"] == "postback":
             act = PostbackAction(

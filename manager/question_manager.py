@@ -1,4 +1,4 @@
-from utils.models import Question
+from utils.models import Question, QuestionCategory
 from typing import List
 import aiofiles
 import asyncio
@@ -12,45 +12,49 @@ class QuestionManager(object):
     def __init__(self, data_source):
         # 初始化
         self.data_source = data_source
-        self.questions = self.load_questions()
+        self.questions: dict[str, QuestionCategory] = self.load_questions()
 
-    def load_questions(self) -> List[List[List[Question]]]:
+    def load_questions(self) -> dict[str, QuestionCategory]:
         # 載入問題
-        questions = []
-        for root, dirs, files in os.walk(self.data_source):
+        questions = {}
+        for root, _, files in os.walk(self.data_source):
             for file in files:
-                if not file.endswith('.json'):
+                if not file.endswith('.json') or file.startswith('-'):
                     continue
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     if 'content' not in data:
                         continue
-                    category_questions = [([Question(**q) for q in unit] if isinstance(unit, list) else Question(**unit)) for unit in data['content']]
-                    questions.append(category_questions)
-        self.questions = questions
+                    category_questions = QuestionCategory(**data)
+                    questions[file.split('.')[0]] = category_questions
         return questions
     
-    def get_question(self, category, unit, sub) -> Question:
+    def get_question(self, category: str, sub: str) -> Question:
         # 返回指定的問題
-        return self.questions[category][unit][sub]
+        return self.questions[category].content[sub]
     
-    def get_unit(self, category, unit) -> List[Question]:
-        # 返回指定的單元
-        return self.questions[category][unit]
-        
-    def get_category(self, category) -> List[List[Question]]:
+    def get_all_questions(self, category: str) -> List[Question]:
+        # 返回所有問題
+        return self.questions[category].content
+    
+    def get_category(self, category) -> QuestionCategory | None:
         # 返回指定的類別
-        return self.questions[category]
+        return self.questions.get(category)
     
-    async def _save_category(self, index: int, category) -> None:
-        file_path = os.path.join(self.data_source, f'{index}.json')
+    async def _save_category(self, category: str, value: QuestionCategory) -> None:
+        file_path = os.path.join(self.data_source, f'{category}.json')
         async with aiofiles.open(file_path, 'w', encoding='utf-8') as file:
-            await file.write(json.dumps(category, indent=4))
-        print(f"Category {index} saved successfully.")
-    
-    async def save_questions(self):
+            # Convert value to dict for JSON serialization
+            await file.write(json.dumps(value.to_dict(), indent=4, ensure_ascii=False))
+        print(f"Category {category} saved successfully.")
+
+    async def save_category(self, category: str) -> None:
+        # 儲存類別
+        await self._save_category(category, self.questions.get(category))
+
+    async def save_questions(self) -> None:
         # 儲存問題
-        tasks = [self._save_category(i, cate) for i, cate in enumerate(self.questions)]
+        tasks = [self._save_category(cate, value) for cate, value in self.questions.items()]
         await asyncio.gather(*tasks)
 
