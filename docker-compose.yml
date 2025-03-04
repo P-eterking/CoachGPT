@@ -36,7 +36,7 @@ services:
     env_file:
       - .env
     environment:
-      - DOMAIN={DOMAIN2}
+      - DOMAIN=${DOMAIN2}
       - PORT=8001
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET2}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN2}
