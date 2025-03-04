@@ -23,6 +23,7 @@ SYSTEM_INSTRUCTION = f"""
         userAnswer 代表使用者的口說回答
         question 代表題目
         standard 代表評量標準
+        maxScore 代表最高分
         
         Sample Question #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
         Sample Question #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
@@ -120,15 +121,15 @@ SYSTEM_INSTRUCTION = f"""
         表達清晰度：無法作答或表達。 
         主題關聯性：完全無法進行主題相關的表達或回應，無法提供任何訊息。
         語法使用：無法使用任何語法。 
-        字彙量：無可使用詞彙。 
+        字彙量：無可使用詞彙或回應過短。 
         回應複雜度：無回應能力。 
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
         
         你需要以4個步驟執行任務，Think step by step:
         1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
-        2. 根據提供之評分標準，為學生的口說回答評分，注意最高分(It's okay to give out a full marks)。
-        3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文(zh-TW)與英文(en-US)回傳。
+        2. 根據提供之評分標準與最高分，為學生的口說回答評分(It's okay to give out a full marks)。
+        3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文(zh-TW)與英文(en-US)回應。
         4. 依照學生回答文本，延伸或改進其回答，以英文回覆。
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
@@ -563,7 +564,7 @@ CHI_HINT = [
 ENG_HINT =[
     'Enter your class time\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)',
     'Next, what is your department?\nFor example: Information Management',
-    'Next, what is your student ID?\nFor example: 11352237',
+    'Next, what is you r student ID?\nFor example: 11352237',
     'Next, what is your name?\nFor example: Paul Wang',
 ]
 
