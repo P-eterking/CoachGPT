@@ -127,8 +127,7 @@ async def handle_audio_message(event):
         text = None
         category = user_state.category
         
-        if not category or category in ['menu', 'admin', 'exercises']:
-            await send_text_message(event, "請先選擇練習單元！\nPlease select a practice unit first!")
+        if not category or not question_manager.has_question(category):
             return 
         
         # 獲取使用者的練習單元和題目

@@ -35,6 +35,10 @@ class QuestionManager(object):
         # 返回指定的問題
         return self.questions[category].content[sub]
     
+    def has_question(self, category: str) -> bool:
+        # 是否有問題
+        return category in self.questions
+    
     def get_all_questions(self, category: str) -> List[Question]:
         # 返回所有問題
         return self.questions[category].content
