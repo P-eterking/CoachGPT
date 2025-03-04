@@ -1,3 +1,4 @@
+from os import remove
 from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
 from utils.message_utils import (
@@ -5,10 +6,7 @@ from utils.message_utils import (
     question_message, carousel_message, SYSTEM_INSTRUCTION, text_message, progress_message,
 )
 from utils.models import SpeechAssessment
-from utils.file_utils import (
-    get_rich_menu_id, isAdmin, save_config, save_user_data, hasData, get_user_state,
-    updateHistory, getHistory, initData, delData, addAdmin
-)
+from utils.file_utils import *
 import tempfile
 import time
 
@@ -250,7 +248,7 @@ async def handle_postback(event):
     if action == 'record':
         # 設定使用者狀態為當前選擇的單元和題目
         category = user_state.category
-        if question_manager.get_category(category) and not question_manager.get_category(category).enabled:
+        if not isEnabled(category):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         sub = int(vars.get('sub', 0))
@@ -273,7 +271,7 @@ async def handle_postback(event):
         if alias in ['admin'] and not isAdmin(user_id):
             await send_text_message(event, '無權限！\nNo permission!')
             return
-        if question_manager.get_category(alias) and not question_manager.get_category(alias).enabled:
+        if alias in ['pretest', 'posttest', 'sheet1', 'sheet2', 'sheet3'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         user_state.category = alias
@@ -282,11 +280,25 @@ async def handle_postback(event):
         await send_message(event, await progress_message(user_id))
     elif action == 'enabled':
         alias = vars.get('alias')
-        question_manager.get_category(alias).enabled = not question_manager.get_category(alias).enabled
-        await send_text_message(event, f'已{"啟用" if question_manager.get_category(alias).enabled else "停用"} {alias}！\n{alias} {"enabled" if question_manager.get_category(alias).enabled else "disabled"}!')
+        if isEnabled(alias):
+            removeEnabled(alias)
+        else:
+            addEnabled(alias)
+        await save_config()
+        await send_text_message(event, f'已{"啟用" if isEnabled(alias) else "停用"} {alias}！\n{alias} {"enabled" if isEnabled(alias) else "disabled"}!')
         await question_manager.save_category(alias)
     elif action == 'respond':
         alias = vars.get('alias')
-        question_manager.get_category(alias).response = not question_manager.get_category(alias).response
-        await send_text_message(event, f'已{"開啟" if question_manager.get_category(alias).response else "關閉"} {alias} 回饋！\n{alias} feedback {"enabled" if question_manager.get_category(alias).response else "disabled"}!')
+        if isResponse(alias):
+            removeResponse(alias)
+        else:
+            addResponse(alias)
+        await save_config()
+        await send_text_message(event, f'已{"開啟" if isResponse(alias) else "關閉"} {alias} 回饋！\n{alias} feedback {"enabled" if isResponse(alias) else "disabled"}!')
         await question_manager.save_category(alias)
+    elif action == 'reload':
+        question_manager.load_questions()
+        await send_text_message(event, '已重新載入問題！\nQuestions reloaded!')
+    elif action == 'save':
+        await save_all()
+        await send_text_message(event, '儲存成功！\nSave successful!')

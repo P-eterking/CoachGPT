@@ -5,18 +5,43 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "run", "--token", "eyJhIjoiMjBhYWU3OWZjZjI4MmYwZWE5YjAyMTEyNzhkNDEwNDAiLCJ0IjoiYmUzY2E1MDUtMDIxOS00MDM2LWFlZjUtY2Y5NWRhMGM1Nzg5IiwicyI6IlpHWmxPR013TmpFdE5UUmhNaTAwWlRZMExUaGhNMlF0T0RSaFl6RmtaakUzWVRFMiJ9"]
+    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "run", "--token", ""]
     container_name: cloudflared-tunnel
 
   service:
     build: .
     container_name: linebot-service
+    restart: unless-stopped
     ports:
       - "8000:8000"  # 映射 FastAPI 服務的端口
     env_file:
       - .env
+    environment:
+      - DOMAIN=${DOMAIN}
+      - PORT=8000
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
     volumes:
-      - .:/app  # 將當前目錄映射到容器中的 /app 目錄
+      - ./data/config.json:/app/config.json
+      - ./data/user_data.json:/app/user_data.json
+      - ./category:/app/category
+      - ./templates:/app/templates
 
-# volumes:
-  # app-data:
+  service2:
+    build: .
+    container_name: linebot-service2
+    restart: unless-stopped
+    ports:
+      - "8001:8001"  # 映射 FastAPI 服務的端口
+    env_file:
+      - .env
+    environment:
+      - DOMAIN={DOMAIN2}
+      - PORT=8001
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET2}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN2}
+    volumes:
+      - ./data/config2.json:/app/config.json
+      - ./data/user_data2.json:/app/user_data.json
+      - ./category:/app/category
+      - ./templates:/app/templates

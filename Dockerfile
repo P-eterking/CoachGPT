@@ -11,16 +11,16 @@ ENV UV_SYSTEM_PYTHON=1
 RUN apk update && apk add --no-cache \
     bash \
     curl \
-    gcc \
+    # gcc \
     libc-dev \
     linux-headers \
     libffi-dev \
     openssl-dev
 
 # 下載並安裝 ngrok
-RUN curl -Lo /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz && \
-    tar -xvzf /usr/local/bin/ngrok -C /usr/local/bin && \
-    chmod +x /usr/local/bin/ngrok
+# RUN curl -Lo /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz && \
+#     tar -xvzf /usr/local/bin/ngrok -C /usr/local/bin && \
+#     chmod +x /usr/local/bin/ngrok
 
 # 複製應用代碼
 COPY . /app/
@@ -39,5 +39,5 @@ RUN chmod +x /app/start.sh
 EXPOSE 8000
 
 # 使用 bash 執行啟動腳本來啟動 FastAPI 和 Ngrok
-CMD ["uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
-# CMD ["bash", "./start.sh"]
+# CMD ["uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "./start.sh"]

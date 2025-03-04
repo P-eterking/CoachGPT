@@ -46,10 +46,10 @@
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "switch", "label": "enabled", "alias_id": "enabled" },
-                { "type": "postback", "label": "q2", "data": "action=q&q=2" },
-                { "type": "postback", "label": "q3", "data": "action=q&q=3" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "uri", "label": "stats", "uri": "https://aigbl.xmoty.me/" },
+                { "type": "postback", "label": "save", "data": "action=save" },
+                { "type": "switch", "label": "respond", "alias_id": "respond" },
+                { "type": "postback", "label": "reload", "data": "action=reload" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },

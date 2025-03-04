@@ -12,6 +12,8 @@ user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括
 DEFAULT_CONFIG = {
     'admin': [],
     'rich_menu_ids': {},
+    'enabled': [],
+    'response': []
 }
 
 # 設定檔案
@@ -75,6 +77,26 @@ def isAdmin(user_id) -> bool:
 async def addAdmin(user_id):
     config['admin'].append(user_id)
     config['admin'] = list(set(config['admin']))
+
+def addEnabled(category):
+    config['enabled'].append(category)
+    config['enabled'] = list(set(config['enabled']))
+
+def removeEnabled(category):
+    config['enabled'].remove(category)
+
+def isEnabled(category):
+    return category in config['enabled']
+
+def addResponse(category):
+    config['response'].append(category)
+    config['response'] = list(set(config['response']))
+
+def removeResponse(category):
+    config['response'].remove(category)
+
+def isResponse(category):
+    return category in config['response']
 
 # 非同步加載設定
 async def load_config():

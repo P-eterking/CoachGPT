@@ -107,7 +107,6 @@ class RichMenuManager:
         self.line_bot_api = api
         self.line_bot_api_blob = api_blob
         self.rich_menus = {}
-            
         
     async def create_rich_menu(self, builder: RichMenuBuilder) -> str:
         """
@@ -119,7 +118,6 @@ class RichMenuManager:
         rich_menu_object = builder.build()
         response = await self.line_bot_api.create_rich_menu(rich_menu_request=rich_menu_object, async_req=True).get()
         rich_menu_id = response.rich_menu_id
-        self.rich_menus[rich_menu_id] = rich_menu_object
         return rich_menu_id
 
     async def upload_rich_menu_image(self, rich_menu_id: str, image_path: str):
@@ -143,6 +141,18 @@ class RichMenuManager:
             richMenuId=rich_menu_id,
         ),async_req=True).get()
     
+    def get_display_name(self, rich_menu_alias: str) -> str:
+        """
+        Get the display name of a rich menu.
+        """ 
+        return self.rich_menus[rich_menu_alias]
+    
+    def set_display_name(self, rich_menu_alias: str, display_name: str):
+        """
+        Set the display name of a rich menu.
+        """
+        self.rich_menus[rich_menu_alias] = display_name
+        
     async def get_all_rich_menus(self) -> list:
         """
         Get a list of all rich menus.

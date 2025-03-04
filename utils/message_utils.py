@@ -10,7 +10,7 @@ from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import SpeechAssessment
 import json
 from utils.file_utils import (
-    get_user_state, getHistory, get_rich_menu_id, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
+    get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
 )
 # 設定主網址和分類變數
 URL = f'https://{DOMAIN}'
@@ -18,7 +18,7 @@ IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 
 # 系統評估提示語，指導如何進行回答分析
 SYSTEM_INSTRUCTION = f"""
-        你是一個專業英語口說評量助手，擅長根據學生的回答提供改進建議和改善後之文本。
+        你是一個專業英語口說評量助手，擅長根據臺灣非母語者大學生的回答提供改進建議和改善後之文本。
         
         userAnswer 代表使用者的口說回答
         question 代表題目
@@ -203,6 +203,8 @@ async def progress_message(user_id):
     total = 0
     
     for category, question in questions.items():
+        if not isEnabled(question):
+            continue
         for num, _ in enumerate(question.content):
             total += 1
             if getHistory(user_id, f'{category}-{num}'):
@@ -215,17 +217,17 @@ async def progress_message(user_id):
         return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
     
     # Create a formatted message
-    message = f"您尚未回答 Questions Unanswered ({total - sum(len(v) for v in progress.values())}):\n"
+    message = f"您尚未回答 Questions Unanswered ({sum(len(v) for v in progress.values())}):\n"
     for category, subs in progress.items():
         if len(subs) > 0:
-            message += f"\nCategory {category}:\n"
-        for sub in subs:
-            message += f"\n - Q{sub+1}"
+            message += f"\n{rich_menu_manager.get_display_name(category)}:\n"
+        for i, sub in enumerate(subs):
+            message += f"{"\n" if i > 0 else ""} - Q{sub+1}"
     
     return TextMessage(text=message)
     
     
-async def result_message(result: SpeechAssessment, category: int, sub: int):
+async def result_message(result: SpeechAssessment, category: str, sub: int):
     """
     生成口語評估結果訊息。
     
@@ -337,7 +339,7 @@ async def result_message(result: SpeechAssessment, category: int, sub: int):
                         ],
                     ),
                 )
-            ] if not question_manager.get_category(category).response else [
+            ] if isResponse(category) else [
                 FlexBubble(
                     size='giga',
                     body=FlexBox(
@@ -559,7 +561,7 @@ CHI_HINT = [
 ]
 
 ENG_HINT =[
-    'Enter your class time\n\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)',
+    'Enter your class time\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)',
     'Next, what is your department?\nFor example: Information Management',
     'Next, what is your student ID?\nFor example: 11352237',
     'Next, what is your name?\nFor example: Paul Wang',
@@ -639,6 +641,7 @@ async def create_rich_menu():
             await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
         clear_rich_menu_id()
     for menu_name, config in configs['rich_menus'].items():
+        rich_menu_manager.set_display_name(menu_name, config.get('chat_bar_text'))
         if get_rich_menu_id(menu_name):
             continue
         builder = build_rich_menu_from_config(menu_name, config)

@@ -42,8 +42,8 @@ class Question(BaseModel):
         return self.model_dump(exclude_none=True)
 
 class QuestionCategory(BaseModel):
-    enabled: bool = Field(description="是否啟用", default=True)  # 是否啟用
-    response: bool = Field(description="是否回饋", default=True)  # 是否回饋
+    # enabled: bool = Field(description="是否啟用", default=True)  # 是否啟用
+    # response: bool = Field(description="是否回饋", default=True)  # 是否回饋
     content: List[Question] = Field(description="問題")  # 問題
     
     def to_dict(self) -> dict:

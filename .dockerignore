@@ -6,6 +6,7 @@ __pycache__/
 # Virtual environment
 venv/
 env/
+data/
 
 # Docker-related files
 Dockerfile
@@ -25,3 +26,6 @@ Thumbs.db
 # IDE specific files
 .vscode/
 .idea/
+
+config.json
+user_data.json

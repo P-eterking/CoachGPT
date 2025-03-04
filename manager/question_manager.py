@@ -12,7 +12,8 @@ class QuestionManager(object):
     def __init__(self, data_source):
         # 初始化
         self.data_source = data_source
-        self.questions: dict[str, QuestionCategory] = self.load_questions()
+        self.questions: dict[str, QuestionCategory]
+        self.load_questions()
 
     def load_questions(self) -> dict[str, QuestionCategory]:
         # 載入問題
@@ -28,7 +29,7 @@ class QuestionManager(object):
                         continue
                     category_questions = QuestionCategory(**data)
                     questions[file.split('.')[0]] = category_questions
-        return questions
+        self.questions = questions
     
     def get_question(self, category: str, sub: str) -> Question:
         # 返回指定的問題
