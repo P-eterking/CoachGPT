@@ -204,7 +204,7 @@ async def progress_message(user_id):
     total = 0
     
     for category, question in questions.items():
-        if not isEnabled(question):
+        if not isEnabled(category):
             continue
         for num, _ in enumerate(question.content):
             total += 1
