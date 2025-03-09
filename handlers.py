@@ -247,6 +247,7 @@ async def handle_postback(event):
     if action == 'record':
         # 設定使用者狀態為當前選擇的單元和題目
         category = user_state.category
+
         if not isEnabled(category):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return

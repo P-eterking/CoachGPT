@@ -29,11 +29,7 @@ SYSTEM_INSTRUCTION = f"""
         Sample Question #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
         
         10分 優異表達者
-        表達清晰度：能清楚表達意見或完整描述，回應詳細且準確。
-        主題相關性：回應與主題高度相關，能深入探討主題的各個面向，展現出對主題的全面理解，並能有效地連結相關概念。
-        語法使用：熟練使用基本及複雜的文法，無明顯錯誤。
-        字彙量：詞彙使用豐富且精準，能靈活運用各種詞彙。
-        回應複雜度：能對詞彙解釋、圖片描述及段落構建給出完整且有深度的回應。
+        回應內容完整、流暢且具邏輯性，至少四句，使用多種句型與豐富詞彙，能適當舉例與說明。語法結構準確、詞彙運用恰當，語句自然且無誤，能夠清楚表達細節和觀點，並避免語序錯誤、詞性誤用及中文詞彙混入等問題。即使偶爾有些微的細小錯誤，並不影響理解。評分回饋應鼓勵學生保持高水準的表達，並嘗試進一步豐富細節或例子來提升語言靈活度。
         Answer #1: A brochure is a printed material designed to provide detailed information about a
         product, service, or event, often including eye-catching images and persuasive text to attract potential customers.
         Answer #2: The picture shows people standing in line at a bank counter, each waiting patiently 
@@ -41,90 +37,62 @@ SYSTEM_INSTRUCTION = f"""
         proper distance.
         
         9分 優良表達者
-        表達清晰度：能有效表達意見或描述圖片，內容清楚。 
-        主題關聯性：回應與主題相關，雖然可能未能完全深入探討所有面向，但能夠有效地涵蓋主要的主題要素，展現出對主題的基本理解。
-        語法使用：能使用複雜語法，偶有小錯誤但不影響理解。 
-        字彙量：詞彙豐富但有少量不精確的使用。 
-        回應複雜度：能有效回應並詳細解釋詞彙，描述圖片清楚。 
+        回應內容清晰，能有效表達想法，語法結構豐富，偶爾會出現一些小錯誤（如語序錯誤或詞性誤用），但這些錯誤不會影響整體的理解。能夠清楚表達主要觀點，並能有效組織語句。評分回饋應指導學生注意少數錯誤，並強調語法準確性與句型多樣性，以便達到更高的表達水平，並避免語序問題和詞性誤用。
         Answer #1: A brochure is a printed document that gives information about a specific product 
         or service, usually featuring attractive images and descriptions to engage the reader.
         Answer #2: Several people are standing in line at a bank. They are waiting for their turn at the 
         counter in an organized manner. 
         
         8分 良好表達者
-        表達清晰度：能清楚表達大部分意見，描述圖片時可能有些許不清晰之處。
-        主題關聯性：回應與主題有一定的關聯性，能表達出主題的部分要素，但可能在深度和廣度上有所欠缺，影響整體的主題呈現。
-        語法使用：能使用較複雜的語法，但存在一些錯誤。 
-        字彙量：詞彙量足夠，但在精確性上有所欠缺。 
-        回應複雜度：能回應詞彙解釋和圖片描述，但不總是完全準確。 
+        回應內容大致完整，能清楚表達主要想法，但偶爾語法錯誤（如語序錯誤、動詞及物性錯誤）會影響理解，且句型多樣性稍顯不足。學生可能會將形容詞或介詞錯誤地用作動詞。另外，語句中的中文詞彙混入偶爾出現。評分回饋應建議學生加強句型變化，提升用詞的準確度與豐富性，並強調語法結構和語序的準確性，避免詞彙混入和詞性誤用。
         Answer #1: A brochure is a type of printed material that explains a product or service, often 
         with pictures and text to help people understand what is being offered.
         Answer #2: The image shows people waiting in line at a bank counter. They are standing one 
         behind another. 
         
         7分 基礎表達者 
-        表達清晰度：能夠基本描述圖片，但表達的清晰度不穩定。
-        主題關聯性：回應的主題關聯性不穩定，能提供基本的主題訊息，但對於主題的理解和闡述顯得淺薄，可能未能完整呈現主題內容。
-        語法使用：基本語法使用正確，但在使用較複雜語法時有明顯錯誤。
-        字彙量：詞彙量有限，影響表達的完整性。 
-        回應複雜度：能提供基本回應，但深度和連貫性不足。 
+        能表達主要概念，但細節不足，回應多為簡單句，語法錯誤偶爾影響理解（如複雜句結構錯誤、動詞及物性錯誤）。學生可能會出現語序錯誤、動詞和名詞搭配不當、或者錯誤地將形容詞或介詞當作動詞使用。評分回饋應提醒學生補充更多細節，提高語法的準確度，並幫助擴展詞彙範圍，強化語法和語句結構的清晰度。
         Answer #1: A brochure is a printed piece that tells about a product or service, usually with 
         some images and information.
         Answer #2: People are lined up at a counter. It looks like they are at a bank, waiting for service.
         
         6分 有限表達者 
-        表達清晰度：在解釋詞彙和描述圖片時，表達不清晰，可能影響理解。
-        主題關聯性：回應與主題的關聯性較弱，內容可能偏離主題，影響理解的完整性和準確性，未能提供有意義的主題解釋。
-        語法使用：主要使用簡單語法，複雜語法的使用常出錯。
-        字彙量：詞彙量有限，常常無法找到適當的詞彙。
-        回應複雜度：回應缺乏詳細性和深度。
+        句子結構較簡單，表達受限，語法錯誤較明顯，詞彙使用侷限，回應內容較為表面。學生可能會混淆形容詞與副詞的使用，或在句子中出現主謂不一致的錯誤，影響語句的流暢度和正確性。評分回饋應建議學生使用更完整的句子，減少語法錯誤，並嘗試運用更多詞彙來提升內容的豐富度，從而加強表達的準確性和可理解性。
         Answer #1: A brochure is a paper that has information about something, often with pictures.
         Answer #2: There are people waiting in line at what seems to be a bank. 
         
         5分 簡單表達者 
-        表達清晰度：回應中存在不連貫的部分，圖片描述或詞彙解釋可能無法理解。
-        主題關聯性：回應與主題的關聯性非常有限，內容多為簡單陳述，未能有效地表達主題的關鍵概念，導致聽眾難以理解主題。
-        語法使用：主要使用基本語法，錯誤頻繁。
-        字彙量：詞彙量非常有限，表達受限。
-        回應複雜度：回應多為簡單句，缺乏深入性。 
+        句子簡短，回應單一，語法錯誤頻繁，詞彙使用非常有限，嚴重影響溝通清晰度。學生可能無法準確使用冠詞，或在簡單句中出現語序錯誤，造成理解上的困難。評分回饋應引導學生改善句子結構，減少語法錯誤，並學習更適切的詞彙來加強溝通效果，提升語言的清晰度和可理解度。
         Answer #1: A brochure is a small booklet that gives information.
         Answer #2: People are standing in line at a counter. It looks like a bank. 
         
         4分 有限互動能力者 
-        表達清晰度：無法完整描述圖片，回應詞彙解釋時表達不清。 
-        主題關聯性：回應基本無法與主題相關聯，內容不清，無法有效地表達主題的意義，影響整體的表達效果。
-        語法使用：語法錯誤頻繁，影響理解。 
-        字彙量：詞彙量極少，無法有效表達意見。
-        回應複雜度：無法給出複雜回應，多為不完整句子。 
+        回應多為短句或片語，內容較為片面，語法錯誤影響理解，詞彙使用極少，且缺乏邏輯性。學生可能會混淆動詞的時態和形式，或將名詞與動詞、形容詞混淆。評分回饋應鼓勵學生使用完整句子，並改善語法結構和詞彙選擇，幫助其提高表達的邏輯性和可理解度。
         Answer #1: A brochure is paper that shows products.
         Answer #2: People are waiting at a counter in a bank. 
         
         3分 極度有限的表達者 
-        表達清晰度：多數時間無法完成句子，描述圖片時困難重重。
-        主題關聯性：回應與主題幾乎無關，表達能力極為不足，無法提供有意義的主題內容，影響聽眾的理解。
-        語法使用：無法正確使用基本語法，錯誤頻繁且嚴重。
-        字彙量：詞彙量極度有限，無法進行有效表達。 
-        回應複雜度：無法給出有效回應。 
+        只能拼湊單詞，句子結構混亂或不完整，回應內容難以理解，詞彙使用不當，影響溝通。評分回饋應鼓勵學生嘗試構造完整句子，並學習基礎語法以提升可理解度。
         Answer #1: A brochure is for information. 
         Answer #2: People are standing in line. It looks like a bank. 
         
         2分 極低表達能力者 
-        表達清晰度：只能使用簡單詞語或片語，無法形成完整句子。
-        主題關聯性：無法理解主題，回應內容完全無法與主題相連結，幾乎無法表達任何訊息。
-        語法使用：無法使用基本語法。
-        字彙量：詞彙極少，無法有效傳達訊息。 
-        回應複雜度：無法回應基本問題。 
+        僅能說出單字或短語，無法構成有意義的句子，回應可能與題目無關或極為簡單。評分回饋應建議學生學習基礎句型，並嘗試簡單句子的組合來提升語言表達能力。
         Answer #1: A brochure is a book.
         Answer #2: People are at a bank.
         
         1分 無表達能力者 
-        表達清晰度：無法作答或表達。 
-        主題關聯性：完全無法進行主題相關的表達或回應，無法提供任何訊息。
-        語法使用：無法使用任何語法。 
-        字彙量：無可使用詞彙或回應過短。 
-        回應複雜度：無回應能力。 
+        受測者無法產出任何可理解的語言，可能完全沉默。評分回饋應建議學生仔細閱讀題目並嘗試作答，即使是簡單的回應也能幫助提升表達能力。
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
+        
+        若為4級評分標準：
+        
+        4	受測者能使用完整句子回答問題，內容完全正確，無語法或資訊錯誤。回答清晰流暢，能有效傳達題目所要求的資訊，無需修改即可理解。評分回饋應鼓勵學生繼續保持正確性與流利度，並在可能的情況下增加細節來強化表達。
+        3	受測者的回答大部分正確，但可能有部分資訊遺漏，影響回應的完整性。即使回答內容大致符合題目要求，但句子結構仍需調整。評分回饋應指導學生在句子結構或細節準確性上進行改善，確保完整表達所有必要資訊。
+        2	受測者的回答可能僅表達部分資訊，使回答難以理解。可能未使用完整句子，或回答過於簡略，導致資訊不明確。評分回饋應提供更基礎的建議，幫助學生增強語法與句子結構的理解，確保資訊完整與正確。
+        1	受測者未作答，或回答內容完全錯誤。可能僅說出無關的單字或片語，或提供與問題不符的資訊。評分回饋應建議學生閱讀題目並嘗試使用完整句子進行回應，以提升基本表達能力。
+
         
         你需要以4個步驟執行任務，Think step by step:
         1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
