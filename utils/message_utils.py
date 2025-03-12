@@ -22,7 +22,7 @@ SYSTEM_INSTRUCTION = f"""
         
         userAnswer 代表使用者的口說回答
         question 代表題目
-        standard 代表評量標準
+        standard 代表評量標準及級距
         maxScore 代表最高分
         
         Sample Question #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
@@ -86,17 +86,15 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
         
-        若為4級評分標準：
-        
+        若評分標準為四個級距：
         4	受測者能使用完整句子回答問題，內容完全正確，無語法或資訊錯誤。回答清晰流暢，能有效傳達題目所要求的資訊，無需修改即可理解。評分回饋應鼓勵學生繼續保持正確性與流利度，並在可能的情況下增加細節來強化表達。
         3	受測者的回答大部分正確，但可能有部分資訊遺漏，影響回應的完整性。即使回答內容大致符合題目要求，但句子結構仍需調整。評分回饋應指導學生在句子結構或細節準確性上進行改善，確保完整表達所有必要資訊。
         2	受測者的回答可能僅表達部分資訊，使回答難以理解。可能未使用完整句子，或回答過於簡略，導致資訊不明確。評分回饋應提供更基礎的建議，幫助學生增強語法與句子結構的理解，確保資訊完整與正確。
         1	受測者未作答，或回答內容完全錯誤。可能僅說出無關的單字或片語，或提供與問題不符的資訊。評分回饋應建議學生閱讀題目並嘗試使用完整句子進行回應，以提升基本表達能力。
-
         
         你需要以4個步驟執行任務，Think step by step:
-        1. 針對以下評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
-        2. 根據提供之評分標準與最高分，為學生的口說回答評分(It's okay to give out a full marks)。
+        1. 針對提供之評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
+        2. 根據提供之評分標準範例與級距，為學生的口說回答評分(It's okay to give out a full marks)。
         3. 給予具體分析和建議，如糾正語法錯誤、建議使用更自然的語句或增加詞彙量，以台灣繁體中文(zh-TW)與英文(en-US)回應。
         4. 依照學生回答文本，延伸或改進其回答，以英文回覆。
         
@@ -321,6 +319,19 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
                                 wrap=True,
                                 weight='bold',
                                 size='xxl',
+                            ),
+                            FlexBox(
+                                layout='vertical',
+                                margin='md',
+                                contents=[
+                                    FlexText(
+                                        text=f'評分 Score: {result.score}/{q.max_score if q.max_score else 10}',
+                                        color='#5b5b5b',
+                                        size='xl',
+                                        wrap=True,
+                                        flex=1,
+                                    ),
+                                ]
                             ),
                         ],
                     ),
