@@ -2,7 +2,7 @@ from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
     QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
-    FlexText, FlexBox, FlexButton
+    FlexText, FlexBox, FlexButton, AudioMessage
 )
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
@@ -152,7 +152,23 @@ async def send_text_message(event, text):
             messages=[TextMessage(text=text)]
         )
     )
+
+async def send_audio_message(event, filename, duration):
+    """
+    發送音訊訊息給使用者。
     
+    Sends an audio message to the user.
+       Args:
+        event: 事件物件，包含回覆token。
+        url: 音訊檔案的網址。
+    """
+    await line_bot_api.reply_message(
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[AudioMessage(originalContentUrl=f'{URL}/templates/{filename}', duration=duration)]
+        )
+    )
+
 async def progress_message(user_id):
     """
     生成使用者未回答問題的進度訊息。
@@ -346,6 +362,11 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
     if len(question_manager.get_all_questions(category))-1 > sub:
         msg.quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=record&sub={sub+1}')))
     return msg
+
+async def chat_message(user_id, sub):
+    return TextMessage(text=f'已選擇主題 {sub+1}！\nSelected subject {sub+1}!', quick_reply=QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(label='', data=f'action=record&sub={sub}')),]))
+    
 
 async def question_message(category, sub):
     """

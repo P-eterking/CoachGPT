@@ -2,7 +2,7 @@ import json
 import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
 from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
-from utils.models import User, SpeechAssessment, UserState  # 使用者和評分資料的模型
+from utils.models import ChatHistory, User, SpeechAssessment, UserState  # 使用者和評分資料的模型
 
 # 使用者狀態和資料
 user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
@@ -20,6 +20,7 @@ DEFAULT_CONFIG = {
 config = DEFAULT_CONFIG.copy()
 
 def get_user_state(user_id: str) -> UserState | None:
+    global user_state
     if user_state.get(user_id) is None:
         user_state[user_id] = UserState()
     return user_state.get(user_id)
@@ -58,6 +59,13 @@ def hasData(user_id) -> bool:
 # 獲取使用者資料
 def getData() -> dict:
     return user_data
+
+# 更新使用者的聊天紀錄
+def getChatHistory(user_id, key) -> ChatHistory:
+    return user_data[user_id].chat.get(key, ChatHistory(questions=[], answers=[]))
+
+def updateChatHistory(user_id, key, chat: ChatHistory):
+    user_data[user_id].chat[key] = chat
 
 # 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):
