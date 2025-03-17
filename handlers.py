@@ -44,11 +44,6 @@ async def handle_text_message(event):
     message: str = event.message.text.strip()
     # 獲取使用者 ID
     user_id = event.source.user_id
-
-    # 若訊息以「清除」開頭，取消使用者的 rich menu 綁定 using new framework
-    if message.startswith('清除'):
-        rich_menu_manager.unlink_rich_menu_from_user(user_id)
-        return
     
     await handle_rich_menu(user_id)
     
@@ -56,8 +51,8 @@ async def handle_text_message(event):
     if not await check_user_login(event, message):
         return
 
-    # 根據訊息內容執行不同的口語練習
-    if message.startswith('解除綁定'):
+    # 若訊息以「/」開頭，進行指令處理
+    if message.startswith('/解除綁定') or message.startswith('/unlink'):
         delData(user_id)
         await send_text_message(event, "已解除綁定！\nUnlinked!")
     elif message.startswith('/魔法'):
@@ -79,6 +74,11 @@ async def check_user_login(event, message: str = None) -> bool:
     if message is None:
         # 若沒有訊息，提示使用者提供所需資料
         await send_message(event, await info_hint_message(len(info)))
+        return False
+    
+    if message.lower() == 'back' and len(info) > 0:
+        await send_message(event, await info_hint_message(len(info) - 1))
+        user_data_enter[user_id] = info[:-1]
         return False
     
     # 以下依序確認使用者輸入格式
@@ -280,12 +280,12 @@ async def handle_postback(event):
     elif action == 'chat':
         sub = int(vars.get('sub', -1))
         user_state.sub = sub
-        if 'hint' in vars.keys():
-            history = getChatHistory(user_id, sub)
-            history = await send_audio_request(event, history, vars.get('hint'))
-            updateChatHistory(user_id, sub, history)
-            return
-        await send_message(event, await chat_message(user_id, sub))
+        # if 'hint' in vars.keys():
+        #     history = getChatHistory(user_id, sub)
+        #     history = await send_audio_request(event, history, vars.get('hint'))
+        #     updateChatHistory(user_id, sub, history)
+        #     return
+        # await send_message(event, await chat_message(user_id, sub))
     elif action == 'result':
         category = int(vars.get('category', user_state.category))
         sub = int(vars.get('sub', 0))
