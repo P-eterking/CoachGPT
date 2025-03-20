@@ -34,7 +34,7 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
         f.seek(0)
         f.flush()
         transcript_obj = await client.audio.transcriptions.create(
-            model="whisper-1",
+            model="gpt-4o-mini-transcribe",#"whisper-1",
             file=(f.name, f.read()),
             language=language,
         )
@@ -209,26 +209,22 @@ async def handle_chat(event):
     if not user_state.sub or user_state.sub < 0 or user_state.sub > 4:
         await send_text_message(event, "請先選擇主題。\nPlease select a subject first.")
         return
-    history = getChatHistory(user_id, user_state.sub)
+    history = getChatHistory(user_id, str(user_state.sub))
     message_content = await get_audio_content(event)
     if not message_content:
         await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
         return
-    history = await send_audio_request(event, history, message_content)
     try:
         # Transcribe audio for chat history
         text = await transcribe_audio(message_content, language="en")
-        history.questions.append(text)
     except Exception as e:
         print("Transcription error in chat:", e)
-    updateChatHistory(user_id, user_state.sub, history)
+    history = await send_audio_request(event, history, text)
+    updateChatHistory(user_id, str(user_state.sub), history)
 
 async def send_audio_request(event, history, content: bytes | str):
     user_id = event.source.user_id
-    messages = [{
-                'role': 'system',
-                'content': 'You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please notify them to speak in English.',
-            }]
+    messages = []
     if len(history.questions) > 0:
         messages.append({
                 'role': 'user',
@@ -241,30 +237,38 @@ async def send_audio_request(event, history, content: bytes | str):
             })
     messages.append({
         'role': 'user',
-        'content': [
-            { 'type': "input_audio", 'input_audio': { 'data': convert_m4a_to_mp3_base64(content), 'format': "mp3" }} if isinstance(content, bytes) else { 'type': "text", 'text': content }
-        ],
+        'content': content,
+        # 'content': [
+        #     { 'type': "input_audio", 'input_audio': { 'data': convert_m4a_to_mp3_base64(content), 'format': "mp3" }} if isinstance(content, bytes) else { 'type': "text", 'text': content }
+        # ],
     })
-    completion = await client.beta.chat.completions.parse(
-        model="gpt-4o-mini-audio-preview",
-        modalities=["text", "audio"],
-        audio={"voice": "nova", "format": "mp3"},
-        max_completion_tokens=2048,
-        temperature=1.1,
-        messages=messages
+    completion = await client.responses.create(
+        input=messages,
+        model="gpt-4o",
+        instructions='You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please notify them to speak in English.',
+        max_output_tokens=2048,
     )
-    answer = base64.b64decode(completion.choices[0].message.audio.data)
+    audio_output = await client.audio.speech.create(
+        model="gpt-4o-mini-tts",
+        voice="nova",
+        response_format='mp3',
+        instructions='''You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please notify them to speak in English.
+Affect/personality: A cheerful guide 
+Tone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.
+Pronunciation: Clear, articulate, and steady, ensuring each instruction is easily understood while maintaining a natural, conversational flow.
+Pause: Brief, purposeful pauses after key instructions (e.g., "cross the street" and "turn right") to allow time for the listener to process the information and follow along.
+Emotion: Warm and supportive, conveying empathy and care, ensuring the listener feels guided and safe throughout the journey.''',
+        input=completion.output_text
+    )
     try:
         os.makedirs(f"templates/audio", exist_ok=True)
-        with open(f"templates/audio/{user_id}.mp3", "wb") as f:
-            f.write(answer)
+        audio_output.write_to_file(f"templates/audio/{user_id}.mp3")
     except Exception as e:
         print("Error saving audio file:", e)
-    audio_segment = AudioSegment.from_file(BytesIO(answer), format="mp3")
+    audio_segment = AudioSegment.from_file(BytesIO(audio_output.read()), format="mp3")
     duration_ms = len(audio_segment)
-    history.answers.append(completion.choices[0].message.audio.transcript)
-    if isinstance(content, str):
-        history.questions.append(content)
+    history.answers.append(completion.output_text)
+    history.questions.append(content)
     await send_audio_message(event, f"audio/{user_id}.mp3", duration_ms)
     return history
 
@@ -284,24 +288,33 @@ async def handle_postback(event):
             return
         sub = int(vars.get('sub', 0))
         user_state.sub = sub
-        await send_message(event, await question_message(category, sub))
+        # if not getHistory(user_id, f'{category}-{sub}') or 'force' in vars.keys():
+        await send_message(event, await question_message(user_id, category, sub)) 
+        # else:
+        #     await send_message(event, await result_message(getHistory(user_id, f'{category}-{sub}'), category, sub))
     elif action == 'chat':
         sub = int(vars.get('sub', -1))
         user_state.sub = sub
         # if 'hint' in vars.keys():
-        #     history = getChatHistory(user_id, sub)
+        #     history = getChatHistory(user_id, str(sub))
         #     history = await send_audio_request(event, history, vars.get('hint'))
         #     updateChatHistory(user_id, sub, history)
         #     return
         # await send_message(event, await chat_message(user_id, sub))
     elif action == 'result':
-        category = int(vars.get('category', user_state.category))
+        category = vars.get('category', user_state.category)
         sub = int(vars.get('sub', 0))
         result = getHistory(user_id, f'{category}-{sub}')
         if not result:
             await send_text_message(event, f'Q{sub+1} 查無紀錄！\nNo history found in Q{sub+1}!')
             return
-        await send_message(event, await result_message(result, category, sub))
+        if not isEnabled(category):
+            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+            return
+        if not isResponse(category):
+            await send_text_message(event, "該單元目前不提供回饋。\nCurrently unavailable.")
+            return
+        await send_message(event, await result_message(result[-1], category, sub))
     elif action == 'switch':
         alias = vars.get('to')
         if alias in ['admin'] and not isAdmin(user_id):

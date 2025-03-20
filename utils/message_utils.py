@@ -366,9 +366,8 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
 async def chat_message(user_id, sub):
     return TextMessage(text=f'已選擇主題 {sub+1}！\nSelected subject {sub+1}!', quick_reply=QuickReply(items=[
         QuickReplyItem(action=PostbackAction(label='', data=f'action=record&sub={sub}')),]))
-    
 
-async def question_message(category, sub):
+async def question_message(user_id, category, sub):
     """
     生成問題訊息。
     
@@ -415,7 +414,26 @@ async def question_message(category, sub):
             aspect_mode='cover',
             margin='md'
         ))
-        
+    
+    footer = [
+        FlexText(
+            style='italic',
+            size='md',
+            wrap=True,
+            align='center',
+            text='請按下方按鈕開始錄音回答\nPress record button below to start',
+        )
+    ]
+    if getHistory(user_id, f'{category}-{sub}') and isResponse(category):
+        footer.append(FlexButton(
+            text='查看分數 Result',
+            wrap=True,
+            action=PostbackAction(label='或 查看分數 Result', data=f'action=result&sub={sub}&category={category}'),
+            align='center',
+            margin='md',
+            style='primary'
+        ))
+    
     messages.append(FlexBubble(   
             size='giga', 
             body=FlexBox(
@@ -428,15 +446,7 @@ async def question_message(category, sub):
                 spacing='sm',
                 alignItems='center',
                 justifyContent='center',
-                contents=[
-                    FlexText(
-                        style='italic',
-                        size='md',
-                        wrap=True,
-                        align='center',
-                        text='請按下方按鈕開始錄音回答\nPress record button below to start',
-                    )
-                ]
+                contents=footer
             )
         )
     )

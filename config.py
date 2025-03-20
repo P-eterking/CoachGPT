@@ -2,7 +2,7 @@ import os
 from linebot.v3.messaging import Configuration, AsyncApiClient, AsyncMessagingApi, AsyncMessagingApiBlob
 from linebot.v3.webhook import WebhookParser
 from openai import AsyncOpenAI
-from groq import AsyncGroq
+# from groq import AsyncGroq
 from manager import QuestionManager
 from manager.richmenu import RichMenuManager
 # 環境變數設定
@@ -20,7 +20,7 @@ rich_menu_manager = RichMenuManager(line_bot_api, line_bot_api_blob)
 
 # OpenAI 和 Groq 配置
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-groq = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+# groq = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 # 問題管理器
 question_manager = QuestionManager(data_source='./category')
