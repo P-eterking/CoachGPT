@@ -29,6 +29,7 @@ async def callback(request: Request):
     return 'OK'
 
 templates = Jinja2Templates(directory="templates")
+
 async def index(request: Request):
     users = getData()
     analysis = analyze_by_question(users.values(), question_manager)

@@ -2,7 +2,7 @@ from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
     QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
-    FlexText, FlexBox, FlexButton, AudioMessage
+    FlexText, FlexBox, FlexButton, AudioMessage, ShowLoadingAnimationRequest
 )
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
@@ -601,7 +601,18 @@ async def info_hint_message(index: int):
             )
         )
     )
-
+async def show_loading(user_id, secs=20):
+    """
+    生成等待動畫。    
+    
+    Generates a loading animation.
+    
+    Args:
+        user_id: 使用者ID。
+        secs: 等待時間。
+    """
+    await line_bot_api.show_loading_animation(show_loading_animation_request=ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=secs), async_req=True).get()
+    
 async def handle_rich_menu(user_id):
     """
     處理使用者的Rich Menu。

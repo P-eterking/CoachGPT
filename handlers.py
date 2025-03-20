@@ -2,7 +2,7 @@ from config import line_bot_api, line_bot_api_blob, client, question_manager, ri
 import asyncio
 from utils.message_utils import (
     handle_rich_menu, info_hint_message, result_message, send_audio_message, send_message, send_text_message,
-    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message
+    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading
 )
 from utils.models import SpeechAssessment
 from utils.file_utils import *
@@ -11,6 +11,7 @@ import time
 import base64
 from pydub import AudioSegment
 from io import BytesIO
+import os
 
 async def get_audio_content(event):
     result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
@@ -138,12 +139,15 @@ async def handle_audio_message(event):
     if not user_state:
         return
     
+    await show_loading(user_id)
     try:
         text = None
         category = user_state.category
+        
         if category == 'chat':
             await handle_chat(event)
             return
+        
         if not category or not question_manager.has_question(category):
             return 
         
@@ -250,8 +254,12 @@ async def send_audio_request(event, history, content: bytes | str):
         messages=messages
     )
     answer = base64.b64decode(completion.choices[0].message.audio.data)
-    with open(f"templates/audio/{user_id}.mp3", "wb") as f:
-        f.write(answer)
+    try:
+        os.makedirs(f"templates/audio", exist_ok=True)
+        with open(f"templates/audio/{user_id}.mp3", "wb") as f:
+            f.write(answer)
+    except Exception as e:
+        print("Error saving audio file:", e)
     audio_segment = AudioSegment.from_file(BytesIO(answer), format="mp3")
     duration_ms = len(audio_segment)
     history.answers.append(completion.choices[0].message.audio.transcript)
