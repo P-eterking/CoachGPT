@@ -245,14 +245,14 @@ async def send_audio_request(event, history, content: bytes | str):
     completion = await client.responses.create(
         input=messages,
         model="gpt-4o",
-        instructions='You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please notify them to speak in English.',
+        instructions='You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.',
         max_output_tokens=2048,
     )
     audio_output = await client.audio.speech.create(
         model="gpt-4o-mini-tts",
         voice="nova",
         response_format='mp3',
-        instructions='''You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please notify them to speak in English.
+        instructions='''You are a helpful friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.
 Affect/personality: A cheerful guide 
 Tone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.
 Pronunciation: Clear, articulate, and steady, ensuring each instruction is easily understood while maintaining a natural, conversational flow.
