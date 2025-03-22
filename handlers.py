@@ -320,7 +320,7 @@ async def handle_postback(event):
         if alias in ['admin'] and not isAdmin(user_id):
             await send_text_message(event, '無權限！\nNo permission!')
             return
-        if alias in ['pretest', 'posttest', 'sheet1', 'sheet2', 'sheet3'] and not isEnabled(alias):
+        if alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         user_state.category = alias

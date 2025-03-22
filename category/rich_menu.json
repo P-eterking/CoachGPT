@@ -58,17 +58,17 @@
             "chat_bar_text": "Exercises",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "switch", "label": "sheet1", "alias_id": "sheet1" },
-                { "type": "switch", "label": "sheet2", "alias_id": "sheet2" },
-                { "type": "switch", "label": "sheet3", "alias_id": "sheet3" },
+                { "type": "switch", "label": "ex1", "alias_id": "ex1" },
+                { "type": "switch", "label": "ex2", "alias_id": "ex2" },
+                { "type": "switch", "label": "ex3", "alias_id": "ex3" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
-        "sheet1": {
+        "ex1": {
             "file": "preposttest.png",
-            "chat_bar_text": "Worksheet 1",
+            "chat_bar_text": "Exercise 1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
@@ -79,9 +79,9 @@
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
             ]
         },
-        "sheet2": {
+        "ex2": {
             "file": "preposttest.png",
-            "chat_bar_text": "Worksheet 2",
+            "chat_bar_text": "Exercise 2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
@@ -92,9 +92,9 @@
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
             ]
         },
-        "sheet3": {
+        "ex3": {
             "file": "preposttest.png",
-            "chat_bar_text": "Worksheet 3",
+            "chat_bar_text": "Exercise 3",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
@@ -123,9 +123,9 @@
             "chat_bar_text": "Enabled",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q1", "data": "action=enabled&alias=sheet1" },
-                { "type": "postback", "label": "q2", "data": "action=enabled&alias=sheet2" },
-                { "type": "postback", "label": "q3", "data": "action=enabled&alias=sheet3" },
+                { "type": "postback", "label": "q1", "data": "action=enabled&alias=ex1" },
+                { "type": "postback", "label": "q2", "data": "action=enabled&alias=ex2" },
+                { "type": "postback", "label": "q3", "data": "action=enabled&alias=ex3" },
                 { "type": "postback", "label": "q4", "data": "action=enabled&alias=pretest" },
                 { "type": "postback", "label": "q5", "data": "action=enabled&alias=posttest" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
@@ -136,9 +136,9 @@
             "chat_bar_text": "Respond",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q1", "data": "action=respond&alias=sheet1" },
-                { "type": "postback", "label": "q2", "data": "action=respond&alias=sheet2" },
-                { "type": "postback", "label": "q3", "data": "action=respond&alias=sheet3" },
+                { "type": "postback", "label": "q1", "data": "action=respond&alias=ex1" },
+                { "type": "postback", "label": "q2", "data": "action=respond&alias=ex2" },
+                { "type": "postback", "label": "q3", "data": "action=respond&alias=ex3" },
                 { "type": "postback", "label": "q4", "data": "action=respond&alias=pretest" },
                 { "type": "postback", "label": "q5", "data": "action=respond&alias=posttest" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
