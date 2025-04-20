@@ -379,9 +379,9 @@ async def chat_message(user_id, sub):
         ],
     )
     result = QuestionSet.model_validate_json(completion.choices[0].message.content)
-    return TextMessage(text=f'引導問題 Guiding Questions:\nQ1: {result.questions[0]}\nQ2: {result.questions[1]}\nQ3: {result.questions[2]}\n\n按下方按鈕錄音發問 Record to ask!', quick_reply=QuickReply(items=[
-        QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
-                                                                                                  ))
+    return TextMessage(text=f'引導問題 Guiding Questions:\nQ1: {result.questions[0]}\nQ2: {result.questions[1]}\nQ3: {result.questions[2]}\n\n按下方按鈕錄音發問 Record to ask!',)
+                    #    quick_reply=QuickReply(items=[QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
+                    #                                                                               ))
 
 async def question_message(user_id, category, sub):
     """
