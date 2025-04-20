@@ -61,11 +61,11 @@ def getData() -> dict:
     return user_data
 
 # 更新使用者的聊天紀錄
-def getChatHistory(user_id, key) -> ChatHistory:
-    return user_data[user_id].chat.get(key, ChatHistory(questions=[], answers=[]))
+def getChatHistory(user_id: str) -> ChatHistory:
+    return user_data[user_id].chat
 
-def updateChatHistory(user_id, key, chat: ChatHistory):
-    user_data[user_id].chat[key] = chat
+def updateChatHistory(user_id, chat: ChatHistory):
+    user_data[user_id].chat = chat
 
 # 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):

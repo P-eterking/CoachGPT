@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field
+from typing import Annotated, List, Optional
+from pydantic import BaseModel, Field, conlist
 
 class SpeechAssessment(BaseModel):
     chi_suggestion: str = Field(description="繁體中文建議 Traditional Chinese (zh-TW) suggestion", default_factory=lambda: "無建議。")  # 中文建議
@@ -13,8 +13,8 @@ class SpeechAssessment(BaseModel):
         return self.model_dump(exclude_none=True)
     
 class ChatHistory(BaseModel):
-    questions: List[str] = Field(description="問題")  # 問題
-    answers: List[str] = Field(description="回答")  # 回答
+    questions: List[str] = Field(description="問題", default=[])  # 問題
+    answers: List[str] = Field(description="回答", default=[])  # 回答
 
 class User(BaseModel):
     id: str = Field(description="學號")  # 學號
@@ -22,7 +22,7 @@ class User(BaseModel):
     name: str = Field(description='姓名')  # 姓名
     class_time: int = Field(description='上課時段')  # 上課時段 
     history: dict[str, list[SpeechAssessment]] = Field(description='歷史紀錄')  # 歷史紀錄
-    chat: dict[str, ChatHistory] = Field(description='聊天紀錄')  # 聊天紀錄
+    chat: ChatHistory = Field(description='聊天紀錄', default_factory=lambda: ChatHistory())  # 聊天紀錄
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
@@ -30,6 +30,9 @@ class User(BaseModel):
 class UserState(BaseModel):
     category: Optional[str] = Field(description="類別", default=None)  # 類別
     sub:  Optional[int] = Field(description="子題", default=-1)  # 子題
+    sex: Optional[int] = Field(description="性別", default=0)  # 性別
+    accent: Optional[int] = Field(description="口音", default=0)  # 口音
+    
 
 class Question(BaseModel):
     text: str = Field(description="問題文本")  # 問題文本
@@ -48,3 +51,6 @@ class QuestionCategory(BaseModel):
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
+
+class QuestionSet(BaseModel):
+    questions: list[str] = Field(description="問題集") # 問題集

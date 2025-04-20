@@ -1,7 +1,7 @@
 {
   "rich_menus": {
         "menu": {
-            "file": "menu.png",
+            "file": "menu.jpg",
             "chat_bar_text": "CoachGPT",
             "selected": true,
             "grid": { "rows": 2, "columns": 3 },
@@ -15,7 +15,7 @@
             ]
         },
         "pretest":{
-            "file": "preposttest.png",
+            "file": "preposttest.jpg",
             "chat_bar_text": "Pre-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -28,7 +28,7 @@
             ]
         },
         "posttest": {
-            "file": "preposttest.png",
+            "file": "preposttest.jpg",
             "chat_bar_text": "Post-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -41,12 +41,12 @@
             ]
         },
         "admin": {
-            "file": "admin.png",
+            "file": "admin.jpg",
             "chat_bar_text": "Admin",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "switch", "label": "enabled", "alias_id": "enabled" },
-                { "type": "uri", "label": "stats", "uri": "https://aigbl.xmoty.me/" },
+                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
                 { "type": "postback", "label": "save", "data": "action=save" },
                 { "type": "switch", "label": "respond", "alias_id": "respond" },
                 { "type": "postback", "label": "reload", "data": "action=reload" },
@@ -54,7 +54,7 @@
             ]
         },
         "exercises": {
-            "file": "exercises.png",
+            "file": "exercises.jpg",
             "chat_bar_text": "Exercises",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -67,7 +67,7 @@
             ]
         },
         "ex1": {
-            "file": "preposttest.png",
+            "file": "preposttest.jpg",
             "chat_bar_text": "Exercise 1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -80,7 +80,7 @@
             ]
         },
         "ex2": {
-            "file": "preposttest.png",
+            "file": "preposttest.jpg",
             "chat_bar_text": "Exercise 2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -93,33 +93,59 @@
             ]
         },
         "ex3": {
-            "file": "preposttest.png",
-            "chat_bar_text": "Exercise 3",
+            "file": "exercises3-1.jpg",
+            "chat_bar_text": "Exercise 3 #1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
-                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
-                { "type": "switch", "label": "menu", "alias_id": "exercises" }
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" },
+                { "type": "switch", "label": "next", "alias_id": "ex3-2" }
+            ]
+        },
+        "ex3-2": {
+            "file": "exercises3-2.jpg",
+            "chat_bar_text": "Exercise 3 #2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex3" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" },
+                { "type": "switch", "label": "next", "alias_id": "ex3-3" }
+            ]
+        },
+        "ex3-3": {
+            "file": "exercises3-3.jpg",
+            "chat_bar_text": "Exercise 3 #3",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=6" },
+                { "type": "postback", "label": "q2", "data": "action=idle" },
+                { "type": "postback", "label": "q3", "data": "action=idle" },
+                { "type": "switch", "label": "prev", "alias_id": "ex3-2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" },
+                { "type": "postback", "label": "next", "data": "action=idle" }
             ]
         },
         "chat": {
-            "file": "chat.png",
+            "file": "chat.jpg",
             "chat_bar_text": "Chat",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=chat&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=chat&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=chat&sub=2" },
+                { "type": "switch", "label": "settings", "alias_id": "audio" },
                 { "type": "postback", "label": "q4", "data": "action=chat&sub=3" },
-                { "type": "postback", "label": "q5", "data": "action=chat&sub=4" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
         "enabled": {
-            "file": "toggle.png",
+            "file": "toggle.jpg",
             "chat_bar_text": "Enabled",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -132,7 +158,7 @@
             ]
         },
         "respond": {
-            "file": "toggle.png",
+            "file": "toggle.jpg",
             "chat_bar_text": "Respond",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -142,6 +168,41 @@
                 { "type": "postback", "label": "q4", "data": "action=respond&alias=pretest" },
                 { "type": "postback", "label": "q5", "data": "action=respond&alias=posttest" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "audio": {
+            "file": "audio_settings.jpg",
+            "chat_bar_text": "Audio Settings",
+            "grid": { "rows": 2, "columns": 2 },
+            "actions": [
+                { "type": "switch", "label": "sex", "alias_id": "sex" },
+                { "type": "switch", "label": "accent", "alias_id": "accent" },
+                { "type": "switch", "label": "menu", "alias_id": "chat" },
+                { "type": "switch", "label": "menu", "alias_id": "chat" }
+            ]
+        },
+        "sex": {
+            "file": "audio_sex.jpg",
+            "chat_bar_text": "Sex",
+            "grid": { "rows": 2, "columns": 2 },
+            "actions": [
+                { "type": "postback", "label": "male", "data": "action=sex&sub=0" },
+                { "type": "postback", "label": "female", "data": "action=sex&sub=1" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" }
+            ]
+        },
+        "accent": {
+            "file": "audio_accent.jpg",
+            "chat_bar_text": "Accent",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "accent1", "data": "action=accent&sub=0" },
+                { "type": "postback", "label": "accent2", "data": "action=accent&sub=1" },
+                { "type": "postback", "label": "accent3", "data": "action=accent&sub=2" },
+                { "type": "postback", "label": "accent4", "data": "action=accent&sub=3" },
+                { "type": "postback", "label": "accent5", "data": "action=accent&sub=4" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" }
             ]
         }
     }

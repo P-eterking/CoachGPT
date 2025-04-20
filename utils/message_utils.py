@@ -1,4 +1,4 @@
-from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager
+from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager, client
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
     QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
@@ -7,7 +7,7 @@ from linebot.v3.messaging import (
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
-from utils.models import SpeechAssessment
+from utils.models import QuestionSet, SpeechAssessment
 import json
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
@@ -86,11 +86,11 @@ SYSTEM_INSTRUCTION = f"""
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
         
-        若評分標準為四個級距：
-        4	受測者能使用完整句子回答問題，內容完全正確，無語法或資訊錯誤。回答清晰流暢，能有效傳達題目所要求的資訊，無需修改即可理解。評分回饋應鼓勵學生繼續保持正確性與流利度，並在可能的情況下增加細節來強化表達。
-        3	受測者的回答大部分正確，但可能有部分資訊遺漏，影響回應的完整性。即使回答內容大致符合題目要求，但句子結構仍需調整。評分回饋應指導學生在句子結構或細節準確性上進行改善，確保完整表達所有必要資訊。
-        2	受測者的回答可能僅表達部分資訊，使回答難以理解。可能未使用完整句子，或回答過於簡略，導致資訊不明確。評分回饋應提供更基礎的建議，幫助學生增強語法與句子結構的理解，確保資訊完整與正確。
-        1	受測者未作答，或回答內容完全錯誤。可能僅說出無關的單字或片語，或提供與問題不符的資訊。評分回饋應建議學生閱讀題目並嘗試使用完整句子進行回應，以提升基本表達能力。
+        若提供之評分標準只有四個級距：
+        4分	受測者能使用完整句子回答問題，內容完全正確，無語法或資訊錯誤。回答清晰流暢，能有效傳達題目所要求的資訊，無需修改即可理解。評分回饋應鼓勵學生繼續保持正確性與流利度，並在可能的情況下增加細節來強化表達。
+        3分	受測者的回答大部分正確，但可能有部分資訊遺漏，影響回應的完整性。即使回答內容大致符合題目要求，但句子結構仍需調整。評分回饋應指導學生在句子結構或細節準確性上進行改善，確保完整表達所有必要資訊。
+        2分	受測者的回答可能僅表達部分資訊，使回答難以理解。可能未使用完整句子，或回答過於簡略，導致資訊不明確。評分回饋應提供更基礎的建議，幫助學生增強語法與句子結構的理解，確保資訊完整與正確。
+        1分	受測者未作答，或回答內容完全錯誤。可能僅說出無關的單字或片語，或提供與問題不符的資訊。評分回饋應建議學生閱讀題目並嘗試使用完整句子進行回應，以提升基本表達能力。
         
         你需要以4個步驟執行任務，Think step by step:
         1. 針對提供之評估面向給予分析和建議：表達清晰度、語法使用、詞彙量、回應複雜度、主題相關性進行思考評估。
@@ -363,9 +363,25 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
         msg.quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=record&sub={sub+1}')))
     return msg
 
+category = ["旅遊 Travel", "運動 Sports", "面試 Interview", "英語技巧 English Skills"]
+
 async def chat_message(user_id, sub):
-    return TextMessage(text=f'已選擇主題 {sub+1}！\nSelected subject {sub+1}!', quick_reply=QuickReply(items=[
-        QuickReplyItem(action=PostbackAction(label='', data=f'action=record&sub={sub}')),]))
+    completion = await client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        response_format=QuestionSet,
+        max_completion_tokens=512,
+        temperature=1.2,
+        messages=[
+            {
+                "role": "user",
+                "content": f"As a non-native English college student, generate three questions that are suitable for me to practice about {category[sub]} in English.\n",
+            }
+        ],
+    )
+    result = QuestionSet.model_validate_json(completion.choices[0].message.content)
+    return TextMessage(text=f'引導問題 Guiding Questions:\nQ1: {result.questions[0]}\nQ2: {result.questions[1]}\nQ3: {result.questions[2]}\n\n按下方按鈕錄音發問 Record to ask!', quick_reply=QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
+                                                                                                  ))
 
 async def question_message(user_id, category, sub):
     """
