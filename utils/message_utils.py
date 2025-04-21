@@ -370,7 +370,10 @@ async def chat_message(user_id, sub):
         model="gpt-4o-mini",
         response_format=QuestionSet,
         max_completion_tokens=512,
-        temperature=1.2,
+        temperature=1.4,
+        top_p=0.9,
+        frequency_penalty=0.5,
+        presence_penalty=0.5,
         messages=[
             {
                 "role": "user",

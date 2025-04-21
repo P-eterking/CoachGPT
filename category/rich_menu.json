@@ -115,19 +115,6 @@
                 { "type": "postback", "label": "q3", "data": "action=record&sub=5" },
                 { "type": "switch", "label": "prev", "alias_id": "ex3" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises" },
-                { "type": "switch", "label": "next", "alias_id": "ex3-3" }
-            ]
-        },
-        "ex3-3": {
-            "file": "exercises3-3.jpg",
-            "chat_bar_text": "Exercise 3 #3",
-            "grid": { "rows": 2, "columns": 3 },
-            "actions": [
-                { "type": "postback", "label": "q1", "data": "action=record&sub=6" },
-                { "type": "postback", "label": "q2", "data": "action=idle" },
-                { "type": "postback", "label": "q3", "data": "action=idle" },
-                { "type": "switch", "label": "prev", "alias_id": "ex3-2" },
-                { "type": "switch", "label": "menu", "alias_id": "exercises" },
                 { "type": "postback", "label": "next", "data": "action=idle" }
             ]
         },
