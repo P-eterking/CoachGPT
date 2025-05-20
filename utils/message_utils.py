@@ -435,7 +435,7 @@ async def chat_message(user_id, sub):
         )
     )
     messages.append(FlexBubble(
-        size='mega', 
+        size='giga', 
         body=FlexBox(
             layout='vertical',
             spacing='sm',
