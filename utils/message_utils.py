@@ -153,7 +153,7 @@ async def send_text_message(event, text):
         )
     )
 
-async def send_audio_message(event, filename, duration):
+async def send_chat_response(event, filename, duration):
     """
     發送音訊訊息給使用者。
     
@@ -162,10 +162,13 @@ async def send_audio_message(event, filename, duration):
         event: 事件物件，包含回覆token。
         url: 音訊檔案的網址。
     """
+    quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(label='📄 查看回覆 Lookup', data=f'action=chat&lookup=true')),
+    ])
     await line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
-            messages=[AudioMessage(originalContentUrl=f'{URL}/templates/{filename}', duration=duration)]
+            messages=[AudioMessage(originalContentUrl=f'{URL}/templates/{filename}', quickReply=quick_reply, duration=duration)]
         )
     )
 
@@ -364,6 +367,7 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
     return msg
 
 category = ["旅遊 Travel", "運動 Sports", "面試 Interview", "英語技巧 English Skills"]
+category_image_url = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
 async def chat_message(user_id, sub):
     completion = await client.beta.chat.completions.parse(
@@ -382,9 +386,75 @@ async def chat_message(user_id, sub):
         ],
     )
     result = QuestionSet.model_validate_json(completion.choices[0].message.content)
-    return TextMessage(text=f'引導問題 Guiding Questions:\nQ1: {result.questions[0]}\nQ2: {result.questions[1]}\nQ3: {result.questions[2]}\n\n按下方按鈕錄音發問 Record to ask!',)
-                    #    quick_reply=QuickReply(items=[QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
-                    #                                                                               ))
+    messages = []
+    contents = [
+        FlexImage(
+            url=f'{URL}{category_image_url[sub]}',
+            size='full',
+            aspect_ratio='1:1',
+            aspect_mode='cover',
+            margin='md'
+        ),
+        FlexText(
+            text=category[sub],
+            wrap=True,
+            weight='bold',
+            size='xxl',
+        ),
+        FlexText(
+            text=f'引導問題 Guiding Questions',
+            color='#5b5b5b',
+            size='lg',
+            wrap=True,
+            flex=1,
+        ),
+    ]
+    footer = [
+        FlexText(
+            style='italic',
+            size='md',
+            wrap=True,
+            align='center',
+            text='按下方按鈕錄音發問 Record to ask!',
+        )
+    ]
+    messages.append(FlexBubble(  
+            size='giga', 
+            body=FlexBox(
+                layout='vertical',
+                wrap=True,
+                contents=contents
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                alignItems='center',
+                justifyContent='center',
+                contents=footer
+            )
+        )
+    )
+    messages.append(FlexBubble(
+        size='mega', 
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            justifyContent='center',
+            contents=[
+                FlexText(
+                    text='\n\n'.join([f'Q{i+1}. {q}' for i, q in enumerate(result.questions)]),
+                    wrap=True,
+                    size='lg',
+                ),
+            ]
+        )
+    ))
+    return FlexMessage(
+        altText='聊天Chat',
+        contents=FlexCarousel(contents=messages)
+    )
+    #    quick_reply=QuickReply(items=[QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
+    #                                                                               ))
 
 async def question_message(user_id, category, sub):
     """

@@ -1,7 +1,7 @@
 from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
 from utils.message_utils import (
-    handle_rich_menu, info_hint_message, result_message, send_audio_message, send_message, send_text_message,
+    handle_rich_menu, info_hint_message, result_message, send_chat_response, send_message, send_text_message,
     question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading
 )
 from utils.models import SpeechAssessment
@@ -261,18 +261,20 @@ async def send_audio_request(event, history, content: bytes | str):
         completion = await client.responses.create(
             input=messages,
             model="gpt-4o",
-            instructions=f'You are a helpful {audio[accent][-1]} friend to an English learner. Please have a conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.',
+            instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.',
             max_output_tokens=2048,
+            temperature=0.8,
         )
         audio_output = await client.audio.speech.create(
             model="gpt-4o-mini-tts",
             voice=audio[accent][sex],
             response_format='mp3',
+            speed=0.8,
             instructions=f'''Accent: Very strong {audio[accent][-1]} accent.
-Identity: {audio[accent][-1]} speaker.
-Tone: Friendly.
-Emotion: Warm and supportive.
-Only respond in accented English. If the user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.''',
+                Identity: {audio[accent][-1]} speaker.
+                Tone: Friendly.
+                Emotion: Warm and supportive.
+                Only respond in accented English. If the user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.''',
             input=completion.output_text
         )
         try:
@@ -284,7 +286,7 @@ Only respond in accented English. If the user speaks in Chinese, please ignore a
         duration_ms = len(audio_segment)
         history.answers.append(completion.output_text)
         history.questions.append(content)
-        await send_audio_message(event, f"audio/{user_id}.mp3", duration_ms)
+        await send_chat_response(event, f"audio/{user_id}.mp3", duration_ms)
     except Exception as e:
         print("Error in audio request:", e)
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
@@ -321,6 +323,13 @@ async def handle_postback(event):
             history = getChatHistory(user_id)
             history = await send_audio_request(event, history, vars.get('question'))
             updateChatHistory(user_id, history)
+            return
+        elif 'lookup' in vars.keys():
+            history = getChatHistory(user_id)
+            if not history:
+                await send_text_message(event, "無法獲取歷史紀錄，請稍後再試。\nUnable to get chat history, please try again later.")
+                return
+            await send_text_message(event, f"{history.answers[-1]}")
             return
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'sex':
