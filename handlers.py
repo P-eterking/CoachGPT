@@ -208,10 +208,6 @@ async def handle_audio_message(event):
 
 async def handle_chat(event):
     user_id = event.source.user_id
-    user_state = get_user_state(user_id)
-    if user_state.sub < 0 or user_state.sub > 4:
-        await send_text_message(event, "請先選擇主題。\nPlease select a subject first.")
-        return
     history = getChatHistory(user_id)
     message_content = await get_audio_content(event)
     if not message_content:
@@ -317,8 +313,6 @@ async def handle_postback(event):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         await show_loading(user_id)
-        sub = int(vars.get('sub', -1))
-        user_state.sub = sub
         if 'question' in vars.keys():
             history = getChatHistory(user_id)
             history = await send_audio_request(event, history, vars.get('question'))
@@ -329,8 +323,9 @@ async def handle_postback(event):
             if not history:
                 await send_text_message(event, "無法獲取歷史紀錄，請稍後再試。\nUnable to get chat history, please try again later.")
                 return
-            await send_text_message(event, f"{history.answers[-1]}")
+            await send_text_message(event, history.answers[-1])
             return
+        sub = int(vars.get('sub', -1))
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'sex':
         user_state.sex = int(vars.get('sub'))
