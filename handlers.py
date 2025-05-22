@@ -366,7 +366,7 @@ async def handle_postback(event):
         else:
             addEnabled(alias)
         await save_config()
-        await send_text_message(event, f'已{"啟用" if isEnabled(alias) else "停用"} {alias}！\n{alias} {"enabled" if isEnabled(alias) else "disabled"}!')
+        await send_text_message(event, f'已{"啟用" if isEnabled(alias) else "停用"} {alias.capitalize()}!\n{alias.capitalize()} {"enabled" if isEnabled(alias) else "disabled"}!')
         if alias in ['chat']:
             return
         await question_manager.save_category(alias)
@@ -377,7 +377,7 @@ async def handle_postback(event):
         else:
             addResponse(alias)
         await save_config()
-        await send_text_message(event, f'已{"開啟" if isResponse(alias) else "關閉"} {alias} 回饋！\n{alias} feedback {"enabled" if isResponse(alias) else "disabled"}!')
+        await send_text_message(event, f'已{"開啟" if isResponse(alias) else "關閉"} {alias.capitalize()} 回饋!\n{alias.capitalize()} feedback {"enabled" if isResponse(alias) else "disabled"}!')
         await question_manager.save_category(alias)
     elif action == 'reload':
         question_manager.load_questions()

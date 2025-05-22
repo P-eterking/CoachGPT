@@ -206,7 +206,7 @@ async def progress_message(user_id):
     message = f"您尚未回答 Questions Unanswered ({sum(len(v) for v in progress.values())}):\n"
     for category, subs in progress.items():
         if len(subs) > 0:
-            message += f"\n{rich_menu_manager.get_display_name(category)}:\n"
+            message += f"\n{rich_menu_manager.get_display_name(category).split("#")[0]}:\n"
         for i, sub in enumerate(subs):
             message += f"{"\n" if i > 0 else ""} - Q{sub+1}"
     
@@ -393,59 +393,66 @@ async def chat_message(user_id, sub):
             size='full',
             aspect_ratio='1:1',
             aspect_mode='cover',
-            margin='md'
+            margin='md',
+            flex=1,
         ),
         FlexText(
-            text=category[sub],
+            text=category[sub].replace(' ', '\n', 1) if len(category[sub]) > 12 else category[sub],
             wrap=True,
             weight='bold',
             size='xxl',
+            flex=1,
         ),
         FlexText(
-            text=f'引導問題 Guiding Questions',
+            text=f'與 CoachGPT 進行語音對話！\nTalk with CoachGPT!',
             color='#5b5b5b',
             size='lg',
             wrap=True,
             flex=1,
         ),
     ]
-    footer = [
-        FlexText(
-            style='italic',
-            size='md',
-            wrap=True,
-            align='center',
-            text='按下方按鈕錄音發問 Record to ask!',
-        )
-    ]
+
     messages.append(FlexBubble(  
-            size='giga', 
+            size='mega',
             body=FlexBox(
                 layout='vertical',
                 wrap=True,
-                contents=contents
+                contents=contents,
+                justifyContent='space-around',
             ),
-            footer=FlexBox(
-                layout='vertical',
-                spacing='sm',
-                alignItems='center',
-                justifyContent='center',
-                contents=footer
-            )
         )
     )
     messages.append(FlexBubble(
-        size='giga', 
+        size='mega', 
         body=FlexBox(
             layout='vertical',
-            spacing='sm',
+            spacing='lg',
             justifyContent='center',
             contents=[
+                FlexText(
+                    text='聊天話題\nTopics',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                ),
                 FlexText(
                     text='\n\n'.join([f'Q{i+1}. {q}' for i, q in enumerate(result.questions)]),
                     wrap=True,
                     size='lg',
                 ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            alignItems='center',
+            contents=[
+                FlexText(
+                    text='選擇話題開始聊天\nChoose a topic to talk!',
+                    size='md',
+                    wrap=True,
+                    align='center',
+                )
             ]
         )
     ))
