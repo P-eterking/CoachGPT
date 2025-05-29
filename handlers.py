@@ -258,8 +258,9 @@ async def send_audio_request(event, history, content: bytes | str):
             input=messages,
             model="gpt-4o",
             instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.',
-            max_output_tokens=2048,
-            temperature=0.8,
+            max_output_tokens=1024,
+            top_p=0.9,
+            temperature=1.1,
         )
         audio_output = await client.audio.speech.create(
             model="gpt-4o-mini-tts",

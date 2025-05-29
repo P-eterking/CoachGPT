@@ -61,8 +61,21 @@
                 { "type": "switch", "label": "ex1", "alias_id": "ex1" },
                 { "type": "switch", "label": "ex2", "alias_id": "ex2" },
                 { "type": "switch", "label": "ex3", "alias_id": "ex3" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" },
+                { "type": "switch", "label": "advanced", "alias_id": "exercises2" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
+            ]
+        },
+        "exercises2": {
+            "file": "exercises_advanced.jpg",
+            "chat_bar_text": "Exercises",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "ex4", "alias_id": "ex4" },
+                { "type": "switch", "label": "ex5", "alias_id": "ex5" },
+                { "type": "switch", "label": "ex6", "alias_id": "ex6" },
+                { "type": "switch", "label": "regular", "alias_id": "exercises" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
@@ -93,7 +106,7 @@
             ]
         },
         "ex3": {
-            "file": "exercises3-1.jpg",
+            "file": "exercises_page1.jpg",
             "chat_bar_text": "Exercise 3 #1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -106,7 +119,7 @@
             ]
         },
         "ex3-2": {
-            "file": "exercises3-2.jpg",
+            "file": "exercises_page2-2.jpg",
             "chat_bar_text": "Exercise 3 #2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -116,6 +129,97 @@
                 { "type": "switch", "label": "prev", "alias_id": "ex3" },
                 { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
+            ]
+        },
+        "ex4": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Exercise 4 #1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "ex4-2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Exercise 4 #2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q3", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4-1" },
+                { "type": "switch", "label": "next", "alias_id": "ex4-3" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Exercise 4 #3",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=record&sub=6" },
+                { "type": "postback", "label": "q8", "data": "action=record&sub=7" },
+                { "type": "postback", "label": "q9", "data": "action=record&sub=8" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4-2" },
+                { "type": "switch", "label": "next", "alias_id": "ex4-4" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Exercise 4 #4",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=record&sub=9" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4-3" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex5": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Exercise 5 #1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "switch", "label": "next", "alias_id": "ex5-2" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex5-2": {
+            "file": "exercises_page2-2.jpg",
+            "chat_bar_text": "Exercise 5 #2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex5" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex6": {
+            "file": "exercises_3.jpg",
+            "chat_bar_text": "Exercise 6",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "chat": {
@@ -139,8 +243,34 @@
                 { "type": "postback", "label": "q1", "data": "action=enabled&alias=ex1" },
                 { "type": "postback", "label": "q2", "data": "action=enabled&alias=ex2" },
                 { "type": "postback", "label": "q3", "data": "action=enabled&alias=ex3" },
-                { "type": "postback", "label": "q4", "data": "action=enabled&alias=pretest" },
-                { "type": "postback", "label": "q5", "data": "action=enabled&alias=posttest" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "enabled2" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "enabled2": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=enabled&alias=ex4" },
+                { "type": "postback", "label": "q5", "data": "action=enabled&alias=ex5" },
+                { "type": "postback", "label": "q6", "data": "action=enabled&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "enabled" },
+                { "type": "switch", "label": "next", "alias_id": "enabled3" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "enabled3": {
+            "file": "toggle3.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=enabled&alias=pretest" },
+                { "type": "postback", "label": "q8", "data": "action=enabled&alias=posttest" },
+                { "type": "postback", "label": "q9", "data": "action=enabled&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "enabled2" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -152,8 +282,34 @@
                 { "type": "postback", "label": "q1", "data": "action=respond&alias=ex1" },
                 { "type": "postback", "label": "q2", "data": "action=respond&alias=ex2" },
                 { "type": "postback", "label": "q3", "data": "action=respond&alias=ex3" },
-                { "type": "postback", "label": "q4", "data": "action=respond&alias=pretest" },
-                { "type": "postback", "label": "q5", "data": "action=respond&alias=posttest" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "enabled2" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "respond2": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=respond&alias=ex4" },
+                { "type": "postback", "label": "q5", "data": "action=respond&alias=ex5" },
+                { "type": "postback", "label": "q6", "data": "action=respond&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "respond" },
+                { "type": "switch", "label": "next", "alias_id": "respond3" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "respond3": {
+            "file": "toggle3.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=respond&alias=pretest" },
+                { "type": "postback", "label": "q8", "data": "action=respond&alias=posttest" },
+                { "type": "postback", "label": "q9", "data": "action=respond&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "respond2" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },

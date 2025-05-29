@@ -191,6 +191,8 @@ async def progress_message(user_id):
     for category, question in questions.items():
         if not isEnabled(category):
             continue
+        if any([keyword in category for keyword in ['ex4', 'ex5', 'ex6']]):
+            continue
         for num, _ in enumerate(question.content):
             total += 1
             if getHistory(user_id, f'{category}-{num}'):
@@ -430,7 +432,7 @@ async def chat_message(user_id, sub):
             justifyContent='center',
             contents=[
                 FlexText(
-                    text='聊天話題\nTopics',
+                    text='參考聊天問題\nChatting questions',
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -448,7 +450,7 @@ async def chat_message(user_id, sub):
             alignItems='center',
             contents=[
                 FlexText(
-                    text='選擇話題開始聊天\nChoose a topic to talk!',
+                    text='選擇問題開始聊天\nChoose a question to start!',
                     size='md',
                     wrap=True,
                     align='center',
