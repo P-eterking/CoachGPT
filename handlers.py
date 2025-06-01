@@ -257,7 +257,7 @@ async def send_audio_request(event, history, content: bytes | str):
         completion = await client.responses.create(
             input=messages,
             model="gpt-4o",
-            instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.',
+            instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English kindly.',
             max_output_tokens=1024,
             top_p=0.9,
             temperature=1.1,
@@ -353,7 +353,7 @@ async def handle_postback(event):
         if alias in ['admin'] and not isAdmin(user_id):
             await send_text_message(event, '無權限！\nNo permission!')
             return
-        if alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'chat'] and not isEnabled(alias):
+        if alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6' 'chat'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         user_state.category = alias.split('-')[0]

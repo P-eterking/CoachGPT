@@ -61,8 +61,8 @@
                 { "type": "switch", "label": "ex1", "alias_id": "ex1" },
                 { "type": "switch", "label": "ex2", "alias_id": "ex2" },
                 { "type": "switch", "label": "ex3", "alias_id": "ex3" },
-                { "type": "switch", "label": "advanced", "alias_id": "exercises2" },
                 { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "advanced", "alias_id": "exercises2" },
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
@@ -152,7 +152,7 @@
                 { "type": "postback", "label": "q3", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q4", "data": "action=record&sub=4" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=5" },
-                { "type": "switch", "label": "prev", "alias_id": "ex4-1" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4" },
                 { "type": "switch", "label": "next", "alias_id": "ex4-3" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
@@ -191,8 +191,8 @@
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "switch", "label": "next", "alias_id": "ex5-2" },
                 { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "ex5-2" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
