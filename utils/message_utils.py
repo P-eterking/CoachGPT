@@ -208,7 +208,7 @@ async def progress_message(user_id):
     message = f"您尚未回答 Questions Unanswered ({sum(len(v) for v in progress.values())}):\n"
     for category, subs in progress.items():
         if len(subs) > 0:
-            message += f"\n{rich_menu_manager.get_display_name(category).split("#")[0]}:\n"
+            message += f"\n{rich_menu_manager.get_display_name(category).split("#")[0].strip()}:\n"
         for i, sub in enumerate(subs):
             message += f"{"\n" if i > 0 else ""} - Q{sub+1}"
     
