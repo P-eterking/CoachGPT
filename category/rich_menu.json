@@ -283,7 +283,7 @@
                 { "type": "postback", "label": "q2", "data": "action=respond&alias=ex2" },
                 { "type": "postback", "label": "q3", "data": "action=respond&alias=ex3" },
                 { "type": "postback", "label": "prev", "data": "action=idle" },
-                { "type": "switch", "label": "next", "alias_id": "enabled2" },
+                { "type": "switch", "label": "next", "alias_id": "respond2" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
