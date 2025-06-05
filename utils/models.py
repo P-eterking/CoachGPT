@@ -16,6 +16,10 @@ class ChatHistory(BaseModel):
     questions: List[str] = Field(description="問題", default=[])  # 問題
     answers: List[str] = Field(description="回答", default=[])  # 回答
 
+class ChatSummary(BaseModel):
+    chi_summary: str = Field(description="繁體中文摘要 Traditional Chinese (zh-TW) summary", default_factory=lambda: "無摘要。")  # 中文摘要
+    eng_summary: str = Field(description="英文摘要 English summary", default_factory=lambda: "No summary.")  # 英文摘要
+
 class User(BaseModel):
     id: str = Field(description="學號")  # 學號
     dep: str = Field(description="系級") # 系級

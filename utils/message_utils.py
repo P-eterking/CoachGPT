@@ -7,7 +7,7 @@ from linebot.v3.messaging import (
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
-from utils.models import QuestionSet, SpeechAssessment
+from utils.models import ChatSummary, QuestionSet, SpeechAssessment
 import json
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
@@ -100,7 +100,19 @@ SYSTEM_INSTRUCTION = f"""
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
-    
+
+SYSTEM_SUMMARY_INSTRUCTION = f"""
+    You are an English teaching expert analyzing conversation transcripts between non-native English speakers and AI. Provide concise analysis within 300 words using the sandwich communication method (positive feedback → improvement suggestions → encouragement) in both Traditional Chinese and English.
+    Analysis Focus Areas
+    - Vocabulary Variety: Does the student repeat the same words (e.g., only using "delicious" for expressing tasty)?
+    - Basic Grammar: Subject-verb agreement (oral standards, not overly strict)
+    - Response Relevance: Does the student answer questions appropriately, not off-topic?
+
+    Output start by highlighting what the student did well, then specifically point out 1-2 main issues and solutions, finally, provide positive support.
+
+    Keep within 300 words with a friendly and specific tone and first person perspective in plain text format.
+    """
+
 async def send_message(event, msg):
     """
     發送訊息給使用者。
@@ -153,7 +165,7 @@ async def send_text_message(event, text):
         )
     )
 
-async def send_chat_response(event, filename, duration):
+async def send_chat_response(event, filename, duration, history=None):
     """
     發送音訊訊息給使用者。
     
@@ -165,12 +177,74 @@ async def send_chat_response(event, filename, duration):
     quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(label='📄 查看回覆 Lookup', data=f'action=chat&lookup=true')),
     ])
+    if history and len(history.questions) >= 5:
+        quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='⚡ 查看摘要 Summary', data=f'action=chat&summary=true')))
     await line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
             messages=[AudioMessage(originalContentUrl=f'{URL}/templates/{filename}', quickReply=quick_reply, duration=duration)]
         )
     )
+
+async def chat_summary_message(summary: ChatSummary):
+    """
+    發送聊天摘要訊息給使用者。
+    
+    Sends a chat summary message to the user.
+
+    Args:
+        summary: 聊天摘要物件。
+    """
+    contents = [FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                justifyContent='center',
+                alignItems='center',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text='💬\n聊天摘要\nChat Summary',
+                        wrap=True,
+                        weight='bold',
+                        size='xxl',
+                        align='center',
+                        color="#001174",
+                    ),
+                ]
+            )
+        ),
+        FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text=f'💬 {summary.eng_summary}'
+                        if summary.eng_summary else '💬 No summary.',
+                        wrap=True,
+                        size='md',
+                    ),
+                ]
+            )
+        ),
+        FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text=f'💬 {summary.chi_summary}'
+                        if summary.chi_summary else '💬 無摘要',
+                        wrap=True,
+                        size='md',
+                    ),
+                ]
+            )
+        ),]
+    return FlexMessage(altText='聊天摘要 Chat Summary', contents=FlexCarousel(contents=contents))
 
 async def progress_message(user_id):
     """

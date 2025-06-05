@@ -1,10 +1,10 @@
 from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
 from utils.message_utils import (
-    handle_rich_menu, info_hint_message, result_message, send_chat_response, send_message, send_text_message,
-    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading
+    handle_rich_menu, info_hint_message, result_message, send_chat_response, chat_summary_message, send_message, send_text_message,
+    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION
 )
-from utils.models import SpeechAssessment
+from utils.models import ChatSummary, SpeechAssessment
 from utils.file_utils import *
 import tempfile
 import time
@@ -221,6 +221,31 @@ async def handle_chat(event):
     history = await send_audio_request(event, history, text)
     updateChatHistory(user_id, history)
 
+async def handle_chat_summary(event):
+    user_id = event.source.user_id
+    history = getChatHistory(user_id)
+    if not history:
+        await send_text_message(event, "無法獲取對話歷史，請稍後再試。\nUnable to get chat history, please try again later.")
+        return
+    if len(history.questions) < 5:
+        await send_text_message(event, "對話歷史不足，無法生成摘要。\nInsufficient chat history to generate summary.")
+        return
+    conversation = "\n".join(f"<user>{q}</user><AI>{a}</AI>" for q, a in zip(history.questions[-5:], history.answers[-5:]))
+    # 使用 GPT 模型進行回應分析與評估
+    summary = await client.responses.parse(
+        model="gpt-4o",
+        max_output_tokens=1024,
+        temperature=0.8,
+        instructions=SYSTEM_SUMMARY_INSTRUCTION,
+        text_format=ChatSummary,
+        input=conversation
+    )
+    summary = summary.output_parsed
+    if not summary:
+        await send_text_message(event, "無法生成對話摘要，請稍後再試。\nUnable to generate chat summary, please try again later.")
+        return
+    await send_message(event, await chat_summary_message(summary))
+
 audio = {
     '0': ['ash', 'alloy', 'American 美式口音'],
     '1': ['onyx', 'nova', 'Japanese 日式口音'],
@@ -258,7 +283,7 @@ async def send_audio_request(event, history, content: bytes | str):
             input=messages,
             model="gpt-4o",
             instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English kindly.',
-            max_output_tokens=1024,
+            max_output_tokens=768,
             top_p=0.9,
             temperature=1.1,
         )
@@ -283,7 +308,7 @@ async def send_audio_request(event, history, content: bytes | str):
         duration_ms = len(audio_segment)
         history.answers.append(completion.output_text)
         history.questions.append(content)
-        await send_chat_response(event, f"audio/{user_id}.mp3", duration_ms)
+        await send_chat_response(event, f"audio/{user_id}.mp3", duration_ms, history)
     except Exception as e:
         print("Error in audio request:", e)
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
@@ -325,6 +350,9 @@ async def handle_postback(event):
                 await send_text_message(event, "無法獲取歷史紀錄，請稍後再試。\nUnable to get chat history, please try again later.")
                 return
             await send_text_message(event, history.answers[-1])
+            return
+        elif 'summary' in vars.keys():
+            await handle_chat_summary(event)
             return
         sub = int(vars.get('sub', -1))
         await send_message(event, await chat_message(user_id, sub))
