@@ -2,7 +2,7 @@ from config import line_bot_api, line_bot_api_blob, client, question_manager, ri
 import asyncio
 from utils.message_utils import (
     handle_rich_menu, info_hint_message, result_message, send_chat_response, chat_summary_message, send_message, send_text_message,
-    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION
+    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY
 )
 from utils.models import ChatSummary, SpeechAssessment
 from utils.file_utils import *
@@ -206,10 +206,16 @@ async def handle_audio_message(event):
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
         print(e)
 
+def get_audio_duration(message_content: bytes, format: str = "m4a") -> int:
+    """獲取音訊的時長"""
+    audio_segment = AudioSegment.from_file(BytesIO(message_content), format=format)
+    return len(audio_segment)  # 返回毫秒數
+
 async def handle_chat(event):
     user_id = event.source.user_id
     history = getChatHistory(user_id)
     message_content = await get_audio_content(event)
+    duration = get_audio_duration(message_content)
     if not message_content:
         await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
         return
@@ -218,7 +224,7 @@ async def handle_chat(event):
         text = await transcribe_audio(message_content, language="en")
     except Exception as e:
         print("Transcription error in chat:", e)
-    history = await send_audio_request(event, history, text)
+    history = await send_audio_request(event, history, text, duration//1000)
     updateChatHistory(user_id, history)
 
 async def handle_chat_summary(event):
@@ -246,6 +252,14 @@ async def handle_chat_summary(event):
         return
     await send_message(event, await chat_summary_message(summary))
 
+async def switch_topic(user_id, sub: int = -1):
+    history = getChatHistory(user_id)
+    if not history:
+        return
+    history.answers.append(f"[Switch to topic {CHAT_CATEGORY[sub]}]")
+    history.questions.append(f"[Switch to topic {CHAT_CATEGORY[sub]}]")
+    updateChatHistory(user_id, history)
+
 audio = {
     '0': ['ash', 'alloy', 'American 美式口音'],
     '1': ['onyx', 'nova', 'Japanese 日式口音'],
@@ -253,7 +267,7 @@ audio = {
     '3': ['ballad', 'nova', 'British 英式口音'],
     '4': ['fable', 'sage', 'Indian 印度口音']
 }
-async def send_audio_request(event, history, content: bytes | str):
+async def send_audio_request(event, history, content: bytes | str, duration: int = 0):
     user_id = event.source.user_id
     
     sex = get_user_state(user_id).sex
@@ -304,10 +318,9 @@ async def send_audio_request(event, history, content: bytes | str):
             audio_output.write_to_file(f"templates/audio/{user_id}.mp3")
         except Exception as e:
             print("Error saving audio file:", e)
-        audio_segment = AudioSegment.from_file(BytesIO(audio_output.read()), format="mp3")
-        duration_ms = len(audio_segment)
+        duration_ms = get_audio_duration(audio_output.read(), format="mp3")
         history.answers.append(completion.output_text)
-        history.questions.append(content)
+        history.questions.append(f'{duration}|{content}')
         await send_chat_response(event, f"audio/{user_id}.mp3", duration_ms, history)
     except Exception as e:
         print("Error in audio request:", e)
@@ -339,12 +352,7 @@ async def handle_postback(event):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         await show_loading(user_id)
-        if 'question' in vars.keys():
-            history = getChatHistory(user_id)
-            history = await send_audio_request(event, history, vars.get('question'))
-            updateChatHistory(user_id, history)
-            return
-        elif 'lookup' in vars.keys():
+        if 'lookup' in vars.keys():
             history = getChatHistory(user_id)
             if not history:
                 await send_text_message(event, "無法獲取歷史紀錄，請稍後再試。\nUnable to get chat history, please try again later.")
@@ -355,6 +363,7 @@ async def handle_postback(event):
             await handle_chat_summary(event)
             return
         sub = int(vars.get('sub', -1))
+        await switch_topic(user_id, sub)
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'sex':
         user_state.sex = int(vars.get('sub'))

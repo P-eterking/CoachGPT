@@ -15,6 +15,8 @@ from utils.file_utils import (
 # 設定主網址和分類變數
 URL = f'https://{DOMAIN}'
 IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
+CHAT_CATEGORY = ["旅遊 Travel", "運動 Sports", "面試 Interview", "英語技巧 English Skills"]
+CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
 # 系統評估提示語，指導如何進行回答分析
 SYSTEM_INSTRUCTION = f"""
@@ -442,9 +444,6 @@ async def result_message(result: SpeechAssessment, category: str, sub: int):
         msg.quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=record&sub={sub+1}')))
     return msg
 
-category = ["旅遊 Travel", "運動 Sports", "面試 Interview", "英語技巧 English Skills"]
-category_image_url = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
-
 async def chat_message(user_id, sub):
     completion = await client.beta.chat.completions.parse(
         model="gpt-4o-mini",
@@ -457,7 +456,7 @@ async def chat_message(user_id, sub):
         messages=[
             {
                 "role": "user",
-                "content": f"As a non-native English college student, generate three questions that are suitable for me to practice about {category[sub]} in English.\n",
+                "content": f"As a non-native English college student, generate three questions that are suitable for me to practice about {CHAT_CATEGORY[sub]} in English.\n",
             }
         ],
     )
@@ -465,7 +464,7 @@ async def chat_message(user_id, sub):
     messages = []
     contents = [
         FlexImage(
-            url=f'{URL}{category_image_url[sub]}',
+            url=f'{URL}{CHAT_CATEGORY_IMAGE_URL[sub]}',
             size='full',
             aspect_ratio='1:1',
             aspect_mode='cover',
@@ -473,7 +472,7 @@ async def chat_message(user_id, sub):
             flex=1,
         ),
         FlexText(
-            text=category[sub].replace(' ', '\n', 1) if len(category[sub]) > 12 else category[sub],
+            text=CHAT_CATEGORY[sub].replace(' ', '\n', 1) if len(CHAT_CATEGORY[sub]) > 12 else CHAT_CATEGORY[sub],
             wrap=True,
             weight='bold',
             size='xxl',
