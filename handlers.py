@@ -156,6 +156,11 @@ async def handle_audio_message(event):
         
         # 獲取使用者的練習單元和題目
         sub = user_state.sub
+        
+        if sub == -1:
+            await send_text_message(event, "請選擇單元。\nPlease select a unit.")
+            return
+        
         question = question_manager.get_question(category, sub)
         
         try:
@@ -362,7 +367,7 @@ async def handle_postback(event):
         elif 'summary' in vars.keys():
             await handle_chat_summary(event)
             return
-        sub = int(vars.get('sub', -1))
+        sub = int(vars.get('sub', 0))
         await switch_topic(user_id, sub)
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'sex':

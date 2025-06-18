@@ -113,8 +113,8 @@
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "next", "alias_id": "ex3-2" },
-                { "type": "postback", "label": "prev", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
             ]
         },
