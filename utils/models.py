@@ -20,6 +20,10 @@ class ChatSummary(BaseModel):
     chi_summary: str = Field(description="繁體中文摘要 Traditional Chinese (zh-TW) summary", default_factory=lambda: "無摘要。")  # 中文摘要
     eng_summary: str = Field(description="英文摘要 English summary", default_factory=lambda: "No summary.")  # 英文摘要
 
+class ChatSummaryAndScore(BaseModel):
+    summary: ChatSummary = Field(description="摘要", default_factory=lambda: ChatSummary())  # 摘要
+    score: int = Field(description="分數", default_factory=lambda: 0, ge=0, le=10)  # 分數
+
 class User(BaseModel):
     id: str = Field(description="學號")  # 學號
     dep: str = Field(description="系級") # 系級

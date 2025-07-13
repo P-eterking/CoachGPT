@@ -2,9 +2,9 @@ from config import line_bot_api, line_bot_api_blob, client, question_manager, ri
 import asyncio
 from utils.message_utils import (
     handle_rich_menu, info_hint_message, result_message, send_chat_response, chat_summary_message, send_message, send_text_message,
-    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY
+    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY, SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION
 )
-from utils.models import ChatSummary, SpeechAssessment
+from utils.models import ChatSummary, ChatSummaryAndScore, SpeechAssessment
 from utils.file_utils import *
 import tempfile
 import time
@@ -90,7 +90,7 @@ async def check_user_login(event, message: str = None) -> bool:
             return False
         try:
             option = int(message)
-            if option < 1 or option > 4:
+            if option < 1 or option > 5:
                 await send_text_message(event, "輸入格式錯誤！\nFormat error!")
                 return False
         except ValueError:
@@ -249,6 +249,32 @@ async def handle_chat_summary(event):
         temperature=0.8,
         instructions=SYSTEM_SUMMARY_INSTRUCTION,
         text_format=ChatSummary,
+        input=conversation
+    )
+    summary = summary.output_parsed
+    if not summary:
+        await send_text_message(event, "無法生成對話摘要，請稍後再試。\nUnable to generate chat summary, please try again later.")
+        return
+    await send_message(event, await chat_summary_message(summary))
+
+
+async def handle_chat_summary_and_score(event):
+    user_id = event.source.user_id
+    history = getChatHistory(user_id)
+    if not history:
+        await send_text_message(event, "無法獲取對話歷史，請稍後再試。\nUnable to get chat history, please try again later.")
+        return
+    if len(history.questions) < 5:
+        await send_text_message(event, "對話歷史不足，無法生成摘要。\nInsufficient chat history to generate summary.")
+        return
+    conversation = "\n".join(f"<user>{q.split('|')[1] if '|' in q else q}</user><AI>{a}</AI>" if not q.startswith('[') else q for q, a in zip(history.questions, history.answers))
+    # 使用 GPT 模型進行回應分析與評估
+    summary = await client.responses.parse(
+        model="gpt-4o",
+        max_output_tokens=1024,
+        temperature=0.8,
+        instructions=SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION,
+        text_format=ChatSummaryAndScore,
         input=conversation
     )
     summary = summary.output_parsed

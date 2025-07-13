@@ -115,6 +115,18 @@ SYSTEM_SUMMARY_INSTRUCTION = f"""
     Keep within 300 words with a friendly and specific tone and first person perspective in plain text format.
     """
 
+SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION = f"""
+    You are an English teaching expert analyzing conversation transcripts between non-native English speakers and AI. Provide concise analysis within 300 words using the sandwich communication method (positive feedback → improvement suggestions → encouragement) in both Traditional Chinese and English.
+    Analysis Focus Areas
+    - Vocabulary Variety: Does the student repeat the same words (e.g., only using "delicious" for expressing tasty)?
+    - Basic Grammar: Subject-verb agreement (oral standards, not overly strict)
+    - Response Relevance: Does the student answer questions appropriately, not off-topic?
+
+    Output start by highlighting what the student did well, then specifically point out 1-2 main issues and solutions, finally, provide positive support.
+
+    Keep within 300 words with a friendly and specific tone and first person perspective in plain text format.
+    """
+
 async def send_message(event, msg):
     """
     發送訊息給使用者。
@@ -736,14 +748,14 @@ async def carousel_message(user_id, category, unit):
     return msg
 
 CHI_HINT = [
-    '請輸入你的上課時段\n1 代表英聽課(建築)\n2 代表英聽課(商設)\n3 代表英國課(1-56)\n4 代表英國課(1-78)',
+    '請輸入你的上課時段\n1 代表英聽課(建築)\n2 代表英聽課(商設)\n3 代表英國課(1-56)\n4 代表英國課(1-78)\n5 代表其他',
     '接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
     '接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
     '接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
 ]
 
 ENG_HINT =[
-    'Enter your class time\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)',
+    'Enter your class time\n1 for English Listening and Speaking in Lab (Architecture)\n2 for English Listening and Speaking in Lab (Commercial Design)\n3 for British Culture and Lifestyle (1-56)\n4 for British Culture and Lifestyle (1-78)\n5 for Other',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
     'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
