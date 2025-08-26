@@ -1,20 +1,12 @@
 import json
 import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
-from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
+from constants import USER_DATA_FILE, CONFIG_FILE, DEFAULT_CONFIG  # 使用者資料檔案的路徑
 from utils.models import ChatHistory, User, SpeechAssessment, UserState  # 使用者和評分資料的模型
 
 # 使用者狀態和資料
 user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
 user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
-
-# 預設設定
-DEFAULT_CONFIG = {
-    'admin': [],
-    'rich_menu_ids': {},
-    'enabled': [],
-    'response': []
-}
 
 # 設定檔案
 config = DEFAULT_CONFIG.copy()

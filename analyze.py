@@ -9,11 +9,13 @@ import os
 # Helper function to parse different history key formats
 def parse_history_key(key: str) -> tuple[str, str] | None:
     """Parses keys like 'ex1-0', 'pretest-3' into (category_name, question_idx)."""
+    from constants import KNOWN_CATEGORIES, CATEGORY_NAME_MAP
+    
     parts = key.split('-')
     if len(parts) == 2:
         category_name, q_idx_str = parts
         # Check if the first part is a known category prefix and the second is a digit
-        if category_name in ['ex1', 'ex2', 'ex3', 'pretest', 'posttest'] and q_idx_str.isdigit():
+        if category_name in KNOWN_CATEGORIES and q_idx_str.isdigit():
             return (category_name, q_idx_str)
             
     # Handle potential old numeric keys 'c-u-q' by mapping them back to names
@@ -36,18 +38,24 @@ def load_user_data(file_path: str) -> list[User]:
     return [User(**value) for key, value in data.items()]
 
 def analyze_by_question(users: list[User], question_manager: QuestionManager):
+    """
+    Analyze user performance by question categories.
+    
+    Args:
+        users: List of User objects to analyze
+        question_manager: QuestionManager instance for accessing questions
+        
+    Returns:
+        Dictionary containing analysis results
+    """
+    from constants import CATEGORY_NAME_MAP
+    
     category_scores = {} # Renamed, keyed by category_name
     user_count = len(users)
     users_completed_category = {} # Renamed, keyed by category_name
     
-    # Define the mapping from category name to QM indices and the category names list
-    category_name_map = {
-        'ex1': (0, 0),
-        'ex2': (0, 1),
-        'ex3': (0, 2),
-        'pretest': (1, 0),
-        'posttest': (2, 0)
-    }
+    # Use the mapping from constants
+    category_name_map = CATEGORY_NAME_MAP
     category_names = list(category_name_map.keys())
     
     # --- Initialize data structures using category names --- 
