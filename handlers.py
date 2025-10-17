@@ -86,7 +86,7 @@ async def check_user_login(event, message: str = None) -> bool:
     # 上課時段
     if len(info) == 0:
         if not message.isdigit():
-            await send_text_message(event, "格式錯誤！\nFormat error!")
+            await send_text_message(event, "輸入格式錯誤！\nFormat error!")
             return False
         try:
             option = int(message)
