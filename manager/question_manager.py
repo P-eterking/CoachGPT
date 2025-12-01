@@ -55,8 +55,13 @@ class QuestionManager(object):
         print(f"Category {category} saved successfully.")
 
     async def save_category(self, category: str) -> None:
-        # 儲存類別
-        await self._save_category(category, self.questions.get(category))
+        # 儲存類別（僅對已載入的題目類別進行儲存）
+        value = self.questions.get(category)
+        if value is None:
+            # 若該類別不存在於題庫（例如 chat 等純功能性類別），則不進行儲存
+            print(f"Category {category} not found in questions, skip saving.")
+            return
+        await self._save_category(category, value)
 
     async def save_questions(self) -> None:
         # 儲存問題

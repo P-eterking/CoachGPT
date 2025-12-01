@@ -90,7 +90,7 @@ async def check_user_login(event, message: str = None) -> bool:
             return False
         try:
             option = int(message)
-            if option < 1 or option > 5:
+            if option < 1 or option > 9:
                 await send_text_message(event, "輸入格式錯誤！\nFormat error!")
                 return False
         except ValueError:
