@@ -12,6 +12,7 @@ import base64
 from pydub import AudioSegment
 from io import BytesIO
 import os
+###123123測試測試
 
 async def get_audio_content(event):
     result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
