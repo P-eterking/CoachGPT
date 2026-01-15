@@ -70,7 +70,7 @@ services:
     container_name: linebot-service4
     restart: unless-stopped
     ports:
-      - "8003:8003"  # 映射 FastAPI 服務的端口
+      - "5678:5678"  # 映射 FastAPI 服務的端口
     env_file:
       - .env
     environment:
