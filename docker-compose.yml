@@ -75,7 +75,7 @@ services:
       - .env
     environment:
       - DOMAIN=${DOMAIN4}
-      - PORT=8003
+      - PORT=5678
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET4}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN4}
     volumes:
