@@ -6,6 +6,7 @@ __pycache__/
 *.pyd
 *.so
 
+*.xlsx
 # Python virtual environments
 .env/
 .venv/
