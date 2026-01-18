@@ -29,7 +29,7 @@
             ]
         },
         "rag_test": {
-            "file": "Game_Sel.jpg",
+            "file": "Game_Role_Select.jpg",
             "chat_bar_text": "Select Role", 
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
