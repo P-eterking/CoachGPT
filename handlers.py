@@ -437,12 +437,16 @@ async def handle_postback(event):
     
     if action == 'record':
         category = user_state.category
-        if not isEnabled(category):
+        
+        # [修改] 允許 rag_test 或 enabled 列表中的單元
+        if category != 'rag_test' and not isEnabled(category):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
+            
         sub = int(vars.get('sub', 0))
         user_state.sub = sub
-        # [恢復] 無論是否為 RAG 模式，都發送圖文卡片，讓使用者能看到題目/角色圖片
+        
+        # 顯示題目卡片
         await send_message(event, await question_message(user_id, category, sub)) 
 
     elif action == 'chat':
@@ -482,7 +486,6 @@ async def handle_postback(event):
             return
         
         is_rag = config.get('rag_mode', False)
-        # 允許 RAG 模式查看回覆，或一般模式下有開啟 response 的類別
         if not isResponse(category) and not is_rag:
             await send_text_message(event, "該單元目前不提供回饋。\nCurrently unavailable.")
             return
@@ -494,38 +497,30 @@ async def handle_postback(event):
             await send_text_message(event, '無權限！\nNo permission!')
             return
         
-        # [新增] 智慧選單切換邏輯
-        # 判斷是否為 RAG 模式
+        # RAG 模式下的選單切換邏輯
         is_rag = config.get('rag_mode', False)
-        
-        # 如果目標是回首頁 (menu)，依據模式決定去哪
         if alias == 'menu':
             if is_rag:
-                alias = 'menu_game' # 遊戲模式回遊戲首頁
+                alias = 'menu_game'
         elif alias == 'menu_game':
             if not is_rag:
-                alias = 'menu'      # 一般模式回一般首頁
+                alias = 'menu'
         
-        # 檢查該類別是否啟用 (rag_test 豁免或需在 enabled 中)
-        # 為了保險起見，直接豁免 rag_test 的檢查，或是確保它在 enabled 列表中
         if alias not in ['rag_test'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         
-        # 設定當前類別
         user_state.category = alias.split('-')[0]
         
-        # 連結 Rich Menu
         rich_menu_id = get_rich_menu_id(alias)
         if rich_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
         
-        # 自動彈出選單：如果切換到的類別有題目 (且不是 Chat 或 Admin)，則顯示選單
+        # 自動彈出選單
         if question_manager.has_question(user_state.category) and alias not in ['chat', 'admin']:
-            await send_message(event, await carousel_message(user_id, user_state.category, 0)) # unit 從 0 開始
+            await send_message(event, await carousel_message(user_id, user_state.category, 0)) # 從第一頁開始
         else:
-            # 只有當沒有自動彈出選單時，才顯示切換成功訊息，避免訊息過多
-            if alias not in ['chat', 'admin', 'menu', 'menu_game']: # menu 不需要提示
+            if alias not in ['chat', 'admin', 'menu', 'menu_game']:
                  await send_text_message(event, f"已切換至 {alias}。\nSwitched to {alias}.")
 
     elif action == 'progress':
