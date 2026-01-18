@@ -15,7 +15,7 @@
             ]
         },
         "menu_game": {
-            "file": "Game_Menu.jpg",
+            "file": "menu.jpg",
             "chat_bar_text": "Mystery Game",
             "selected": false,
             "grid": { "rows": 2, "columns": 3 },
@@ -30,7 +30,7 @@
         },
         "rag_test": {
             "file": "chat.jpg",
-            "chat_bar_text": "select role",
+            "chat_bar_text": "Select Role", 
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "case1", "data": "action=record&sub=0" },

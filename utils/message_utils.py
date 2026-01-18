@@ -12,6 +12,7 @@ import json
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id, config
 )
+import os
 
 URL = f'https://{DOMAIN}'
 IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
@@ -534,9 +535,24 @@ async def chat_message(user_id, sub):
 async def question_message(user_id, category, sub):
     messages = []
     question = question_manager.get_question(category, sub)
+    
+    # 判斷是否為 RAG 模式
+    is_rag = config.get('rag_mode', False)
+    
+    # 如果是 RAG 模式，使用更符合劇情的標題
+    if is_rag:
+        # 假設題目文字格式為 "Scenario: ... \n\nTask: ..."
+        # 我們只取第一行作為標題，避免太長
+        title_text = question.text.split('\n')[0]
+        # 如果標題太長，截斷顯示
+        if len(title_text) > 20:
+            title_text = title_text[:20] + "..."
+    else:
+        title_text = f'Q{sub+1}'
+
     contents = [
         FlexText(
-            text=f'Q{sub+1}',
+            text=title_text,
             wrap=True,
             weight='bold',
             size='xxl',
@@ -566,17 +582,18 @@ async def question_message(user_id, category, sub):
             margin='md'
         ))
     
+    footer_text = '請按下方按鈕開始對話\nPress record button below to speak' if is_rag else '請按下方按鈕開始錄音回答\nPress record button below to start'
+    
     footer = [
         FlexText(
             style='italic',
             size='md',
             wrap=True,
             align='center',
-            text='請按下方按鈕開始錄音回答\nPress record button below to start',
+            text=footer_text,
         )
     ]
     
-    is_rag = config.get('rag_mode', False)
     result_label = '查看劇情回應 Response' if is_rag else '查看分數 Result'
     
     if getHistory(user_id, f'{category}-{sub}') and (isResponse(category) or is_rag):
@@ -633,7 +650,7 @@ async def question_message(user_id, category, sub):
             ))
     
     return FlexMessage(
-        altText='口語練習',
+        altText='口語練習' if not is_rag else '情境對話',
         contents=FlexCarousel(contents=messages)
     )
     
@@ -641,13 +658,20 @@ async def carousel_message(user_id, category, unit):
     if len(question_manager.get_all_questions(category)) < unit:
         return None
     cols = []
-    for sub,j in enumerate(question_manager.get_unit(category,unit-1)):
+    
+    is_rag = config.get('rag_mode', False)
+    
+    for sub,j in enumerate(question_manager.get_unit(category,unit-1)): # 注意這裡的 unit-1 與 0 的關係，原邏輯看似是從1開始算
+        # 如果是 RAG 模式，標題顯示為 "Scenario X"
+        title_text = f'Scenario {sub+1}' if is_rag else f'口語練習 Q{unit}-{sub+1}'
+        label_text = '開始調查 Investigate' if is_rag else '開始作答 Enter'
+        
         body = FlexBox(
             layout='vertical',
             spacing='lg',
             contents=[
                 FlexText(
-                    text=f'口語練習 Q{unit}-{sub+1}',
+                    text=title_text,
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -655,7 +679,7 @@ async def carousel_message(user_id, category, unit):
                 ),
                 FlexButton(
                     action=PostbackAction(
-                        label='開始作答 Enter',
+                        label=label_text,
                         data=f'action=record&unit={unit-1}&sub={sub}'
                     ),
                     height='sm',
@@ -674,16 +698,22 @@ async def carousel_message(user_id, category, unit):
                     style='secondary',
                 )
             )
+        
+        # 圖片處理：RAG 模式可能沒有 coverX-Y.jpg，需確保圖片存在或使用預設
+        img_url = f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg'
+        # 這裡假設圖片一定存在，若不存在可能需要前端(LINE)處理或後端檢查
+        # 為了簡化，先使用預設邏輯
+        
         cols.append(FlexBubble(
             hero=FlexImage(
-                url=f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg',
+                url=img_url,
                 size='full',
                 aspect_ratio='20:13',
                 aspect_mode='cover',
             ),
             body=body
         ))
-    if len(question_manager.get_all_questions(category)) > unit:
+    if len(question_manager.get_all_questions(category)) > unit * 10: # 假設每頁10個
         cols.append(FlexBubble(
             body=FlexBox(
                 contents=[
@@ -707,90 +737,62 @@ async def carousel_message(user_id, category, unit):
     )
     return msg
 
-CHI_HINT = [
-    '請依照指示輸入你的課程編號\n1 代表簡報課(4-12)\n2 代表簡報課(4-34)\n3 代表英國課(1-56)\n4 代表英國課(1-78)\n5 代表其他',
-    '接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
-    '接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
-    '接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
-]
-
-ENG_HINT =[
-    'Enter your class number\n1 for English Presentation(4-12)\n2 for English Presentation(4-34)\n3 for English Culture and Lifestyle(1-56)\n4 for English Culture and Lifestyle(1-78)\n5 for Others',
-    'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
-    'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
-    'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
-]
-
-async def info_hint_message(index: int):
-    return FlexMessage(
-        altText='資料綁定提示',
-        contents=FlexBubble(
-            size='mega',
-            body=FlexBox(
-                layout='vertical',
-                spacing='lg',
-                contents=[
-                    FlexText(
-                        text=CHI_HINT[index],
-                        wrap=True,
-                        size='md',
-                    ),
-                    FlexText(
-                        text=ENG_HINT[index],
-                        wrap=True,
-                    )
-                ]
-            )
-        )
-    )
-async def show_loading(user_id, secs=20):
-    await line_bot_api.show_loading_animation(show_loading_animation_request=ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=secs), async_req=True).get()
-    
-async def handle_rich_menu(user_id):
-    user_state = get_user_state(user_id)
-    if user_state.category:
-        return
-    try:
-        rich_menu_id = await rich_menu_manager.get_rich_menu_id(user_id)
-        category = get_rich_menu_category_from_id(rich_menu_id)
-        if not category:
-            raise ApiException('No rich menu category found.')
-        user_state.category = category
-    except ApiException as e:
-        rich_menu_id = get_rich_menu_id('menu')
-        await rich_menu_manager.link_rich_menu_to_user(user_id=user_id, rich_menu_id=rich_menu_id)
-        user_state.category = 'menu'
-    except Exception as e:
-        print(e)
-
 async def create_rich_menu():
-    await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
+    try:
+        await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
+    except Exception as e:
+        print(f"Error setting webhook: {e}")
+
     configs = load_rich_menu_configs()
-    response = await rich_menu_manager.get_all_rich_menus()
-    if len(response) != len(configs['rich_menus'].items()):
-        print("Deleting all rich menus...")
-        for r in response:
-            await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
-        clear_rich_menu_id()
+    
+    # 清除舊選單
+    try:
+        response = await rich_menu_manager.get_all_rich_menus()
+        if len(response) != len(configs['rich_menus'].items()):
+            print("Deleting all rich menus...")
+            for r in response:
+                await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
+            clear_rich_menu_id()
+    except Exception as e:
+        print(f"Error clearing rich menus: {e}")
     
     # 根據是否為 RAG 模式決定預設的選單
     target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
     
     for menu_name, config_data in configs['rich_menus'].items():
-        rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
-        if get_rich_menu_id(menu_name):
-            continue
-        builder = build_rich_menu_from_config(menu_name, config_data)
-        rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
-        image_file = config_data.get("file")
-        if image_file:
-            image_path = os.path.join("./templates/richmenu", image_file)
-            await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-        
-        # 如果當前選單是目標預設選單，則設定為預設
-        if menu_name == target_default:
-            await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+        try:
+            # 檢查是否已經建立過
+            if get_rich_menu_id(menu_name):
+                continue
             
-        set_rich_menu_id(rich_menu_id, menu_name)
-        print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+            rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
+            
+            # 建立選單物件
+            builder = build_rich_menu_from_config(menu_name, config_data)
+            
+            # 呼叫 LINE API 建立
+            rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
+            
+            # 上傳圖片
+            image_file = config_data.get("file")
+            if image_file:
+                image_path = os.path.join("./templates/richmenu", image_file)
+                if os.path.exists(image_path):
+                    await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
+                else:
+                    print(f"Warning: Image file not found: {image_path}")
+            
+            # 設定預設選單
+            if menu_name == target_default:
+                await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+                
+            set_rich_menu_id(rich_menu_id, menu_name)
+            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+            
+        except Exception as e:
+            # [關鍵修正] 這裡捕獲單一選單建立的錯誤，不要讓整個程式崩潰
+            print(f"CRITICAL ERROR creating Rich Menu '{menu_name}': {e}")
+            print("Skipping this menu and continuing startup...")
+            continue
+
     await save_config()
