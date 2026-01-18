@@ -30,7 +30,7 @@
         },
         "rag_test": {
             "file": "chat.jpg",
-            "chat_bar_text": "Scenario Select",
+            "chat_bar_text": "select role",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "case1", "data": "action=record&sub=0" },
