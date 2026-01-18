@@ -10,15 +10,14 @@ from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import ChatSummary, QuestionSet, SpeechAssessment
 import json
 from utils.file_utils import (
-    get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id
+    get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, set_rich_menu_id, save_config, get_rich_menu_category_from_id, clear_rich_menu_id, config
 )
-# 設定主網址和分類變數
+
 URL = f'https://{DOMAIN}'
 IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 CHAT_CATEGORY = ["旅遊 Travel", "運動 Sports", "面試 Interview", "英語技巧 English Skills"]
 CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
-# 系統評估提示語，指導如何進行回答分析
 SYSTEM_INSTRUCTION = f"""
         你是一個專業英語口說評量助手，擅長根據臺灣非母語者大學生的回答提供改進建議和改善後之文本。
         
@@ -103,6 +102,39 @@ SYSTEM_INSTRUCTION = f"""
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
 
+GAME_SYSTEM_INSTRUCTION = """
+    You are an advanced AI NPC in an immersive scenario-based mystery game.
+    Your identity is: {persona}
+    
+    Context Information (RAG):
+    {context}
+    
+    Conversation History:
+    {history}
+
+    Your Task:
+    1. **Roleplay**: Reply to the user's input strictly staying in character. Use the knowledge provided in the 'Context Information'.
+       - Do NOT make up facts that contradict the context.
+       - Do NOT simply copy-paste sentences from the context. Rephrase them naturally as dialogue.
+       - If the user asks something outside your knowledge/context, deflect naturally as the character would.
+    2. **Language Coach (Hidden)**: As a background process, evaluate the user's English proficiency.
+    
+    Think step by step:
+    1. Analyze the user's input and the conversation history.
+    2. Retrieve relevant facts from the Context.
+    3. Formulate the 'npc_reply' in English. It should be engaging, natural, and drive the scenario forward.
+    4. Formulate 'feedback' in Traditional Chinese (zh-TW). Point out 1-2 grammar or vocabulary mistakes politely.
+    5. Assign a 'score' (1-10) based on fluency and accuracy.
+
+    Output Schema:
+    The output must be a valid JSON object matching this schema:
+    {{
+      "npc_reply": "Your in-character response here...",
+      "feedback": "Your grammar/vocab advice in Traditional Chinese...",
+      "score": 8
+    }}
+"""
+
 SYSTEM_SUMMARY_INSTRUCTION = f"""
     You are an English teaching expert analyzing conversation transcripts between non-native English speakers and AI. Provide concise analysis within 300 words using the sandwich communication method (positive feedback → improvement suggestions → encouragement) in both Traditional Chinese and English.
     Analysis Focus Areas
@@ -128,15 +160,6 @@ SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION = f"""
     """
 
 async def send_message(event, msg):
-    """
-    發送訊息給使用者。
-    
-    Sends a message to the user.
-
-    Args:
-        event: 事件物件，包含回覆token。
-        msg: 要發送的訊息，可以是單一訊息或訊息列表。
-    """
     if msg is None:
         return
     if not isinstance(msg, list):
@@ -149,29 +172,9 @@ async def send_message(event, msg):
     )
     
 async def text_message(text):
-    """
-    建立文字訊息物件。
-    
-    Creates a text message object.
-
-    Args:
-        text: 要發送的文字內容。
-    
-    Returns:
-        TextMessage: 文字訊息物件。
-    """
     return TextMessage(text=text)
 
 async def send_text_message(event, text):
-    """
-    發送文字訊息給使用者。
-    
-    Sends a text message to the user.
-
-    Args:
-        event: 事件物件，包含回覆token。
-        text: 要發送的文字內容。
-    """
     await line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
@@ -180,14 +183,6 @@ async def send_text_message(event, text):
     )
 
 async def send_chat_response(event, filename, duration, history=None):
-    """
-    發送音訊訊息給使用者。
-    
-    Sends an audio message to the user.
-       Args:
-        event: 事件物件，包含回覆token。
-        url: 音訊檔案的網址。
-    """
     quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(label='📄 查看回覆 Lookup', data=f'action=chat&lookup=true')),
     ])
@@ -201,14 +196,6 @@ async def send_chat_response(event, filename, duration, history=None):
     )
 
 async def chat_summary_message(summary: ChatSummary):
-    """
-    發送聊天摘要訊息給使用者。
-    
-    Sends a chat summary message to the user.
-
-    Args:
-        summary: 聊天摘要物件。
-    """
     contents = [FlexBubble(
             size='mega',
             body=FlexBox(
@@ -261,18 +248,7 @@ async def chat_summary_message(summary: ChatSummary):
     return FlexMessage(altText='聊天摘要 Chat Summary', contents=FlexCarousel(contents=contents))
 
 async def progress_message(user_id):
-    """
-    生成使用者未回答問題的進度訊息。
-    
-    Generates a progress message for unanswered questions for the user.
-
-    Args:
-        user_id: 使用者ID。
-    
-    Returns:
-        TextMessage: 進度訊息物件。
-    """
-    questions = question_manager.questions  # Assume this function retrieves all categories
+    questions = question_manager.questions 
     progress: dict[str: list[int]] = {}
     total = 0
     
@@ -292,7 +268,6 @@ async def progress_message(user_id):
     if len(progress) == 0:
         return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
     
-    # Create a formatted message
     message = f"您尚未回答 Questions Unanswered ({sum(len(v) for v in progress.values())}):\n"
     for category, subs in progress.items():
         if len(subs) > 0:
@@ -304,153 +279,161 @@ async def progress_message(user_id):
     
     
 async def result_message(result: SpeechAssessment, category: str, sub: int):
-    """
-    生成口語評估結果訊息。
-    
-    Generates a speech assessment result message.
-
-    Args:
-        result: 口語評估結果物件。
-        unit: 單元編號。
-        sub: 子單元編號。
-    
-    Returns:
-        FlexMessage: 口語評估結果訊息物件。
-    """
     q = question_manager.get_question(category, sub)
-    msg = FlexMessage(
-        altText=f'Q{sub+1} 口語練習結果 Result',
-        contents=FlexCarousel(
+    
+    is_rag = config.get('rag_mode', False)
+    display_feedback = config.get('display_feedback', True)
+    
+    result_title = '劇情回應 NPC Reply' if is_rag else '可改善為 Improvements'
+    score_text = f'評分 Score: {result.score}/{q.max_score if q.max_score else 10}'
+    
+    main_bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            justifyContent='center',
+            alignItems='center',
             contents=[
-                FlexBubble(
-                    size='giga',
-                    body=FlexBox(
-                        layout='vertical',
-                        justifyContent='center',
-                        alignItems='center',
-                        contents=[
-                            FlexText(
-                                text=f'Q{sub+1} 練習結果 Result',
-                                wrap=True,
-                                weight='bold',
-                                size='xxl',
-                            ),
-                            FlexBox(
-                                layout='vertical',
-                                margin='md',
-                                contents=[
-                                    FlexText(
-                                        text=f'評分 Score: {result.score}/{q.max_score if q.max_score else 10}',
-                                        color='#5b5b5b',
-                                        size='xl',
-                                        wrap=True,
-                                        flex=1,
-                                    ),
-                                ]
-                            ),
-                        ],
-                    ),
+                FlexText(
+                    text=f'Q{sub+1} {"劇情對話" if is_rag else "練習結果"} Result',
+                    wrap=True,
+                    weight='bold',
+                    size='xxl',
                 ),
-                FlexBubble(
-                    size='giga',
-                    body=FlexBox(
-                        layout='vertical',
-                        spacing='sm',
-                        contents=[
-                            FlexText(
-                                text='建議 Suggestions',
-                                wrap=True,
-                                weight='bold',
-                                size='xl',
-                            ),
-                            FlexBox(
-                                layout='vertical',
-                                margin='md',
-                                spacing='sm',
-                                contents=[
-                                    FlexText(
-                                        text=result.chi_suggestion.replace('\\n','\n').strip(),
-                                        color='#5b5b5b',
-                                        size='sm',
-                                        wrap=True,
-                                        flex=1,
-                                    ),
-                                    FlexText(
-                                        text=result.eng_suggestion.replace('\\n','\n').strip(),
-                                        color='#5b5b5b',
-                                        size='sm',
-                                        wrap=True,
-                                        flex=1,
-                                    )
-                                ]
-                            ),
-                        ]
-                    )
+            ],
+        ),
+    )
+    
+    if not is_rag or display_feedback:
+        main_bubble.body.contents.append(
+            FlexBox(
+                layout='vertical',
+                margin='md',
+                contents=[
+                    FlexText(
+                        text=score_text,
+                        color='#5b5b5b',
+                        size='xl',
+                        wrap=True,
+                        flex=1,
+                    ),
+                ]
+            )
+        )
+
+    suggestion_bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexText(
+                    text='建議 Suggestions',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
                 ),
-                FlexBubble(
-                    size='giga',
-                    body=FlexBox(
-                        layout='vertical',
-                        spacing='sm',
-                        contents=[
-                            FlexText(
-                                text='可改善為 Improvements',
-                                wrap=True,
-                                weight='bold',
-                                size='xl',
-                            ),
-                            FlexBox(
-                                layout='vertical',
-                                margin='md',
-                                contents=[
-                                    FlexText(
-                                        text=result.better_ans,
-                                        color='#5b5b5b',
-                                        size='sm',
-                                        wrap=True,
-                                        flex=1,
-                                    ),
-                                ]
-                            ),
-                        ],
-                    ),
-                )
-            ] if isResponse(category) else [
-                FlexBubble(
-                    size='giga',
-                    body=FlexBox(
-                        layout='vertical',
-                        justifyContent='center',
-                        alignItems='center',
-                        contents=[
-                            FlexText(
-                                text=f'Q{sub+1} 作答完成 Complete',
-                                wrap=True,
-                                weight='bold',
-                                size='xxl',
-                            ),
-                            FlexBox(
-                                layout='vertical',
-                                margin='md',
-                                contents=[
-                                    FlexText(
-                                        text=f'評分 Score: {result.score}/{q.max_score if q.max_score else 10}',
-                                        color='#5b5b5b',
-                                        size='xl',
-                                        wrap=True,
-                                        flex=1,
-                                    ),
-                                ]
-                            ),
-                        ],
-                    ),
+                FlexBox(
+                    layout='vertical',
+                    margin='md',
+                    spacing='sm',
+                    contents=[
+                        FlexText(
+                            text=result.chi_suggestion.replace('\\n','\n').strip(),
+                            color='#5b5b5b',
+                            size='sm',
+                            wrap=True,
+                            flex=1,
+                        ),
+                        FlexText(
+                            text=result.eng_suggestion.replace('\\n','\n').strip(),
+                            color='#5b5b5b',
+                            size='sm',
+                            wrap=True,
+                            flex=1,
+                        )
+                    ]
                 ),
             ]
         )
     )
+
+    reply_bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexText(
+                    text=result_title,
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                ),
+                FlexBox(
+                    layout='vertical',
+                    margin='md',
+                    contents=[
+                        FlexText(
+                            text=result.better_ans, 
+                            color='#5b5b5b',
+                            size='sm',
+                            wrap=True,
+                            flex=1,
+                        ),
+                    ]
+                ),
+            ],
+        ),
+    )
+
+    bubbles = [main_bubble]
+    
+    if not is_rag or display_feedback:
+        bubbles.append(suggestion_bubble)
+        
+    bubbles.append(reply_bubble)
+
+    if not isResponse(category) and not is_rag:
+        bubbles = [
+             FlexBubble(
+                size='giga',
+                body=FlexBox(
+                    layout='vertical',
+                    justifyContent='center',
+                    alignItems='center',
+                    contents=[
+                        FlexText(
+                            text=f'Q{sub+1} 作答完成 Complete',
+                            wrap=True,
+                            weight='bold',
+                            size='xxl',
+                        ),
+                        FlexBox(
+                            layout='vertical',
+                            margin='md',
+                            contents=[
+                                FlexText(
+                                    text=score_text,
+                                    color='#5b5b5b',
+                                    size='xl',
+                                    wrap=True,
+                                    flex=1,
+                                ),
+                            ]
+                        ),
+                    ],
+                ),
+            ),
+        ]
+
+    msg = FlexMessage(
+        altText=f'Q{sub+1} 練習結果 Result',
+        contents=FlexCarousel(contents=bubbles)
+    )
+    
     msg.quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(label='再次回答 Again',data=f'action=record&sub={sub}')),
-        # QuickReplyItem(action=PostbackAction(label='查看單元 Back', data=f'action=unit&unit={unit+1}')),
     ])
     if len(question_manager.get_all_questions(category))-1 > sub:
         msg.quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='下一題 Next', data=f'action=record&sub={sub+1}')))
@@ -547,22 +530,8 @@ async def chat_message(user_id, sub):
         altText='聊天Chat',
         contents=FlexCarousel(contents=messages)
     )
-    #    quick_reply=QuickReply(items=[QuickReplyItem(action=PostbackAction(label=f'Q{sub+1}', data=f'action=chat&sub={sub}&question={question}')) for sub, question in enumerate(result.questions)]
-    #                                                                               ))
 
 async def question_message(user_id, category, sub):
-    """
-    生成問題訊息。
-    
-    Generates a question message.
-
-    Args:
-        unit: 單元編號。
-        sub: 子單元編號。
-    
-    Returns:
-        FlexMessage: 問題訊息物件。
-    """
     messages = []
     question = question_manager.get_question(category, sub)
     contents = [
@@ -588,7 +557,6 @@ async def question_message(user_id, category, sub):
         ),
     ]
     
-    # Add image if present
     if question.image_url:
         contents.insert(1, FlexImage(
             url=f'{URL}{question.image_url}',
@@ -607,11 +575,15 @@ async def question_message(user_id, category, sub):
             text='請按下方按鈕開始錄音回答\nPress record button below to start',
         )
     ]
-    if getHistory(user_id, f'{category}-{sub}') and isResponse(category):
+    
+    is_rag = config.get('rag_mode', False)
+    result_label = '查看劇情回應 Response' if is_rag else '查看分數 Result'
+    
+    if getHistory(user_id, f'{category}-{sub}') and (isResponse(category) or is_rag):
         footer.append(FlexButton(
-            text='查看分數 Result',
+            text=result_label,
             wrap=True,
-            action=PostbackAction(label='或 查看分數 Result', data=f'action=result&sub={sub}&category={category}'),
+            action=PostbackAction(label=f'或 {result_label}', data=f'action=result&sub={sub}&category={category}'),
             align='center',
             margin='md',
             style='primary'
@@ -666,18 +638,6 @@ async def question_message(user_id, category, sub):
     )
     
 async def carousel_message(user_id, category, unit):
-    """
-    生成單元導覽訊息。
-    
-    Generates a unit navigation message.
-
-    Args:
-        user_id: 使用者ID。
-        unit: 單元編號。
-    
-    Returns:
-        FlexMessage: 單元導覽訊息物件。
-    """
     if len(question_manager.get_all_questions(category)) < unit:
         return None
     cols = []
@@ -762,17 +722,6 @@ ENG_HINT =[
 ]
 
 async def info_hint_message(index: int):
-    """
-    生成資料綁定提示訊息。
-    
-    Generates an information binding hint message.
-
-    Args:
-        index: 提示訊息的索引。
-    
-    Returns:
-        FlexMessage: 資料綁定提示訊息物件。
-    """
     return FlexMessage(
         altText='資料綁定提示',
         contents=FlexBubble(
@@ -795,26 +744,9 @@ async def info_hint_message(index: int):
         )
     )
 async def show_loading(user_id, secs=20):
-    """
-    生成等待動畫。    
-    
-    Generates a loading animation.
-    
-    Args:
-        user_id: 使用者ID。
-        secs: 等待時間。
-    """
     await line_bot_api.show_loading_animation(show_loading_animation_request=ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=secs), async_req=True).get()
     
 async def handle_rich_menu(user_id):
-    """
-    處理使用者的Rich Menu。
-    
-    Handles the user's rich menu.
-
-    Args:
-        user_id: 使用者ID。
-    """
     user_state = get_user_state(user_id)
     if user_state.category:
         return
@@ -832,11 +764,6 @@ async def handle_rich_menu(user_id):
         print(e)
 
 async def create_rich_menu():
-    """
-    創建Rich Menu。
-    
-    Creates a rich menu.
-    """
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
     response = await rich_menu_manager.get_all_rich_menus()

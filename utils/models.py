@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Dict, Any
 from pydantic import BaseModel, Field, conlist
 
 class SpeechAssessment(BaseModel):
@@ -11,7 +11,18 @@ class SpeechAssessment(BaseModel):
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
-    
+
+class GameResponse(BaseModel):
+    npc_reply: str = Field(description="NPC 根據人設與劇情的回覆內容 (English)")
+    feedback: str = Field(description="針對使用者的語法或用詞建議 (繁體中文)")
+    score: int = Field(description="語言能力評分 (1-10)", ge=1, le=10)
+
+# RAG 切片模型
+class RagChunk(BaseModel):
+    content: str = Field(description="切片後的文本內容")
+    metadata: Dict[str, Any] = Field(description="元數據 (如標題來源)", default={})
+    embedding: Optional[List[float]] = Field(description="向量數據", default=None)
+
 class ChatHistory(BaseModel):
     questions: List[str] = Field(description="問題", default=[])  # 問題
     answers: List[str] = Field(description="回答", default=[])  # 回答

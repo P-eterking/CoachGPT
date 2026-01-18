@@ -1,24 +1,31 @@
 import json
-import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
+import aiofiles
 import asyncio
-from config import USER_DATA_FILE, CONFIG_FILE  # 使用者資料檔案的路徑
-from utils.models import ChatHistory, User, SpeechAssessment, UserState  # 使用者和評分資料的模型
+import os
+import re
+import numpy as np
+from pathlib import Path
+from typing import List, Dict, Tuple
+from config import USER_DATA_FILE, CONFIG_FILE, client
+from utils.models import ChatHistory, User, SpeechAssessment, UserState, RagChunk
 
-# 使用者狀態和資料
-user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
-user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
+user_state: dict[str, UserState] = {}
+user_data: dict[str, User] = {}
 _lock = asyncio.Lock()
 
-# 預設設定
 DEFAULT_CONFIG = {
     'admin': [],
     'rich_menu_ids': {},
     'enabled': [],
-    'response': []
+    'response': [],
+    'rag_mode': False,
+    'display_feedback': True
 }
 
-# 設定檔案
 config = DEFAULT_CONFIG.copy()
+
+_rag_cache: Dict[str, List[RagChunk]] = {}
+_rag_lock = asyncio.Lock()
 
 def get_user_state(user_id: str) -> UserState | None:
     global user_state
@@ -41,44 +48,32 @@ def get_rich_menu_category_from_id(rich_menu_id: str) -> str | None:
 def set_rich_menu_id(rich_menu_id: str, category: str):
     config['rich_menu_ids'][category] = rich_menu_id
 
-# 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
-    # 將新的使用者資料加入 user_data 字典，並初始化歷史紀錄為空字典
     user_data[user_id] = User(dep=dep, id=id, name=name, class_time=classTime, history={}, chat={})
 
-# 刪除使用者資料
 def delData(user_id):
-    # 若 user_data 中存在此 user_id 的資料，則刪除之
     if user_data.get(user_id) is not None:
         del user_data[user_id]
 
-# 檢查是否已有使用者資料
 def hasData(user_id) -> bool:
-    # 若 user_data 中存在此 user_id 的資料，返回 True，否則返回 False
     return user_data.get(user_id) is not None
 
-# 獲取使用者資料
 def getData() -> dict:
     return user_data
 
-# 更新使用者的聊天紀錄
 def getChatHistory(user_id: str) -> ChatHistory:
     return user_data[user_id].chat
 
 def updateChatHistory(user_id, chat: ChatHistory):
     user_data[user_id].chat = chat
 
-# 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):
-    # 將指定的歷史紀錄（history）新增或更新到 user_data 中該使用者的歷史紀錄
     if key not in user_data[user_id].history:
         user_data[user_id].history[key] = []
     user_data[user_id].history[key].append(history)
 
-# 獲取使用者的歷史紀錄
 def getHistory(user_id, key) -> list[SpeechAssessment] | None:
-    # 獲取指定使用者的指定歷史紀錄
-    return user_data[user_id].history.get(key,None)
+    return user_data[user_id].history.get(key, None)
 
 def isAdmin(user_id) -> bool:
     return user_id in config['admin']
@@ -107,11 +102,142 @@ def removeResponse(category):
 def isResponse(category):
     return category in config['response']
 
-# 非同步加載設定
+class RagManager:
+    @staticmethod
+    def split_markdown_by_headers(text: str) -> List[RagChunk]:
+        lines = text.split('\n')
+        chunks = []
+        current_chunk_lines = []
+        current_headers = [] 
+        
+        for line in lines:
+            header_match = re.match(r'^(#{1,3})\s+(.*)', line)
+            
+            if header_match:
+                if current_chunk_lines:
+                    content = "\n".join(current_chunk_lines).strip()
+                    if content:
+                        meta = {"headers": list(current_headers)}
+                        chunks.append(RagChunk(content=content, metadata=meta))
+                    current_chunk_lines = []
+                
+                level = len(header_match.group(1))
+                title = header_match.group(2)
+                
+                while len(current_headers) >= level:
+                    current_headers.pop()
+                current_headers.append(title)
+                
+                current_chunk_lines.append(line)
+            else:
+                current_chunk_lines.append(line)
+        
+        if current_chunk_lines:
+            content = "\n".join(current_chunk_lines).strip()
+            if content:
+                meta = {"headers": list(current_headers)}
+                chunks.append(RagChunk(content=content, metadata=meta))
+                
+        return chunks
+
+    @staticmethod
+    async def get_embeddings(texts: List[str]) -> List[List[float]]:
+        try:
+            response = await client.embeddings.create(
+                input=texts,
+                model="text-embedding-3-small"
+            )
+            return [data.embedding for data in response.data]
+        except Exception as e:
+            print(f"Embedding Error: {e}")
+            return []
+
+    @staticmethod
+    def cosine_similarity(v1: List[float], v2: List[float]) -> float:
+        vec1 = np.array(v1)
+        vec2 = np.array(v2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return np.dot(vec1, vec2) / (norm1 * norm2)
+
+    @staticmethod
+    async def get_relevant_context(rag_path: str, query: str, top_k: int = 3) -> str:
+        global _rag_cache
+        
+        async with _rag_lock:
+            if rag_path not in _rag_cache:
+                path = Path(rag_path)
+                full_text = ""
+                
+                if path.is_file():
+                    async with aiofiles.open(path, 'r', encoding='utf-8') as f:
+                        full_text = await f.read()
+                elif path.is_dir():
+                    texts = []
+                    for file in path.glob('*.md'):
+                        async with aiofiles.open(file, 'r', encoding='utf-8') as f:
+                            texts.append(await f.read())
+                    full_text = "\n\n".join(texts)
+                else:
+                    return "No RAG document found."
+
+                chunks = RagManager.split_markdown_by_headers(full_text)
+                if not chunks:
+                    return full_text 
+
+                chunk_texts = [c.content for c in chunks]
+                vectors = await RagManager.get_embeddings(chunk_texts)
+                
+                if len(vectors) != len(chunks):
+                    print("Embedding count mismatch, fallback to full text")
+                    return full_text
+
+                for i, chunk in enumerate(chunks):
+                    chunk.embedding = vectors[i]
+                
+                _rag_cache[rag_path] = chunks
+                print(f"RAG Index built for {rag_path}: {len(chunks)} chunks.")
+
+        chunks = _rag_cache[rag_path]
+        query_vecs = await RagManager.get_embeddings([query])
+        if not query_vecs:
+            return ""
+        query_vec = query_vecs[0]
+
+        scored_chunks = []
+        for chunk in chunks:
+            if chunk.embedding:
+                score = RagManager.cosine_similarity(query_vec, chunk.embedding)
+                scored_chunks.append((score, chunk))
+        
+        scored_chunks.sort(key=lambda x: x[0], reverse=True)
+        top_results = scored_chunks[:top_k]
+        
+        context_str = ""
+        for score, chunk in top_results:
+            context_str += f"---\n[Similarity: {score:.2f}]\n{chunk.content}\n"
+            
+        return context_str
+
+async def get_rag_context_v2(file_path_or_dir: str, query: str) -> str:
+    return await RagManager.get_relevant_context(file_path_or_dir, query)
+
+def load_rag_config(category: str) -> dict:
+    config_path = Path(f'category/rag_docs/{category}/config.json')
+    if config_path.exists():
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading rag config for {category}: {e}")
+            return {}
+    return {}
+
 async def load_config():
     global config
     try:
-        # 讀取 CONFIG_FILE 中的內容，並解析為 config 字典
         async with _lock:
             async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as file:
                 content = await file.read()
@@ -119,32 +245,26 @@ async def load_config():
         config.update(loaded_config)
         print("Config loaded successfully.")
     except FileNotFoundError:
-        # 如果 CONFIG_FILE 不存在，則建立一個空的字典並儲存至檔案中
         async with _lock:
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
                 await file.write(json.dumps(config, indent=4))
         print("Config created successfully.")
 
-# 非同步儲存設定
 async def save_config():
     global config
-    # 將 config 字典轉換為 JSON 字串，並儲存至 CONFIG_FILE 中
     async with _lock:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
             await file.write(json.dumps(config, indent=4))
     print("Config saved successfully.")
 
-# 儲存所有資料
 async def save_all():
     await save_config()
     await save_user_data()
     return 'All data saved.'
 
-# 非同步加載使用者資料
 async def load_user_data():
     global user_data
     try:
-        # 讀取 USER_DATA_FILE 中的內容，並解析為 user_data 字典
         async with _lock:
             async with aiofiles.open(USER_DATA_FILE, 'r', encoding='utf-8') as file:
                 content = await file.read()
@@ -152,16 +272,12 @@ async def load_user_data():
         user_data = {key: User(**value) for key, value in raw_data.items()}
         print("User data loaded successfully.")
     except FileNotFoundError:
-        # 若找不到檔案，顯示訊息並初始化 user_data
         print("No previous data file found, starting fresh.")
     except json.JSONDecodeError as e:
-        # 若檔案無法解析，顯示訊息並重新初始化 user_data
         print("Error decoding JSON, starting fresh.",e)
 
-# 非同步儲存使用者資料
 async def save_user_data():
     global user_data
-    # 將 user_data 轉換為 JSON 字串，並寫入 USER_DATA_FILE
     async with _lock:
         async with aiofiles.open(USER_DATA_FILE, 'w', encoding='utf-8') as file:
             serializable_data = {key: user.to_dict() for key, user in user_data.items()}
@@ -169,9 +285,7 @@ async def save_user_data():
             await file.write(json_data)
     print("User data saved.")
         
-# 每小時自動儲存使用者資料
 async def user_data_task():
     while True:
-        # 每 60 分鐘呼叫一次 save_user_data 儲存資料
         await save_user_data()
         await asyncio.sleep(60 * 60)
