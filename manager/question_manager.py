@@ -47,6 +47,24 @@ class QuestionManager(object):
         # 返回指定的類別
         return self.questions.get(category)
     
+    def get_unit(self, category: str, unit: int = 0) -> List[Question]:
+        """
+        獲取指定類別和單元（分頁）的問題列表。
+        假設每個單元顯示 10 個問題。
+        """
+        if category not in self.questions:
+            return []
+        
+        all_questions = self.questions[category].content
+        start_index = unit * 10
+        end_index = start_index + 10
+        
+        # 如果超出範圍，返回空列表或剩餘問題
+        if start_index >= len(all_questions):
+            return []
+            
+        return all_questions[start_index:end_index]
+
     async def _save_category(self, category: str, value: QuestionCategory) -> None:
         file_path = os.path.join(self.data_source, f'{category}.json')
         async with aiofiles.open(file_path, 'w', encoding='utf-8') as file:
@@ -67,4 +85,3 @@ class QuestionManager(object):
         # 儲存問題
         tasks = [self._save_category(cate, value) for cate, value in self.questions.items()]
         await asyncio.gather(*tasks)
-

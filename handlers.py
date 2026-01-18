@@ -501,6 +501,8 @@ async def handle_postback(event):
         rich_menu_id = get_rich_menu_id(alias)
         if rich_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
+        else:
+            print(f"Warning: Rich Menu ID for alias '{alias}' not found. Cannot link.")
         
         # 如果切換到的類別有「題目」(content)，則自動顯示 Carousel 供使用者選擇角色/關卡
         if question_manager.has_question(user_state.category):
