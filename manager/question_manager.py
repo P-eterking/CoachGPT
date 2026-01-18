@@ -12,7 +12,7 @@ class QuestionManager(object):
     def __init__(self, data_source):
         # 初始化
         self.data_source = data_source
-        self.questions: dict[str, QuestionCategory]
+        self.questions: dict[str, QuestionCategory] = {}
         self.load_questions()
 
     def load_questions(self) -> dict[str, QuestionCategory]:
@@ -23,16 +23,20 @@ class QuestionManager(object):
                 if not file.endswith('.json') or file.startswith('-'):
                     continue
                 file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if 'content' not in data:
-                        continue
-                    category_questions = QuestionCategory(**data)
-                    questions[file.split('.')[0]] = category_questions
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        if 'content' not in data:
+                            continue
+                        category_questions = QuestionCategory(**data)
+                        questions[file.split('.')[0]] = category_questions
+                except Exception as e:
+                    print(f"Error loading {file}: {e}")
         self.questions = questions
+        return self.questions
     
-    def get_question(self, category: str, sub: str) -> Question:
-        # 返回指定的問題
+    def get_question(self, category: str, sub: int) -> Question:
+        # 返回指定的問題 (sub 應為 int)
         return self.questions[category].content[sub]
     
     def has_question(self, category: str) -> bool:
@@ -41,12 +45,15 @@ class QuestionManager(object):
     
     def get_all_questions(self, category: str) -> List[Question]:
         # 返回所有問題
+        if category not in self.questions:
+            return []
         return self.questions[category].content
     
     def get_category(self, category) -> QuestionCategory | None:
         # 返回指定的類別
         return self.questions.get(category)
     
+    # [NEW] 新增此方法以支援 carousel_message
     def get_unit(self, category: str, unit: int = 0) -> List[Question]:
         """
         獲取指定類別和單元（分頁）的問題列表。
@@ -59,7 +66,7 @@ class QuestionManager(object):
         start_index = unit * 10
         end_index = start_index + 10
         
-        # 如果超出範圍，返回空列表或剩餘問題
+        # 如果超出範圍，返回空列表
         if start_index >= len(all_questions):
             return []
             
