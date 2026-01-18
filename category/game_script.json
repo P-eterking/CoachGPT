@@ -1,0 +1,38 @@
+{
+  "theme_A": {
+    "title": "博物館失竊案",
+    "levels": [
+      {
+        "level_id": 0,
+        "title": "第一關：發現現場",
+        "video_url": "https://example.com/video_a_1.mp4",
+        "preview_image": "https://example.com/cover_a_1.jpg",
+        "questions": [
+          {
+            "id": 0,
+            "text": "兇手是從哪個入口進入的？",
+            "keywords": ["窗戶", "window", "back door", "後門"] 
+          },
+          {
+            "id": 1,
+            "text": "現場遺留了什麼證物？",
+            "keywords": ["手套", "glove", "布料"]
+          }
+        ],
+        "npcs": {
+          "0": { "name": "館長", "file": "curator.md" },
+          "1": { "name": "保全", "file": "guard.md" },
+          "2": { "name": "清潔工", "file": "cleaner.md" }
+        }
+      },
+      {
+
+      }
+    ]
+  },
+  "theme_B": {
+
+  },
+  "theme_C": {
+  }
+}
