@@ -33,9 +33,9 @@
             "chat_bar_text": "Select Role", 
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "Theme A", "data": "action=select_theme&theme=theme_A" },
-                { "type": "postback", "label": "Theme B", "data": "action=select_theme&theme=theme_B" },
-                { "type": "postback", "label": "Theme C", "data": "action=select_theme&theme=theme_C" },
+                { "type": "postback", "label": "case1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "case2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "case3", "data": "action=record&sub=2" },
                 { "type": "switch", "label": "menu", "alias_id": "menu_game" },
                 { "type": "switch", "label": "menu", "alias_id": "menu_game" },
                 { "type": "switch", "label": "menu", "alias_id": "menu_game" }
