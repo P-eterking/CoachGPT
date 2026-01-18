@@ -16,9 +16,7 @@ RUN apk update && apk add --no-cache \
     linux-headers \
     libffi-dev \
     openssl-dev \
-    ffmpeg \
-    numpy \
-    openblas-dev
+    ffmpeg 
 
 # 下載並安裝 ngrok
 # RUN curl -Lo /usr/local/bin/ngrok https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz && \

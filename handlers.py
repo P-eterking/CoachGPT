@@ -3,7 +3,7 @@ import asyncio
 from utils.message_utils import (
     handle_rich_menu, info_hint_message, result_message, send_chat_response, chat_summary_message, send_message, send_text_message,
     question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY, SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION,
-    GAME_SYSTEM_INSTRUCTION
+    GAME_SYSTEM_INSTRUCTION, carousel_message
 )
 from utils.models import ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse
 from utils.file_utils import *
@@ -437,7 +437,13 @@ async def handle_postback(event):
             return
         sub = int(vars.get('sub', 0))
         user_state.sub = sub
-        await send_message(event, await question_message(user_id, category, sub)) 
+        
+        # 若是遊戲模式，點擊「開始調查」後直接提示使用者說話，而不是顯示題目卡
+        if config.get('rag_mode', False):
+             await send_text_message(event, f"You have chosen Scenario {sub+1}.\nPress the microphone button to start speaking to the character.")
+        else:
+             await send_message(event, await question_message(user_id, category, sub))
+
     elif action == 'chat':
         if not isEnabled('chat'):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
@@ -483,11 +489,27 @@ async def handle_postback(event):
         if alias in ['admin'] and not isAdmin(user_id):
             await send_text_message(event, '無權限！\nNo permission!')
             return
-        if alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
+        
+        # 允許 rag_test 通過檢查，或檢查是否在 enabled 列表
+        if alias not in ['rag_test'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
+        
         user_state.category = alias.split('-')[0]
-        await rich_menu_manager.link_rich_menu_to_user(user_id, get_rich_menu_id(alias))
+        
+        # 連結 Rich Menu
+        rich_menu_id = get_rich_menu_id(alias)
+        if rich_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
+        
+        # 如果切換到的類別有「題目」(content)，則自動顯示 Carousel 供使用者選擇角色/關卡
+        if question_manager.has_question(user_state.category):
+            # 這裡借用 carousel_message 來顯示該類別下的所有 "題目" (即角色)
+            # 參數 1 代表顯示第 1 頁 (Unit 1)，我們假設遊戲角色都在第一頁
+            await send_message(event, await carousel_message(user_id, user_state.category, 1))
+        else:
+            await send_text_message(event, f"已切換至 {alias}。\nSwitched to {alias}.")
+
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
     elif action == 'enabled':

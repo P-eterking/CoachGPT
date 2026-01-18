@@ -1,5 +1,5 @@
 import json
-import aiofiles
+import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
 import os
 import re
@@ -9,10 +9,12 @@ from typing import List, Dict, Tuple
 from config import USER_DATA_FILE, CONFIG_FILE, client
 from utils.models import ChatHistory, User, SpeechAssessment, UserState, RagChunk
 
-user_state: dict[str, UserState] = {}
-user_data: dict[str, User] = {}
+# 使用者狀態和資料
+user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
+user_data: dict[str, User] = {}  # 儲存每個使用者的詳細資料，包括歷史紀錄
 _lock = asyncio.Lock()
 
+# 預設設定
 DEFAULT_CONFIG = {
     'admin': [],
     'rich_menu_ids': {},
@@ -22,6 +24,7 @@ DEFAULT_CONFIG = {
     'display_feedback': True
 }
 
+# 設定檔案
 config = DEFAULT_CONFIG.copy()
 
 _rag_cache: Dict[str, List[RagChunk]] = {}
@@ -48,30 +51,37 @@ def get_rich_menu_category_from_id(rich_menu_id: str) -> str | None:
 def set_rich_menu_id(rich_menu_id: str, category: str):
     config['rich_menu_ids'][category] = rich_menu_id
 
+# 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
     user_data[user_id] = User(dep=dep, id=id, name=name, class_time=classTime, history={}, chat={})
 
+# 刪除使用者資料
 def delData(user_id):
     if user_data.get(user_id) is not None:
         del user_data[user_id]
 
+# 檢查是否已有使用者資料
 def hasData(user_id) -> bool:
     return user_data.get(user_id) is not None
 
+# 獲取使用者資料
 def getData() -> dict:
     return user_data
 
+# 更新使用者的聊天紀錄
 def getChatHistory(user_id: str) -> ChatHistory:
     return user_data[user_id].chat
 
 def updateChatHistory(user_id, chat: ChatHistory):
     user_data[user_id].chat = chat
 
+# 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):
     if key not in user_data[user_id].history:
         user_data[user_id].history[key] = []
     user_data[user_id].history[key].append(history)
 
+# 獲取使用者的歷史紀錄
 def getHistory(user_id, key) -> list[SpeechAssessment] | None:
     return user_data[user_id].history.get(key, None)
 

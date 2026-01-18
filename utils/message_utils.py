@@ -772,18 +772,25 @@ async def create_rich_menu():
         for r in response:
             await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
         clear_rich_menu_id()
-    for menu_name, config in configs['rich_menus'].items():
-        rich_menu_manager.set_display_name(menu_name, config.get('chat_bar_text'))
+    
+    # 根據是否為 RAG 模式決定預設的選單
+    target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
+    
+    for menu_name, config_data in configs['rich_menus'].items():
+        rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
         if get_rich_menu_id(menu_name):
             continue
-        builder = build_rich_menu_from_config(menu_name, config)
+        builder = build_rich_menu_from_config(menu_name, config_data)
         rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
-        image_file = config.get("file")
+        image_file = config_data.get("file")
         if image_file:
             image_path = os.path.join("./templates/richmenu", image_file)
             await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-        if builder.selected:
+        
+        # 如果當前選單是目標預設選單，則設定為預設
+        if menu_name == target_default:
             await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+            
         set_rich_menu_id(rich_menu_id, menu_name)
         print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
     await save_config()

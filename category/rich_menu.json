@@ -14,6 +14,33 @@
                 { "type": "switch", "label": "admin", "alias_id": "admin"}
             ]
         },
+        "menu_game": {
+            "file": "Game_Menu.jpg",
+            "chat_bar_text": "Mystery Game",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "pretest", "alias_id": "pretest"},
+                { "type": "switch", "label": "exercises", "alias_id": "exercises" },
+                { "type": "switch", "label": "posttest", "alias_id": "posttest"},
+                { "type": "postback", "label": "progress", "data": "action=progress" },
+                { "type": "switch", "label": "Game Mode", "alias_id": "rag_test" },
+                { "type": "switch", "label": "admin", "alias_id": "admin"}
+            ]
+        },
+        "rag_test": {
+            "file": "chat.jpg",
+            "chat_bar_text": "Scenario Select",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "case1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "case2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "case3", "data": "action=record&sub=2" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" }
+            ]
+        },
         "pretest":{
             "file": "preposttest.jpg",
             "chat_bar_text": "Pre-test",
