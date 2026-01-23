@@ -4,12 +4,14 @@ import asyncio
 import os
 import re
 import numpy as np
+import time
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from config import USER_DATA_FILE, CONFIG_FILE, client
 from utils.models import (
     ChatHistory, User, SpeechAssessment, UserState, RagChunk,
-    GameThemeConfig, GameScores, GameThemeScore, GameLevelScore, GameQuestionScore
+    GameThemeConfig, GameScores, GameThemeScore, GameLevelScore, GameQuestionScore,
+    GameInteractionLog  # 修改7: 新增
 )
 
 # 使用者狀態和資料
@@ -29,7 +31,9 @@ DEFAULT_CONFIG = {
     'game_themes': ['theme1', 'theme2', 'theme3'],  # 遊戲主題列表
     'levels_per_theme': 5,  # 每個主題的關卡數
     'questions_per_level': 3,  # 每個關卡的題目數
-    'max_score_per_question': 10  # 每題滿分
+    'max_score_per_question': 10,  # 每題滿分
+    # 修改7: 新增 service_number
+    'service_number': 4  # 服務編號，用於區分資料檔案
 }
 
 # 設定檔案
@@ -130,6 +134,54 @@ def removeResponse(category):
 def isResponse(category):
     return category in config['response']
 
+# ========== 修改7: 服務特定資料檔案功能 ==========
+
+def get_service_number() -> int:
+    """取得服務編號"""
+    return config.get('service_number', 4)
+
+def get_user_data_file() -> str:
+    """取得服務特定的使用者資料檔案路徑"""
+    service_num = get_service_number()
+    return f'data/user_data{service_num}.json'
+
+def get_interaction_log_file() -> str:
+    """取得服務特定的互動紀錄檔案路徑"""
+    service_num = get_service_number()
+    return f'data/interaction_log{service_num}.json'
+
+def get_display_feedback() -> bool:
+    """取得是否顯示回饋的設定"""
+    return config.get('display_feedback', True)
+
+async def save_interaction_log(log: GameInteractionLog):
+    """儲存遊戲互動紀錄"""
+    log_file = get_interaction_log_file()
+    
+    # 確保目錄存在
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    
+    try:
+        # 讀取現有紀錄
+        existing_logs = []
+        if os.path.exists(log_file):
+            async with aiofiles.open(log_file, 'r', encoding='utf-8') as f:
+                content = await f.read()
+                if content:
+                    existing_logs = json.loads(content)
+        
+        # 新增紀錄
+        existing_logs.append(log.to_dict())
+        
+        # 寫入檔案
+        async with aiofiles.open(log_file, 'w', encoding='utf-8') as f:
+            await f.write(json.dumps(existing_logs, indent=2, ensure_ascii=False))
+            
+    except Exception as e:
+        print(f"Error saving interaction log: {e}")
+
+# ========== 結束修改7 ==========
+
 # ========== 新增: 遊戲主題功能 ==========
 
 def get_game_themes() -> List[str]:
@@ -198,7 +250,14 @@ def get_game_level_info(theme_id: str, level_idx: int) -> Optional[dict]:
                 "title": level.title,
                 "description": level.description,
                 "video_file": level.video_file,
-                "questions": [{"text": q.text, "hint": q.hint} for q in level.questions]
+                "questions": [
+                    {
+                        "text": q.text, 
+                        "hint": q.hint,
+                        "reference_answer": q.reference_answer  # 新增: 參考答案
+                    } 
+                    for q in level.questions
+                ]
             }
     return None
 
@@ -212,7 +271,8 @@ def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
                 "id": npc.id,
                 "name": npc.name,
                 "persona": npc.persona,
-                "file": npc.file
+                "file": npc.file,
+                "image": npc.image  # 修改5: 新增 image
             }
     return None
 
@@ -462,28 +522,40 @@ async def save_all():
     await save_user_data()
     return 'All data saved.'
 
+# 修改7: 使用服務特定檔案
 async def load_user_data():
     global user_data
+    user_data_file = get_user_data_file()
+    
+    # 確保目錄存在
+    os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
+    
     try:
         async with _lock:
-            async with aiofiles.open(USER_DATA_FILE, 'r', encoding='utf-8') as file:
+            async with aiofiles.open(user_data_file, 'r', encoding='utf-8') as file:
                 content = await file.read()
         raw_data = json.loads(content)
         user_data = {key: User(**value) for key, value in raw_data.items()}
-        print("User data loaded successfully.")
+        print(f"User data loaded successfully from {user_data_file}.")
     except FileNotFoundError:
-        print("No previous data file found, starting fresh.")
+        print(f"No previous data file found at {user_data_file}, starting fresh.")
     except json.JSONDecodeError as e:
-        print("Error decoding JSON, starting fresh.",e)
+        print(f"Error decoding JSON from {user_data_file}, starting fresh.", e)
 
+# 修改7: 使用服務特定檔案
 async def save_user_data():
     global user_data
+    user_data_file = get_user_data_file()
+    
+    # 確保目錄存在
+    os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
+    
     async with _lock:
-        async with aiofiles.open(USER_DATA_FILE, 'w', encoding='utf-8') as file:
+        async with aiofiles.open(user_data_file, 'w', encoding='utf-8') as file:
             serializable_data = {key: user.to_dict() for key, user in user_data.items()}
-            json_data = json.dumps(serializable_data, indent=4)
+            json_data = json.dumps(serializable_data, indent=4, ensure_ascii=False)
             await file.write(json_data)
-    print("User data saved.")
+    print(f"User data saved to {user_data_file}.")
         
 async def user_data_task():
     while True:

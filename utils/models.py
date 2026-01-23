@@ -17,6 +17,41 @@ class GameResponse(BaseModel):
     feedback: str = Field(description="針對使用者的語法或用詞建議 (繁體中文)")
     score: int = Field(description="語言能力評分 (1-10)", ge=1, le=10)
 
+# ========== 新增: NPC對話與題目回答的分離模型 ==========
+
+class NPCChatResponse(BaseModel):
+    """NPC對話回應 (不計分，僅劇情互動)"""
+    npc_reply: str = Field(description="NPC的劇情回覆 (English, 1-3 sentences)")
+    feedback: str = Field(description="語言學習建議 (繁體中文, 1 sentence max)", default="")
+    is_english: bool = Field(description="使用者是否使用英文對話", default=True)
+
+class QuestionAnswerResponse(BaseModel):
+    """題目回答回應 (計分)"""
+    score: int = Field(description="回答評分 (0-10): 內容正確性0-5 + 語言品質0-5", ge=0, le=10)
+    feedback_chi: str = Field(description="評語回饋 (繁體中文)")
+    feedback_eng: str = Field(description="評語回饋 (English)")
+    reference_comparison: str = Field(description="與參考答案的比較說明 (English)", default="")
+
+class GameInteractionLog(BaseModel):
+    """遊戲互動紀錄"""
+    user_id: str = Field(description="使用者ID")
+    timestamp: float = Field(description="時間戳記")
+    interaction_type: str = Field(description="互動類型: 'npc_chat' or 'question_answer'")
+    theme_id: str = Field(description="主題ID")
+    level_idx: Optional[int] = Field(description="關卡索引", default=None)
+    question_idx: Optional[int] = Field(description="題目索引", default=None)
+    npc_idx: Optional[int] = Field(description="NPC索引", default=None)
+    npc_name: Optional[str] = Field(description="NPC名稱", default=None)
+    user_transcript: str = Field(description="使用者語音轉錄文字")
+    ai_response: str = Field(description="AI回應內容")
+    score: Optional[int] = Field(description="評分 (僅題目回答)", default=None)
+    feedback: Optional[str] = Field(description="回饋內容", default=None)
+    
+    def to_dict(self) -> dict:
+        return self.model_dump(exclude_none=True)
+
+# ========== 結束新增 ==========
+
 # RAG 切片模型
 class RagChunk(BaseModel):
     content: str = Field(description="切片後的文本內容")
@@ -148,6 +183,8 @@ class UserState(BaseModel):
     game_level: Optional[int] = Field(description="目前遊戲關卡", default=-1)  # 目前遊戲關卡
     game_question: Optional[int] = Field(description="目前遊戲題目", default=-1)  # 目前遊戲題目
     game_npc: Optional[int] = Field(description="目前NPC索引", default=0)  # 目前NPC索引
+    # 修改2: 新增 in_npc_chat 狀態標記
+    in_npc_chat: bool = Field(description="是否正在與NPC對話中", default=False)  # NPC對話模式
     
 
 class Question(BaseModel):
@@ -178,11 +215,14 @@ class GameNPC(BaseModel):
     name: str = Field(description="NPC顯示名稱")  # NPC顯示名稱
     persona: str = Field(description="NPC人設/背景")  # NPC人設/背景
     file: str = Field(description="此NPC的RAG文件檔案")  # RAG文件檔案
+    # 修改5: 新增 image 欄位
+    image: Optional[str] = Field(description="NPC頭像圖片檔案名稱", default=None)  # NPC頭像圖片
 
 class GameLevelQuestion(BaseModel):
     """遊戲關卡中的單一題目"""
     text: str = Field(description="題目文字")  # 題目文字
     hint: Optional[str] = Field(description="可選提示", default=None)  # 可選提示
+    reference_answer: Optional[str] = Field(description="參考答案", default=None)  # 參考答案 (用於評分)
 
 class GameLevel(BaseModel):
     """遊戲主題中的單一關卡"""
@@ -198,6 +238,8 @@ class GameThemeConfig(BaseModel):
     name: str = Field(description="主題顯示名稱")  # 主題顯示名稱
     prologue: str = Field(description="主題前情提要/背景故事")  # 前情提要
     cover_image: Optional[str] = Field(description="封面圖片網址", default=None)  # 封面圖片
+    # 修改4: 新增 intro_video 欄位
+    intro_video: Optional[str] = Field(description="主題介紹影片檔案名稱", default=None)  # 介紹影片
     npcs: List[GameNPC] = Field(description="可用的NPC列表")  # NPC列表
     levels: List[GameLevel] = Field(description="遊戲關卡列表")  # 關卡列表
     

@@ -9,9 +9,16 @@ from utils.message_utils import (
     # 新增: 遊戲訊息
     game_prologue_message, game_level_intro_message, game_questions_carousel,
     game_score_message, game_theme_select_message, game_npc_select_message,
-    game_level_select_message
+    game_level_select_message,
+    # 修改2&5: 新增 NPC 相關訊息
+    game_npc_card_message, game_npc_chat_response_message,
+    NPC_CHAT_SYSTEM_INSTRUCTION, QUESTION_ANSWER_SYSTEM_INSTRUCTION
 )
-from utils.models import ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse
+from utils.models import (
+    ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
+    # 修改6: 新增回應模型
+    NPCChatResponse, QuestionAnswerResponse, GameInteractionLog
+)
 from utils.file_utils import *
 import tempfile
 import time
@@ -134,6 +141,11 @@ async def handle_audio_message(event):
     
     # 優先處理遊戲模式
     if config.get('rag_mode'):
+        # 修改2: 新增 - 檢查是否在 NPC 對話模式
+        if user_state.in_npc_chat and user_state.game_theme and user_state.game_npc >= 0:
+            await handle_npc_chat(event, user_id, user_state)
+            return
+        
         # 新增: 檢查使用者是否在新遊戲模式中且已選擇題目
         if user_state.game_theme and user_state.game_level >= 0 and user_state.game_question >= 0:
             await handle_game_answer(event, user_id, user_state)
@@ -297,7 +309,117 @@ async def handle_game_mode(event, user_id, user_state):
         print(f"Game Mode Error: {e}")
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error.")
 
-# 新增: 處理新遊戲系統的答題
+# ========== 修改2: NPC 對話處理 (不計分) ==========
+async def handle_npc_chat(event, user_id, user_state):
+    """處理 NPC 對話 (不計分，僅劇情互動)"""
+    try:
+        theme_id = user_state.game_theme
+        npc_idx = user_state.game_npc
+        
+        if not theme_id or npc_idx < 0:
+            await send_text_message(event, "請先選擇角色。\nPlease select a character first.")
+            return
+        
+        # 取得音訊並轉錄
+        try:
+            message_content = await get_audio_content(event)
+            text = await transcribe_audio(message_content, language="en")
+        except Exception as e:
+            print("Audio error:", e)
+            await send_text_message(event, "音訊處理錯誤，請稍後再試。\nAudio processing error.")
+            return
+
+        if not text:
+            await send_text_message(event, "聽不清楚，請再說一次。\nCould not hear clearly, please try again.")
+            return
+
+        # 取得 NPC 資訊
+        npc_info = get_game_npc_info(theme_id, npc_idx)
+        if not npc_info:
+            npc_info = {
+                "name": "The Narrator",
+                "persona": "A helpful guide.",
+                "file": "narrator.md"
+            }
+        
+        # 取得 RAG 上下文
+        rag_path = os.path.join("category", "rag_docs", theme_id, npc_info["file"])
+        if not os.path.exists(rag_path):
+            rag_path = os.path.join("category", "rag_docs", theme_id)
+        
+        context_content = await get_rag_context_v2(rag_path, query=text)
+        
+        # 取得對話歷史
+        history_key = f'{theme_id}-npc-{npc_idx}'
+        past_assessments = getHistory(user_id, history_key)
+        history_str = ""
+        if past_assessments:
+            recent = past_assessments[-5:]
+            for turn in recent:
+                history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
+        
+        # 建構提示詞
+        formatted_prompt = NPC_CHAT_SYSTEM_INSTRUCTION.format(
+            persona=f"{npc_info['name']}: {npc_info['persona']}",
+            context=context_content,
+            history=history_str
+        )
+
+        # 取得 AI 回應
+        completion = await client.beta.chat.completions.parse(
+            model="gpt-4o",
+            response_format=NPCChatResponse,
+            max_completion_tokens=512,
+            temperature=0.7, 
+            messages=[
+                { "role": "system", "content": formatted_prompt },
+                { "role": "user", "content": text }
+            ],
+        )
+
+        npc_res: NPCChatResponse = NPCChatResponse.model_validate_json(completion.choices[0].message.content)
+
+        # 儲存對話歷史 (使用 SpeechAssessment 格式，score=0 表示非計分)
+        assessment = SpeechAssessment(
+            chi_suggestion=npc_res.feedback,
+            eng_suggestion="", 
+            score=0,  # NPC 對話不計分
+            transcript=text,
+            better_ans=npc_res.npc_reply,
+            timestamp=time.time()
+        )
+        
+        updateHistory(user_id, history_key, assessment)
+        
+        # 修改7: 儲存互動紀錄
+        interaction_log = GameInteractionLog(
+            user_id=user_id,
+            timestamp=time.time(),
+            interaction_type='npc_chat',
+            theme_id=theme_id,
+            npc_idx=npc_idx,
+            npc_name=npc_info['name'],
+            user_transcript=text,
+            ai_response=npc_res.npc_reply,
+            feedback=npc_res.feedback
+        )
+        await save_interaction_log(interaction_log)
+        
+        # 發送回應訊息
+        await send_message(event, await game_npc_chat_response_message(
+            npc_info['name'],
+            npc_res.npc_reply,
+            npc_res.feedback,
+            npc_res.is_english
+        ))
+
+    except Exception as e:
+        print(f"NPC Chat Error: {e}")
+        await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
+
+# ========== 結束修改2 ==========
+
+# 修改6: 使用新的 QuestionAnswerResponse 模型
 async def handle_game_answer(event, user_id, user_state):
     """處理遊戲題目的語音回答"""
     try:
@@ -323,48 +445,26 @@ async def handle_game_answer(event, user_id, user_state):
             await send_text_message(event, "聽不清楚，請再說一次。\nCould not hear clearly, please try again.")
             return
 
-        # 取得NPC資訊
-        npc_info = get_game_npc_info(theme_id, npc_idx)
-        if not npc_info:
-            npc_info = {
-                "name": "The Narrator",
-                "persona": "A helpful guide.",
-                "file": "narrator.md"
-            }
-        
-        # 取得RAG上下文
-        rag_path = os.path.join("category", "rag_docs", theme_id, npc_info["file"])
-        if not os.path.exists(rag_path):
-            rag_path = os.path.join("category", "rag_docs", theme_id)
-        
-        context_content = await get_rag_context_v2(rag_path, query=text)
-        
-        # 取得對話歷史
-        history_key = f'{theme_id}-{level_idx}-{question_idx}'
-        past_assessments = getHistory(user_id, history_key)
-        history_str = ""
-        if past_assessments:
-            recent = past_assessments[-3:]
-            for turn in recent:
-                history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
-        
-        # 取得題目資訊作為上下文
+        # 取得題目資訊
         level_info = get_game_level_info(theme_id, level_idx)
         question_text = ""
+        reference_answer = ""
         if level_info and question_idx < len(level_info.get('questions', [])):
-            question_text = level_info['questions'][question_idx]['text']
+            q_data = level_info['questions'][question_idx]
+            question_text = q_data['text']
+            reference_answer = q_data.get('reference_answer', '')
         
-        # 建構提示詞
-        formatted_prompt = GAME_SYSTEM_INSTRUCTION.format(
-            persona=f"{npc_info['name']}: {npc_info['persona']}",
-            context=f"Current Question: {question_text}\n\n{context_content}",
-            history=history_str
+        # 修改6: 使用新的題目回答系統指令
+        formatted_prompt = QUESTION_ANSWER_SYSTEM_INSTRUCTION.format(
+            question=question_text,
+            reference_answer=reference_answer if reference_answer else "No reference answer provided.",
+            user_answer=text
         )
 
-        # 取得AI回應
+        # 取得 AI 回應
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
-            response_format=GameResponse,
+            response_format=QuestionAnswerResponse,
             max_completion_tokens=512,
             temperature=0.7, 
             messages=[
@@ -373,29 +473,50 @@ async def handle_game_answer(event, user_id, user_state):
             ],
         )
 
-        game_res: GameResponse = GameResponse.model_validate_json(completion.choices[0].message.content)
+        answer_res: QuestionAnswerResponse = QuestionAnswerResponse.model_validate_json(completion.choices[0].message.content)
 
         # 儲存評估結果
         assessment = SpeechAssessment(
-            chi_suggestion=game_res.feedback,
-            eng_suggestion="", 
-            score=game_res.score,
+            chi_suggestion=answer_res.feedback_chi,
+            eng_suggestion=answer_res.feedback_eng, 
+            score=answer_res.score,
             transcript=text,
-            better_ans=game_res.npc_reply,
+            better_ans=answer_res.reference_comparison,
             timestamp=time.time()
         )
         
+        history_key = f'{theme_id}-{level_idx}-{question_idx}'
         updateHistory(user_id, history_key, assessment)
         
         # 更新遊戲分數
         is_new_high, theme_total = update_game_score(
-            user_id, theme_id, level_idx, question_idx, game_res.score
+            user_id, theme_id, level_idx, question_idx, answer_res.score
         )
         
-        # 發送結果訊息
+        # 修改7: 儲存互動紀錄
+        interaction_log = GameInteractionLog(
+            user_id=user_id,
+            timestamp=time.time(),
+            interaction_type='question_answer',
+            theme_id=theme_id,
+            level_idx=level_idx,
+            question_idx=question_idx,
+            user_transcript=text,
+            ai_response=answer_res.reference_comparison,
+            score=answer_res.score,
+            feedback=f"{answer_res.feedback_chi}\n{answer_res.feedback_eng}"
+        )
+        await save_interaction_log(interaction_log)
+        
+        # 重置題目狀態 (退出答題模式)
+        user_state.game_question = -1
+        
+        # 發送結果訊息 - 修改6: 使用新的參數
         await send_message(event, await game_score_message(
             user_id, theme_id, level_idx, question_idx,
-            game_res.score, is_new_high, game_res.npc_reply, game_res.feedback
+            answer_res.score, is_new_high,
+            feedback_chi=answer_res.feedback_chi,
+            feedback_eng=answer_res.feedback_eng
         ))
 
     except Exception as e:
@@ -448,151 +569,109 @@ async def handle_chat_summary(event):
     await send_message(event, await chat_summary_message(summary))
 
 
-async def handle_chat_summary_and_score(event):
+async def send_audio_request(event, history, text, secs):
+    from utils.models import ChatHistory
+    from openai import AsyncOpenAI
+    import uuid
+    import aiofiles
+    
     user_id = event.source.user_id
-    history = getChatHistory(user_id)
+    user = getUser(user_id)
     if not history:
-        await send_text_message(event, "無法獲取對話歷史，請稍後再試。\nUnable to get chat history, please try again later.")
-        return
-    if len(history.questions) < 5:
-        await send_text_message(event, "對話歷史不足，無法生成摘要。\nInsufficient chat history to generate summary.")
-        return
-    conversation = "\n".join(f"<user>{q.split('|')[1] if '|' in q else q}</user><AI>{a}</AI>" if not q.startswith('[') else q for q, a in zip(history.questions, history.answers))
-    summary = await client.responses.parse(
+        history = ChatHistory()
+    
+    history.questions.append(text)
+    
+    messages = [
+        {
+            "role": "system",
+            "content": f"""You are a friendly and helpful AI English-speaking coach for college students who are non-native speakers in Taiwan. 
+            Their names are {user.name}.
+            Your job is to engage in natural, supportive conversations that help them practice speaking.
+
+            Style: Speak in short, friendly sentences like a native English speaker. Use casual but clear language.
+            When correcting grammar:
+            - If there's a mistake, gently correct it while maintaining conversation flow
+            - For severe errors, provide the correction naturally in your response
+            
+            Keep responses under 60 words unless explaining something complex. Do not use bullet points, markdown, or formatted text - just natural conversational language.
+
+            If asked about topics you don't know, just say you're not sure. Don't mention being an AI assistant.
+            """,
+        }
+    ]
+    
+    for q, a in zip(history.questions, history.answers):
+        messages.append({"role": "user", "content": q})
+        messages.append({"role": "assistant", "content": a})
+    messages.append({"role": "user", "content": text})
+    
+    completion = await client.chat.completions.create(
         model="gpt-4o",
-        max_output_tokens=1024,
+        messages=messages,
+        max_completion_tokens=512,
         temperature=0.8,
-        instructions=SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION,
-        text_format=ChatSummaryAndScore,
-        input=conversation
     )
-    summary = summary.output_parsed
-    if not summary:
-        await send_text_message(event, "無法生成對話摘要，請稍後再試。\nUnable to generate chat summary, please try again later.")
-        return
-    await send_message(event, await chat_summary_message(summary))
-
-async def switch_topic(user_id, sub: int = -1):
-    history = getChatHistory(user_id)
-    if not history:
-        return
-    history.answers.append(f"[Switch to topic {CHAT_CATEGORY[sub]}]")
-    history.questions.append(f"[Switch to topic {CHAT_CATEGORY[sub]}]")
-    updateChatHistory(user_id, history)
-
-audio = {
-    '0': ['ash', 'alloy', 'American 美式口音'],
-    '1': ['onyx', 'nova', 'Japanese 日式口音'],
-    '2': ['onyx', 'shimmer', 'Spanish 西班牙口音'],
-    '3': ['ballad', 'nova', 'British 英式口音'],
-    '4': ['fable', 'sage', 'Indian 印度口音']
-}
-async def send_audio_request(event, history, content: bytes | str, duration: int = 0):
-    user_id = event.source.user_id
     
-    sex = get_user_state(user_id).sex
-    accent = str(get_user_state(user_id).accent)
+    reply = completion.choices[0].message.content
+    history.answers.append(reply)
     
-    messages = []
-    num_context = min(3, len(history.questions), len(history.answers))
-    for i in range(-num_context, 0):
-        messages.append({
-            'role': 'user',
-            'content': history.questions[i],
-        })
-        messages.append({
-            'role': 'assistant',
-            'content': history.answers[i],
-        })
-    messages.append({
-        'role': 'user',
-        'content': content,
-    })
-    try:
-        completion = await client.responses.create(
-            input=messages,
-            model="gpt-4o",
-            instructions=f'You are a helpful and friendly {audio[accent][-1]} friend to an English learner. Please have a relaxed and friendly conversation with them and help them improve their English. Only respond in English, if user speaks in Chinese, please ignore and correct them to speak in English kindly.',
-            max_output_tokens=768,
-            top_p=0.9,
-            temperature=1.1,
-        )
-        audio_output = await client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice=audio[accent][sex],
-            response_format='mp3',
-            speed=0.8,
-            instructions=f'''Accent: Very strong {audio[accent][-1]} accent.
-                Identity: {audio[accent][-1]} speaker.
-                Tone: Friendly.
-                Emotion: Warm and supportive.
-                Only respond in accented English. If the user speaks in Chinese, please ignore and correct them to speak in English strongly and kindly.''',
-            input=completion.output_text
-        )
-        try:
-            os.makedirs(f"templates/audio", exist_ok=True)
-            audio_output.write_to_file(f"templates/audio/{user_id}.mp3")
-        except Exception as e:
-            print("Error saving audio file:", e)
-        duration_ms = get_audio_duration(audio_output.read(), format="mp3")
-        history.answers.append(completion.output_text)
-        history.questions.append(f'{duration}|{content}')
-        await send_chat_response(event, f"audio/{user_id}.mp3", duration_ms, history)
-    except Exception as e:
-        print("Error in audio request:", e)
-        await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
+    # Generate TTS
+    tts_response = await client.audio.speech.create(
+        model="gpt-4o-mini-tts",
+        voice="nova",
+        input=reply,
+    )
+    
+    filename = f"audio/{uuid.uuid4()}.mp3"
+    os.makedirs("templates/audio", exist_ok=True)
+    async with aiofiles.open(f"templates/{filename}", 'wb') as f:
+        await f.write(tts_response.content)
+    
+    # Calculate duration
+    audio = AudioSegment.from_file(f"templates/{filename}", format="mp3")
+    duration = len(audio)
+    
+    await send_chat_response(event, filename, duration, history)
     return history
 
+
 async def handle_postback(event):
+    user_id = event.source.user_id
+    
+    await handle_rich_menu(user_id)
+    
     if not await check_user_login(event):
         return
-    user_id = event.source.user_id
-    await handle_rich_menu(user_id)
-    user_state = get_user_state(user_id)
-    data: str = event.postback.data
-    vars = {sep.split('=')[0]: sep.split('=')[1] for sep in data.split('&')}
-    action = vars.get('action')
     
-    if action == 'record':
-        category = user_state.category
-        
-        # [修改] 允許 rag_test 或 enabled 列表中的單元
-        if category != 'rag_test' and not isEnabled(category):
-            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
-            return
-            
-        sub = int(vars.get('sub', 0))
-        user_state.sub = sub
-        
-        # 顯示題目卡片
-        await send_message(event, await question_message(user_id, category, sub)) 
-
-    elif action == 'chat':
-        if not isEnabled('chat'):
-            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
-            return
-        await show_loading(user_id)
-        if 'lookup' in vars.keys():
-            history = getChatHistory(user_id)
-            if not history:
-                await send_text_message(event, "無法獲取歷史紀錄，請稍後再試。\nUnable to get chat history, please try again later.")
-                return
-            await send_text_message(event, history.answers[-1])
-            return
-        elif 'summary' in vars.keys():
+    user_state = get_user_state(user_id)
+    if not user_state:
+        return
+    
+    data = event.postback.data
+    params = dict(p.split('=') for p in data.split('&'))
+    action = params.get('action')
+    vars = {k: v for k, v in params.items() if k != 'action'}
+    
+    if action == 'chat':
+        if vars.get('summary'):
             await handle_chat_summary(event)
-            return
-        sub = int(vars.get('sub', 0))
-        await switch_topic(user_id, sub)
+        else:
+            history = getChatHistory(user_id)
+            if history and len(history.answers) > 0:
+                await send_text_message(event, history.answers[-1])
+    elif action == 'sub':
+        sub = int(vars.get('sub'))
+        user_state.sub = sub
         await send_message(event, await chat_message(user_id, sub))
-        
-    elif action == 'sex':
-        user_state.sex = int(vars.get('sub'))
-        await send_text_message(event, f"成功將語音設為 {'男性' if user_state.sex == 0 else '女性'}\nSuccessfully set voice to {'Male' if user_state.sex == 0 else 'Female'}")
-    elif action == 'accent':
-        user_state.accent = int(vars.get('sub'))
-        await send_text_message(event, f"成功將口音設為 Successfully set accent to:\n{audio[str(user_state.accent)][-1]}")
-    elif action == 'result':
+    elif action == 'record':
+        sub = int(vars.get('sub'))
+        user_state.sub = sub
+        await send_message(event, await question_message(user_id, user_state.category, sub))
+    elif action == 'carousel':
+        page = int(vars.get('page', 0))
+        await send_message(event, await carousel_message(user_id, user_state.category, page))
+    elif action == 'last':
         category = vars.get('category', user_state.category)
         sub = int(vars.get('sub', 0))
         result = getHistory(user_id, f'{category}-{sub}')
@@ -629,6 +708,8 @@ async def handle_postback(event):
             return
         
         user_state.category = alias.split('-')[0]
+        # 修改2: 切換選單時重置 NPC 對話狀態
+        user_state.in_npc_chat = False
         
         rich_menu_id = get_rich_menu_id(alias)
         if rich_menu_id:
@@ -686,13 +767,16 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = -1
         user_state.game_question = -1
+        user_state.in_npc_chat = False  # 修改2: 重置 NPC 對話狀態
         
         # 顯示前情提要並切換到主題選單
         theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
         if theme_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
         
-        await send_message(event, await game_prologue_message(theme_id))
+        # 修改4: game_prologue_message 現在回傳列表 (可能包含影片)
+        messages = await game_prologue_message(theme_id)
+        await send_message(event, messages)
     
     elif action == 'game_npcs':
         # 顯示當前主題的NPC選擇
@@ -713,11 +797,11 @@ async def handle_postback(event):
         
         user_state.game_theme = theme_id
         user_state.game_npc = npc_idx
+        user_state.game_question = -1  # 確保不在答題模式
+        user_state.in_npc_chat = True  # 修改2: 設置 NPC 對話模式
         
-        npc_info = get_game_npc_info(theme_id, npc_idx)
-        npc_name = npc_info['name'] if npc_info else f"NPC {npc_idx + 1}"
-        
-        await send_text_message(event, f"你現在正在與 {npc_name} 對話。請發送語音訊息開始！\nYou are now talking to {npc_name}. Send a voice message to begin!")
+        # 修改5: 顯示 NPC 卡片而非純文字
+        await send_message(event, await game_npc_card_message(theme_id, npc_idx))
     
     elif action == 'game_levels':
         # 顯示關卡選擇
@@ -739,6 +823,7 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = level_idx
         user_state.game_question = -1
+        user_state.in_npc_chat = False  # 修改2: 退出 NPC 對話模式
         
         messages = await game_level_intro_message(theme_id, level_idx, user_id)
         await send_message(event, messages)
@@ -767,6 +852,7 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = level_idx
         user_state.game_question = question_idx
+        user_state.in_npc_chat = False  # 修改2: 確保退出 NPC 對話模式
         
         # 取得題目文字
         level_info = get_game_level_info(theme_id, level_idx)
