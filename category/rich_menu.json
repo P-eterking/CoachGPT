@@ -198,7 +198,7 @@
             ]
         },
         "ex4": {
-            "file": "exercises_1.jpg",
+            "file": "exercises_page1.jpg",
             "chat_bar_text": "Exercise 4 #1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -250,7 +250,7 @@
             ]
         },
         "ex5": {
-            "file": "exercises_2.jpg",
+            "file": "exercises_page1.jpg",
             "chat_bar_text": "Exercise 5 #1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -263,7 +263,7 @@
             ]
         },
         "ex5-2": {
-            "file": "exercises_page2.jpg",
+            "file": "exercises_page2-2.jpg",
             "chat_bar_text": "Exercise 5 #2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
