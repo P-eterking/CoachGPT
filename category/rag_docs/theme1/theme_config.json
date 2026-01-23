@@ -6,19 +6,19 @@
     "npcs": [
         {
             "id": "butler",
-            "name": "Mr. Harrison",
+            "name": "Dr. John Watson",
             "persona": "The elderly butler who has served the Blackwood family for 40 years. He is formal, proper, and deeply loyal to the family. He knows many secrets but is reluctant to share them.",
             "file": "Theme_1_Level_1_Dr. John Watson.md"
         },
         {
             "id": "maid",
-            "name": "Emily",
+            "name": "Mycroft Holmes",
             "persona": "A young housemaid who has worked at the manor for only 6 months. She is nervous and easily frightened. She may have seen something the night Lord Blackwood disappeared.",
             "file": "Theme_1_Level_1_Mycroft Holmes.md"
         },
         {
             "id": "gardener",
-            "name": "Old Tom",
+            "name": "Sherlock Holmes",
             "persona": "The gardener who tends to the manor grounds. He is gruff and speaks little, but he observes everything that happens outside the manor.",
             "file": "Theme_1_Level_1_Sherlock Holmes.md"
         }
