@@ -1,0 +1,128 @@
+{
+    "id": "theme1",
+    "name": "The Mysterious Manor",
+    "prologue": "You have been invited to investigate the disappearance of Lord Blackwood at his manor. The household staff seems nervous, and something feels off about this place. Your task is to interview the residents and uncover the truth behind his disappearance.",
+    "cover_image": "/templates/themes/theme1_cover.jpg",
+    "npcs": [
+        {
+            "id": "butler",
+            "name": "Mr. Harrison",
+            "persona": "The elderly butler who has served the Blackwood family for 40 years. He is formal, proper, and deeply loyal to the family. He knows many secrets but is reluctant to share them.",
+            "file": "Theme_1_Level_1_Dr. John Watson.md"
+        },
+        {
+            "id": "maid",
+            "name": "Emily",
+            "persona": "A young housemaid who has worked at the manor for only 6 months. She is nervous and easily frightened. She may have seen something the night Lord Blackwood disappeared.",
+            "file": "Theme_1_Level_1_Mycroft Holmes.md"
+        },
+        {
+            "id": "gardener",
+            "name": "Old Tom",
+            "persona": "The gardener who tends to the manor grounds. He is gruff and speaks little, but he observes everything that happens outside the manor.",
+            "file": "Theme_1_Level_1_Sherlock Holmes.md"
+        }
+    ],
+    "levels": [
+        {
+            "id": 0,
+            "title": "The First Interview",
+            "description": "Begin your investigation by interviewing the household staff about the night of Lord Blackwood's disappearance.",
+            "video_file": "theme1_level1.mp4",
+            "questions": [
+                {
+                    "text": "Ask about Lord Blackwood's daily routine and habits.",
+                    "hint": "Try asking: What did Lord Blackwood usually do in the evenings?"
+                },
+                {
+                    "text": "Inquire about any unusual visitors or events recently.",
+                    "hint": "Try asking: Has anyone strange visited the manor lately?"
+                },
+                {
+                    "text": "Ask about the relationships between household members.",
+                    "hint": "Try asking: How did the staff get along with Lord Blackwood?"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "title": "Hidden Clues",
+            "description": "Search for physical evidence and ask about objects found around the manor.",
+            "video_file": "theme1_level2.mp4",
+            "questions": [
+                {
+                    "text": "Ask about a torn letter found in the study.",
+                    "hint": "Try asking: Do you know anything about this torn letter?"
+                },
+                {
+                    "text": "Inquire about the locked room in the west wing.",
+                    "hint": "Try asking: Why is the west wing room always locked?"
+                },
+                {
+                    "text": "Ask about the muddy footprints near the back entrance.",
+                    "hint": "Try asking: Who might have left these muddy footprints?"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "Secrets Unveiled",
+            "description": "Dig deeper into the family history and uncover hidden motives.",
+            "video_file": "theme1_level3.mp4",
+            "questions": [
+                {
+                    "text": "Ask about Lord Blackwood's will and inheritance.",
+                    "hint": "Try asking: Who stands to inherit the estate?"
+                },
+                {
+                    "text": "Inquire about family disputes or arguments.",
+                    "hint": "Try asking: Were there any recent arguments in the family?"
+                },
+                {
+                    "text": "Ask about the portrait with the hidden safe.",
+                    "hint": "Try asking: What is behind the portrait in the study?"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "The Night in Question",
+            "description": "Focus on the specific events of the night Lord Blackwood disappeared.",
+            "video_file": "theme1_level4.mp4",
+            "questions": [
+                {
+                    "text": "Ask about each person's whereabouts that night.",
+                    "hint": "Try asking: Where were you between 10 PM and midnight?"
+                },
+                {
+                    "text": "Inquire about any sounds or disturbances heard.",
+                    "hint": "Try asking: Did you hear anything unusual that night?"
+                },
+                {
+                    "text": "Ask about the last person to see Lord Blackwood.",
+                    "hint": "Try asking: Who was the last person to see Lord Blackwood?"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "The Final Revelation",
+            "description": "Confront the suspects with your findings and solve the mystery.",
+            "video_file": "theme1_level5.mp4",
+            "questions": [
+                {
+                    "text": "Present your theory about what happened.",
+                    "hint": "Try saying: I believe I know what happened that night..."
+                },
+                {
+                    "text": "Ask the key suspect to explain the evidence.",
+                    "hint": "Try asking: How do you explain the evidence I found?"
+                },
+                {
+                    "text": "Request a confession or final statement.",
+                    "hint": "Try asking: Is there anything you want to tell me before I make my report?"
+                }
+            ]
+        }
+    ]
+}

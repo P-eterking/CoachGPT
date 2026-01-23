@@ -35,6 +35,96 @@ class ChatSummaryAndScore(BaseModel):
     summary: ChatSummary = Field(description="摘要", default_factory=lambda: ChatSummary())  # 摘要
     score: int = Field(description="分數", default_factory=lambda: 0, ge=0, le=10)  # 分數
 
+# ========== 新增: 遊戲計分模型 ==========
+class GameQuestionScore(BaseModel):
+    """追蹤單一題目的最高分"""
+    question_idx: int = Field(description="題目索引")  # 題目索引
+    best_score: int = Field(description="最高分數", default=0)  # 最高分數
+    attempts: int = Field(description="嘗試次數", default=0)  # 嘗試次數
+
+class GameLevelScore(BaseModel):
+    """追蹤單一關卡的分數 (包含多個題目)"""
+    level_idx: int = Field(description="關卡索引")  # 關卡索引
+    questions: Dict[int, GameQuestionScore] = Field(
+        description="題目分數 (以題目索引為鍵)",
+        default_factory=dict
+    )
+    
+    def get_total_score(self) -> int:
+        """計算此關卡的總分"""
+        return sum(q.best_score for q in self.questions.values())
+    
+    def get_max_possible_score(self, questions_per_level: int = 3, max_score_per_question: int = 10) -> int:
+        """計算此關卡的滿分"""
+        return questions_per_level * max_score_per_question
+
+class GameThemeScore(BaseModel):
+    """追蹤整個主題的分數 (包含多個關卡)"""
+    theme_id: str = Field(description="主題識別碼")  # 主題識別碼
+    levels: Dict[int, GameLevelScore] = Field(
+        description="關卡分數 (以關卡索引為鍵)",
+        default_factory=dict
+    )
+    
+    def get_total_score(self) -> int:
+        """計算此主題的總分"""
+        return sum(level.get_total_score() for level in self.levels.values())
+    
+    def get_max_possible_score(self, num_levels: int = 5, questions_per_level: int = 3, max_score_per_question: int = 10) -> int:
+        """計算此主題的滿分"""
+        return num_levels * questions_per_level * max_score_per_question
+
+class GameScores(BaseModel):
+    """所有主題的遊戲分數容器"""
+    themes: Dict[str, GameThemeScore] = Field(
+        description="主題分數 (以主題識別碼為鍵)",
+        default_factory=dict
+    )
+    
+    def update_score(self, theme_id: str, level_idx: int, question_idx: int, score: int) -> bool:
+        """
+        更新特定題目的分數。若為新高分則回傳 True。
+        若該題目已作答過，則取較高分數。
+        """
+        # 若主題不存在則初始化
+        if theme_id not in self.themes:
+            self.themes[theme_id] = GameThemeScore(theme_id=theme_id)
+        
+        theme = self.themes[theme_id]
+        
+        # 若關卡不存在則初始化
+        if level_idx not in theme.levels:
+            theme.levels[level_idx] = GameLevelScore(level_idx=level_idx)
+        
+        level = theme.levels[level_idx]
+        
+        # 初始化或更新題目分數
+        if question_idx not in level.questions:
+            level.questions[question_idx] = GameQuestionScore(
+                question_idx=question_idx,
+                best_score=score,
+                attempts=1
+            )
+            return True
+        else:
+            q = level.questions[question_idx]
+            q.attempts += 1
+            if score > q.best_score:
+                q.best_score = score
+                return True
+            return False
+    
+    def get_theme_score(self, theme_id: str) -> int:
+        """取得主題總分"""
+        if theme_id in self.themes:
+            return self.themes[theme_id].get_total_score()
+        return 0
+    
+    def to_dict(self) -> dict:
+        return self.model_dump(exclude_none=True)
+
+# ========== 結束新增 ==========
+
 class User(BaseModel):
     id: str = Field(description="學號")  # 學號
     dep: str = Field(description="系級") # 系級
@@ -42,6 +132,8 @@ class User(BaseModel):
     class_time: int = Field(description='上課時段')  # 上課時段 
     history: dict[str, list[SpeechAssessment]] = Field(description='歷史紀錄')  # 歷史紀錄
     chat: ChatHistory = Field(description='聊天紀錄', default_factory=lambda: ChatHistory())  # 聊天紀錄
+    # 新增: 遊戲分數
+    game_scores: GameScores = Field(description='遊戲分數', default_factory=lambda: GameScores())  # 遊戲分數
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
@@ -51,6 +143,11 @@ class UserState(BaseModel):
     sub:  Optional[int] = Field(description="子題", default=-1)  # 子題
     sex: Optional[int] = Field(description="性別", default=0)  # 性別
     accent: Optional[int] = Field(description="口音", default=0)  # 口音
+    # 新增: 遊戲狀態
+    game_theme: Optional[str] = Field(description="目前遊戲主題", default=None)  # 目前遊戲主題
+    game_level: Optional[int] = Field(description="目前遊戲關卡", default=-1)  # 目前遊戲關卡
+    game_question: Optional[int] = Field(description="目前遊戲題目", default=-1)  # 目前遊戲題目
+    game_npc: Optional[int] = Field(description="目前NPC索引", default=0)  # 目前NPC索引
     
 
 class Question(BaseModel):
@@ -73,3 +170,45 @@ class QuestionCategory(BaseModel):
 
 class QuestionSet(BaseModel):
     questions: list[str] = Field(description="問題集") # 問題集
+
+# ========== 新增: 遊戲主題配置模型 ==========
+class GameNPC(BaseModel):
+    """遊戲主題的NPC配置"""
+    id: str = Field(description="NPC識別碼")  # NPC識別碼
+    name: str = Field(description="NPC顯示名稱")  # NPC顯示名稱
+    persona: str = Field(description="NPC人設/背景")  # NPC人設/背景
+    file: str = Field(description="此NPC的RAG文件檔案")  # RAG文件檔案
+
+class GameLevelQuestion(BaseModel):
+    """遊戲關卡中的單一題目"""
+    text: str = Field(description="題目文字")  # 題目文字
+    hint: Optional[str] = Field(description="可選提示", default=None)  # 可選提示
+
+class GameLevel(BaseModel):
+    """遊戲主題中的單一關卡"""
+    id: int = Field(description="關卡索引 (從0開始)")  # 關卡索引
+    title: str = Field(description="關卡標題")  # 關卡標題
+    description: str = Field(description="關卡描述")  # 關卡描述
+    video_file: Optional[str] = Field(description="影片檔案路徑", default=None)  # 影片檔案路徑
+    questions: List[GameLevelQuestion] = Field(description="此關卡的題目")  # 題目列表
+
+class GameThemeConfig(BaseModel):
+    """單一遊戲主題的配置"""
+    id: str = Field(description="主題識別碼")  # 主題識別碼
+    name: str = Field(description="主題顯示名稱")  # 主題顯示名稱
+    prologue: str = Field(description="主題前情提要/背景故事")  # 前情提要
+    cover_image: Optional[str] = Field(description="封面圖片網址", default=None)  # 封面圖片
+    npcs: List[GameNPC] = Field(description="可用的NPC列表")  # NPC列表
+    levels: List[GameLevel] = Field(description="遊戲關卡列表")  # 關卡列表
+    
+    def get_npc(self, npc_idx: int) -> Optional[GameNPC]:
+        if 0 <= npc_idx < len(self.npcs):
+            return self.npcs[npc_idx]
+        return None
+    
+    def get_level(self, level_idx: int) -> Optional[GameLevel]:
+        if 0 <= level_idx < len(self.levels):
+            return self.levels[level_idx]
+        return None
+
+# ========== 結束新增 ==========

@@ -5,9 +5,12 @@ import os
 import re
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from config import USER_DATA_FILE, CONFIG_FILE, client
-from utils.models import ChatHistory, User, SpeechAssessment, UserState, RagChunk
+from utils.models import (
+    ChatHistory, User, SpeechAssessment, UserState, RagChunk,
+    GameThemeConfig, GameScores, GameThemeScore, GameLevelScore, GameQuestionScore
+)
 
 # 使用者狀態和資料
 user_state: dict[str, UserState] = {}  # 儲存每個使用者的即時狀態
@@ -21,7 +24,12 @@ DEFAULT_CONFIG = {
     'enabled': [],
     'response': [],
     'rag_mode': False,
-    'display_feedback': True
+    'display_feedback': True,
+    # 新增: 遊戲設定
+    'game_themes': ['theme1', 'theme2', 'theme3'],  # 遊戲主題列表
+    'levels_per_theme': 5,  # 每個主題的關卡數
+    'questions_per_level': 3,  # 每個關卡的題目數
+    'max_score_per_question': 10  # 每題滿分
 }
 
 # 設定檔案
@@ -29,6 +37,9 @@ config = DEFAULT_CONFIG.copy()
 
 _rag_cache: Dict[str, List[RagChunk]] = {}
 _rag_lock = asyncio.Lock()
+
+# 新增: 遊戲主題配置快取
+_game_theme_cache: Dict[str, GameThemeConfig] = {}
 
 def get_user_state(user_id: str) -> UserState | None:
     global user_state
@@ -53,7 +64,10 @@ def set_rich_menu_id(rich_menu_id: str, category: str):
 
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
-    user_data[user_id] = User(dep=dep, id=id, name=name, class_time=classTime, history={}, chat={})
+    user_data[user_id] = User(
+        dep=dep, id=id, name=name, class_time=classTime, 
+        history={}, chat={}, game_scores=GameScores()
+    )
 
 # 刪除使用者資料
 def delData(user_id):
@@ -67,6 +81,10 @@ def hasData(user_id) -> bool:
 # 獲取使用者資料
 def getData() -> dict:
     return user_data
+
+# 獲取單一使用者
+def getUser(user_id: str) -> User | None:
+    return user_data.get(user_id)
 
 # 更新使用者的聊天紀錄
 def getChatHistory(user_id: str) -> ChatHistory:
@@ -111,6 +129,175 @@ def removeResponse(category):
 
 def isResponse(category):
     return category in config['response']
+
+# ========== 新增: 遊戲主題功能 ==========
+
+def get_game_themes() -> List[str]:
+    """取得可用的遊戲主題ID列表"""
+    return config.get('game_themes', ['theme1', 'theme2', 'theme3'])
+
+def get_levels_per_theme() -> int:
+    """取得每個主題的關卡數"""
+    return config.get('levels_per_theme', 5)
+
+def get_questions_per_level() -> int:
+    """取得每個關卡的題目數"""
+    return config.get('questions_per_level', 3)
+
+def get_max_score_per_question() -> int:
+    """取得每題滿分"""
+    return config.get('max_score_per_question', 10)
+
+def load_game_theme_config(theme_id: str) -> Optional[GameThemeConfig]:
+    """從JSON檔案載入遊戲主題配置"""
+    global _game_theme_cache
+    
+    if theme_id in _game_theme_cache:
+        return _game_theme_cache[theme_id]
+    
+    config_path = Path(f'category/rag_docs/{theme_id}/theme_config.json')
+    if config_path.exists():
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                theme_config = GameThemeConfig(**data)
+                _game_theme_cache[theme_id] = theme_config
+                return theme_config
+        except Exception as e:
+            print(f"Error loading game theme config for {theme_id}: {e}")
+            return None
+    return None
+
+def clear_game_theme_cache():
+    """清除遊戲主題配置快取"""
+    global _game_theme_cache
+    _game_theme_cache = {}
+
+def get_game_prologue(theme_id: str) -> str:
+    """取得遊戲主題的前情提要"""
+    theme_config = load_game_theme_config(theme_id)
+    if theme_config:
+        return theme_config.prologue
+    return ""
+
+def get_game_npcs(theme_id: str) -> List[dict]:
+    """取得遊戲主題的NPC列表"""
+    theme_config = load_game_theme_config(theme_id)
+    if theme_config:
+        return [{"id": npc.id, "name": npc.name} for npc in theme_config.npcs]
+    return []
+
+def get_game_level_info(theme_id: str, level_idx: int) -> Optional[dict]:
+    """取得關卡資訊，包含影片和描述"""
+    theme_config = load_game_theme_config(theme_id)
+    if theme_config:
+        level = theme_config.get_level(level_idx)
+        if level:
+            return {
+                "id": level.id,
+                "title": level.title,
+                "description": level.description,
+                "video_file": level.video_file,
+                "questions": [{"text": q.text, "hint": q.hint} for q in level.questions]
+            }
+    return None
+
+def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
+    """取得NPC資訊供RAG使用"""
+    theme_config = load_game_theme_config(theme_id)
+    if theme_config:
+        npc = theme_config.get_npc(npc_idx)
+        if npc:
+            return {
+                "id": npc.id,
+                "name": npc.name,
+                "persona": npc.persona,
+                "file": npc.file
+            }
+    return None
+
+# ========== 遊戲計分功能 ==========
+
+def update_game_score(user_id: str, theme_id: str, level_idx: int, question_idx: int, score: int) -> Tuple[bool, int]:
+    """
+    更新使用者的遊戲分數。回傳 (是否為新高分, 新的主題總分)。
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return False, 0
+    
+    is_new_high = user.game_scores.update_score(theme_id, level_idx, question_idx, score)
+    theme_total = user.game_scores.get_theme_score(theme_id)
+    return is_new_high, theme_total
+
+def get_user_game_score(user_id: str, theme_id: str) -> int:
+    """取得使用者在某主題的總分"""
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    return user.game_scores.get_theme_score(theme_id)
+
+def get_user_level_score(user_id: str, theme_id: str, level_idx: int) -> int:
+    """取得使用者在某關卡的總分"""
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    
+    if theme_id in user.game_scores.themes:
+        theme = user.game_scores.themes[theme_id]
+        if level_idx in theme.levels:
+            return theme.levels[level_idx].get_total_score()
+    return 0
+
+def get_user_question_score(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:
+    """取得使用者在某題目的最高分"""
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    
+    if theme_id in user.game_scores.themes:
+        theme = user.game_scores.themes[theme_id]
+        if level_idx in theme.levels:
+            level = theme.levels[level_idx]
+            if question_idx in level.questions:
+                return level.questions[question_idx].best_score
+    return 0
+
+def get_max_theme_score() -> int:
+    """取得主題滿分"""
+    levels = get_levels_per_theme()
+    questions = get_questions_per_level()
+    max_score = get_max_score_per_question()
+    return levels * questions * max_score
+
+def get_user_game_progress(user_id: str, theme_id: str) -> dict:
+    """取得使用者在某主題的進度"""
+    user = user_data.get(user_id)
+    if not user:
+        return {"total_score": 0, "max_score": get_max_theme_score(), "levels_completed": 0, "questions_answered": 0}
+    
+    total_score = user.game_scores.get_theme_score(theme_id)
+    max_score = get_max_theme_score()
+    
+    levels_completed = 0
+    questions_answered = 0
+    questions_per_level = get_questions_per_level()
+    
+    if theme_id in user.game_scores.themes:
+        theme = user.game_scores.themes[theme_id]
+        for level in theme.levels.values():
+            questions_answered += len(level.questions)
+            if len(level.questions) >= questions_per_level:
+                levels_completed += 1
+    
+    return {
+        "total_score": total_score,
+        "max_score": max_score,
+        "levels_completed": levels_completed,
+        "questions_answered": questions_answered
+    }
+
+# ========== 結束新增 ==========
 
 class RagManager:
     @staticmethod
@@ -252,7 +439,10 @@ async def load_config():
             async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as file:
                 content = await file.read()
         loaded_config = json.loads(content)
-        config.update(loaded_config)
+        # 與預設值合併以確保新欄位存在
+        merged_config = DEFAULT_CONFIG.copy()
+        merged_config.update(loaded_config)
+        config.update(merged_config)
         print("Config loaded successfully.")
     except FileNotFoundError:
         async with _lock:

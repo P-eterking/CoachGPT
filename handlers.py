@@ -1,9 +1,15 @@
 from config import line_bot_api, line_bot_api_blob, client, question_manager, rich_menu_manager
 import asyncio
 from utils.message_utils import (
-    handle_rich_menu, info_hint_message, result_message, send_chat_response, chat_summary_message, send_message, send_text_message,
-    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY, SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION,
-    GAME_SYSTEM_INSTRUCTION, carousel_message
+    handle_rich_menu, info_hint_message, result_message, send_chat_response, 
+    chat_summary_message, send_message, send_text_message,
+    question_message, SYSTEM_INSTRUCTION, text_message, progress_message, 
+    chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY, 
+    SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION, GAME_SYSTEM_INSTRUCTION, carousel_message,
+    # 新增: 遊戲訊息
+    game_prologue_message, game_level_intro_message, game_questions_carousel,
+    game_score_message, game_theme_select_message, game_npc_select_message,
+    game_level_select_message
 )
 from utils.models import ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse
 from utils.file_utils import *
@@ -128,8 +134,14 @@ async def handle_audio_message(event):
     
     # 優先處理遊戲模式
     if config.get('rag_mode'):
-        await handle_game_mode(event, user_id, user_state)
-        return
+        # 新增: 檢查使用者是否在新遊戲模式中且已選擇題目
+        if user_state.game_theme and user_state.game_level >= 0 and user_state.game_question >= 0:
+            await handle_game_answer(event, user_id, user_state)
+            return
+        # 舊版: 處理舊的 rag_test 類別
+        elif user_state.category == 'rag_test' and user_state.sub >= 0:
+            await handle_game_mode(event, user_id, user_state)
+            return
 
     try:
         text = None
@@ -182,7 +194,7 @@ async def handle_audio_message(event):
                 {
                     "role": "user",
                     "content": f"<question>{question.text}</question>" \
-                               f"{'<standard>'+question.assessment_standard.replace('\n','').strip()+'</standard>' if question.assessment_standard else ''}" \
+                               f"{'<standard>'+question.assessment_standard.replace(chr(10),'').strip()+'</standard>' if question.assessment_standard else ''}" \
                                f"<userAnswer>{text}</userAnswer>" \
                                f"{f'<maxScore>{question.max_score}</maxScore>' if question.max_score else ''}",
                 }
@@ -198,6 +210,7 @@ async def handle_audio_message(event):
         await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
         print(e)
 
+# 舊版: 保留以維持向後相容性
 async def handle_game_mode(event, user_id, user_state):
     try:
         category = user_state.category
@@ -283,6 +296,111 @@ async def handle_game_mode(event, user_id, user_state):
     except Exception as e:
         print(f"Game Mode Error: {e}")
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error.")
+
+# 新增: 處理新遊戲系統的答題
+async def handle_game_answer(event, user_id, user_state):
+    """處理遊戲題目的語音回答"""
+    try:
+        theme_id = user_state.game_theme
+        level_idx = user_state.game_level
+        question_idx = user_state.game_question
+        npc_idx = user_state.game_npc
+        
+        if not theme_id or level_idx < 0 or question_idx < 0:
+            await send_text_message(event, "請先選擇題目。\nPlease select a question first.")
+            return
+        
+        # 取得音訊並轉錄
+        try:
+            message_content = await get_audio_content(event)
+            text = await transcribe_audio(message_content, language="en")
+        except Exception as e:
+            print("Audio error:", e)
+            await send_text_message(event, "音訊處理錯誤，請稍後再試。\nAudio processing error.")
+            return
+
+        if not text:
+            await send_text_message(event, "聽不清楚，請再說一次。\nCould not hear clearly, please try again.")
+            return
+
+        # 取得NPC資訊
+        npc_info = get_game_npc_info(theme_id, npc_idx)
+        if not npc_info:
+            npc_info = {
+                "name": "The Narrator",
+                "persona": "A helpful guide.",
+                "file": "narrator.md"
+            }
+        
+        # 取得RAG上下文
+        rag_path = os.path.join("category", "rag_docs", theme_id, npc_info["file"])
+        if not os.path.exists(rag_path):
+            rag_path = os.path.join("category", "rag_docs", theme_id)
+        
+        context_content = await get_rag_context_v2(rag_path, query=text)
+        
+        # 取得對話歷史
+        history_key = f'{theme_id}-{level_idx}-{question_idx}'
+        past_assessments = getHistory(user_id, history_key)
+        history_str = ""
+        if past_assessments:
+            recent = past_assessments[-3:]
+            for turn in recent:
+                history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
+        
+        # 取得題目資訊作為上下文
+        level_info = get_game_level_info(theme_id, level_idx)
+        question_text = ""
+        if level_info and question_idx < len(level_info.get('questions', [])):
+            question_text = level_info['questions'][question_idx]['text']
+        
+        # 建構提示詞
+        formatted_prompt = GAME_SYSTEM_INSTRUCTION.format(
+            persona=f"{npc_info['name']}: {npc_info['persona']}",
+            context=f"Current Question: {question_text}\n\n{context_content}",
+            history=history_str
+        )
+
+        # 取得AI回應
+        completion = await client.beta.chat.completions.parse(
+            model="gpt-4o",
+            response_format=GameResponse,
+            max_completion_tokens=512,
+            temperature=0.7, 
+            messages=[
+                { "role": "system", "content": formatted_prompt },
+                { "role": "user", "content": text }
+            ],
+        )
+
+        game_res: GameResponse = GameResponse.model_validate_json(completion.choices[0].message.content)
+
+        # 儲存評估結果
+        assessment = SpeechAssessment(
+            chi_suggestion=game_res.feedback,
+            eng_suggestion="", 
+            score=game_res.score,
+            transcript=text,
+            better_ans=game_res.npc_reply,
+            timestamp=time.time()
+        )
+        
+        updateHistory(user_id, history_key, assessment)
+        
+        # 更新遊戲分數
+        is_new_high, theme_total = update_game_score(
+            user_id, theme_id, level_idx, question_idx, game_res.score
+        )
+        
+        # 發送結果訊息
+        await send_message(event, await game_score_message(
+            user_id, theme_id, level_idx, question_idx,
+            game_res.score, is_new_high, game_res.npc_reply, game_res.feedback
+        ))
+
+    except Exception as e:
+        print(f"Game Answer Error: {e}")
+        await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
 
 
 def get_audio_duration(message_content: bytes, format: str = "m4a") -> int:
@@ -547,7 +665,128 @@ async def handle_postback(event):
         await question_manager.save_category(alias)
     elif action == 'reload':
         question_manager.load_questions()
-        await send_text_message(event, '已重新載入問題！\nQuestions reloaded!')
+        clear_game_theme_cache()
+        await send_text_message(event, '已重新載入問題與主題！\nQuestions and themes reloaded!')
     elif action == 'save':
         await save_all()
         await send_text_message(event, '儲存成功！\nSave successful!')
+    
+    # ========== 新增: 遊戲動作 ==========
+    elif action == 'game_themes':
+        # 顯示主題選擇
+        await send_message(event, await game_theme_select_message())
+    
+    elif action == 'game_theme':
+        # 進入主題 - 顯示前情提要
+        theme_id = vars.get('theme')
+        if not theme_id:
+            await send_text_message(event, "未指定主題。\nTheme not specified.")
+            return
+        
+        user_state.game_theme = theme_id
+        user_state.game_level = -1
+        user_state.game_question = -1
+        
+        # 顯示前情提要並切換到主題選單
+        theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
+        if theme_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
+        
+        await send_message(event, await game_prologue_message(theme_id))
+    
+    elif action == 'game_npcs':
+        # 顯示當前主題的NPC選擇
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        await send_message(event, await game_npc_select_message(theme_id, user_id))
+    
+    elif action == 'game_npc':
+        # 選擇要對話的NPC
+        theme_id = vars.get('theme', user_state.game_theme)
+        npc_idx = int(vars.get('npc', 0))
+        
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        
+        user_state.game_theme = theme_id
+        user_state.game_npc = npc_idx
+        
+        npc_info = get_game_npc_info(theme_id, npc_idx)
+        npc_name = npc_info['name'] if npc_info else f"NPC {npc_idx + 1}"
+        
+        await send_text_message(event, f"你現在正在與 {npc_name} 對話。請發送語音訊息開始！\nYou are now talking to {npc_name}. Send a voice message to begin!")
+    
+    elif action == 'game_levels':
+        # 顯示關卡選擇
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        await send_message(event, await game_level_select_message(theme_id, user_id))
+    
+    elif action == 'game_level':
+        # 進入關卡 - 顯示影片介紹
+        theme_id = vars.get('theme', user_state.game_theme)
+        level_idx = int(vars.get('level', 0))
+        
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        
+        user_state.game_theme = theme_id
+        user_state.game_level = level_idx
+        user_state.game_question = -1
+        
+        messages = await game_level_intro_message(theme_id, level_idx, user_id)
+        await send_message(event, messages)
+    
+    elif action == 'game_questions':
+        # 顯示當前關卡的題目卡片
+        theme_id = vars.get('theme', user_state.game_theme)
+        level_idx = int(vars.get('level', user_state.game_level))
+        
+        if not theme_id or level_idx < 0:
+            await send_text_message(event, "請先選擇關卡。\nPlease select a level first.")
+            return
+        
+        await send_message(event, await game_questions_carousel(theme_id, level_idx, user_id))
+    
+    elif action == 'game_answer':
+        # 選擇要回答的題目
+        theme_id = vars.get('theme', user_state.game_theme)
+        level_idx = int(vars.get('level', user_state.game_level))
+        question_idx = int(vars.get('question', 0))
+        
+        if not theme_id or level_idx < 0:
+            await send_text_message(event, "請先選擇關卡。\nPlease select a level first.")
+            return
+        
+        user_state.game_theme = theme_id
+        user_state.game_level = level_idx
+        user_state.game_question = question_idx
+        
+        # 取得題目文字
+        level_info = get_game_level_info(theme_id, level_idx)
+        if level_info and question_idx < len(level_info.get('questions', [])):
+            q_text = level_info['questions'][question_idx]['text']
+            await send_text_message(event, f"Q{question_idx + 1}: {q_text}\n\n請發送語音訊息作答！\nSend a voice message with your answer!")
+        else:
+            await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")
+    
+    elif action == 'game_score':
+        # 顯示當前主題分數
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        
+        progress = get_user_game_progress(user_id, theme_id)
+        await send_text_message(event, 
+            f"主題分數 Theme Score: {progress['total_score']}/{progress['max_score']}\n"
+            f"已回答題數 Questions Answered: {progress['questions_answered']}\n"
+            f"已完成關卡 Levels Completed: {progress['levels_completed']}"
+        )
+    # ========== 結束新增 ==========
