@@ -1,126 +1,126 @@
 {
     "id": "theme1",
-    "name": "The Mysterious Manor",
-    "prologue": "You have been invited to investigate the disappearance of Lord Blackwood at his manor. The household staff seems nervous, and something feels off about this place. Your task is to interview the residents and uncover the truth behind his disappearance.",
+    "name": "Famous attractions and transportation",
+    "prologue": "London is in chaos after Big Ben mysteriously stopped working this morning. However, this is not just a mechanical failure. According to Mycroft, it is a calculated diversion created by a criminal known as The Ghost. His real goal is to use this panic to infiltrate Westminster Abbey and steal a secret document regarding the Royal succession hidden under the Coronation Chair. With the police unable to solve the case, you have been recruited to help Sherlock and Watson. You must race across the city to intercept the thief and recover the document before it is too late.",
     "cover_image": "/templates/themes/theme1_cover.jpg",
     "npcs": [
         {
             "id": "Dr. John Watson",
             "name": "Dr. John Watson",
-            "persona": "You are Dr. John Watson, a loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from witnesses with a helpful, urgent demeanor.",
+            "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from witnesses with a helpful, urgent demeanor.",
             "file": "Theme_1_Level_1_Dr. John Watson.md"
         },
         {
             "id": "Mycroft Holmes",
             "name": "Mycroft Holmes",
-            "persona": "You are Mycroft Holmes, a condescending British official who is the embodiment of the Government, responsible for authorizing codes and unlocking official data with an air of weary superiority.",
+            "persona": "A condescending British official who is the embodiment of the Government, responsible for authorizing codes and unlocking official data with an air of weary superiority.",
             "file": "Theme_1_Level_1_Mycroft Holmes.md"
         },
         {
             "id": "Sherlock Holmes",
             "name": "Sherlock Holmes",
-            "persona": "You are Sherlock Holmes, the arrogant and hyper-observant British consulting detective who provides answers about precise visual details and calculations while frequently insulting the user's lack of intellect.",
+            "persona": "A arrogant and hyper-observant British consulting detective who provides answers about precise visual details and calculations while frequently insulting the user's lack of intellect.",
             "file": "Theme_1_Level_1_Sherlock Holmes.md"
         }
     ],
     "levels": [
         {
             "id": 0,
-            "title": "The First Interview",
-            "description": "Begin your investigation by interviewing the household staff about the night of Lord Blackwood's disappearance.",
+            "title": "The Frozen Big Ben",
+            "description": "You arrive at Big Ben to find the clock broken and the surrounding area sealed off by the police. To open the electronic lock, you must input two critical pieces of information. Three experts are present at the scene: the detective Sherlock, the government official Mycroft, and Dr. Watson. Please consult them for clues to complete the following tasks.",
             "video_file": "theme1_level1.mp4",
             "questions": [
                 {
-                    "text": "Ask about Lord Blackwood's daily routine and habits.",
-                    "hint": "Try asking: What did Lord Blackwood usually do in the evenings?"
+                    "text": "What exact time is displayed on the clock face?",
+                    "hint": ""
                 },
                 {
-                    "text": "Inquire about any unusual visitors or events recently.",
-                    "hint": "Try asking: Has anyone strange visited the manor lately?"
+                    "text": "What is the maintenance code provided?",
+                    "hint": ""
                 },
                 {
-                    "text": "Ask about the relationships between household members.",
-                    "hint": "Try asking: How did the staff get along with Lord Blackwood?"
+                    "text": "Based on the clues, what mode of transportation did the suspect use to escape?",
+                    "hint": ""
                 }
             ]
         },
         {
             "id": 1,
-            "title": "Hidden Clues",
-            "description": "Search for physical evidence and ask about objects found around the manor.",
+            "title": "Westminster Bridge",
+            "description": "After successfully restarting Big Ben, you followed the suspect's tracks to a bus stop. There, you found a Ghost Bus, a red double-decker that isn't on any official schedule.The doors are locked, and the electronic sign shows only strange symbols. The driver, who seems to be an AI or a very stubborn old man, refuses to let you in. He says you must prove you are qualified to learn the Ancient Secrets before he opens the door.",
             "video_file": "theme1_level2.mp4",
             "questions": [
                 {
-                    "text": "Ask about a torn letter found in the study.",
-                    "hint": "Try asking: Do you know anything about this torn letter?"
+                    "text": "What is the hidden license plate number of this bus?",
+                    "hint": ""
                 },
                 {
-                    "text": "Inquire about the locked room in the west wing.",
-                    "hint": "Try asking: Why is the west wing room always locked?"
+                    "text": "What is the emergency requisition command to get on the bus?",
+                    "hint": ""
                 },
                 {
-                    "text": "Ask about the muddy footprints near the back entrance.",
-                    "hint": "Try asking: Who might have left these muddy footprints?"
+                    "text": "Who is the registered owner of this mysterious Oyster Card?",
+                    "hint": ""
                 }
             ]
         },
         {
             "id": 2,
-            "title": "Secrets Unveiled",
-            "description": "Dig deeper into the family history and uncover hidden motives.",
+            "title": "The Silent Rosetta",
+            "description": "After arriving at the museum, you find the alarms ringing loudly, but the main doors are locked. Following the clues on Dr. Watson’s card (H. Carter), you enter the Egyptian Gallery through a secret passage.The suspect is trying to steal a fragment of the Rosetta Stone, which contains the coordinates to the final treasure. The stone is currently locked inside a high-tech shield. To unlock it and get the coordinates, you must identify anomalies in the exhibit and provide the correct catalog numbers.",
             "video_file": "theme1_level3.mp4",
             "questions": [
                 {
-                    "text": "Ask about Lord Blackwood's will and inheritance.",
-                    "hint": "Try asking: Who stands to inherit the estate?"
+                    "text": "Which hieroglyph on the Rosetta Stone is glowing (showing it was tampered with)?",
+                    "hint": ""
                 },
                 {
-                    "text": "Inquire about family disputes or arguments.",
-                    "hint": "Try asking: Were there any recent arguments in the family?"
+                    "text": "What is the secret catalog number of this stone fragment?",
+                    "hint": ""
                 },
                 {
-                    "text": "Ask about the portrait with the hidden safe.",
-                    "hint": "Try asking: What is behind the portrait in the study?"
+                    "text": "A shopping receipt was dropped on the floor. What did the suspect buy?",
+                    "hint": ""
                 }
             ]
         },
         {
             "id": 3,
-            "title": "The Night in Question",
-            "description": "Focus on the specific events of the night Lord Blackwood disappeared.",
+            "title": "The Knowledge Challenge",
+            "description": "After solving the mystery of the Rosetta Stone, you learn that the suspect is heading to Westminster Abbey. However, it is now rush hour in London, and the only way to get there fast is by taking a legendary Black Cab. The driver is a veteran who has mastered The Knowledge (a famous, difficult test for London cabbies). He refuses to drive tourists who don't know the local rules. He locks the doors and tells you that you must answer three insider questions about London's streets and fares before he will let you in.",
             "video_file": "theme1_level4.mp4",
             "questions": [
                 {
-                    "text": "Ask about each person's whereabouts that night.",
-                    "hint": "Try asking: Where were you between 10 PM and midnight?"
+                    "text": "What is the driver's license number?",
+                    "hint": ""
                 },
                 {
-                    "text": "Inquire about any sounds or disturbances heard.",
-                    "hint": "Try asking: Did you hear anything unusual that night?"
+                    "text": "What is the exact fare (in pounds) to Westminster Abbey?",
+                    "hint": ""
                 },
                 {
-                    "text": "Ask about the last person to see Lord Blackwood.",
-                    "hint": "Try asking: Who was the last person to see Lord Blackwood?"
+                    "text": "Victoria Street, Which street under construction must you avoid on the way to the Abbey?",
+                    "hint": ""
                 }
             ]
         },
         {
             "id": 4,
-            "title": "The Final Revelation",
-            "description": "Confront the suspects with your findings and solve the mystery.",
+            "title": "The Secret of the Coronation",
+            "description": "You reached Westminster Abbey just before the royal ceremony began. The suspect is after a stolen document hidden under St. Edward's Chair (the Coronation Chair). Since staff are making final preparations, you must remain quiet. To get the document back, you need to find its exact location and answer the guard's questions.",
             "video_file": "theme1_level5.mp4",
             "questions": [
                 {
-                    "text": "Present your theory about what happened.",
-                    "hint": "Try saying: I believe I know what happened that night..."
+                    "text": "Which mythical creature statue at the base of the Coronation Chair is the document hidden behind?",
+                    "hint": ""
                 },
                 {
-                    "text": "Ask the key suspect to explain the evidence.",
-                    "hint": "Try asking: How do you explain the evidence I found?"
+                    "text": "What is the official name of this stolen document?",
+                    "hint": ""
                 },
                 {
-                    "text": "Request a confession or final statement.",
-                    "hint": "Try asking: Is there anything you want to tell me before I make my report?"
+                    "text": "A key is needed to open the document. Next to which famous poet's tomb is it hidden?",
+                    "hint": ""
                 }
             ]
         }

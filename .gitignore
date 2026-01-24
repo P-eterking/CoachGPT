@@ -17,6 +17,7 @@ env.bak/
 venv.bak/
 data/
 audio/
+save.txt/
 
 # Python package management
 pip-log.txt
