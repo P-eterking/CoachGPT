@@ -281,6 +281,296 @@ SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION = f"""
     The JSON object must use the schema: {json.dumps(ChatSummary.model_json_schema(), indent=2)}
     """
 
+
+# Core message functions
+async def send_message(event, msg):
+    if msg is None:
+        return
+    if not isinstance(msg, list):
+        msg = [msg]
+    await line_bot_api.reply_message(
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=msg
+        )
+    )
+
+
+async def text_message(text):
+    return TextMessage(text=text)
+
+
+async def send_text_message(event, text):
+    await line_bot_api.reply_message(
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[TextMessage(text=text)]
+        )
+    )
+
+
+async def send_chat_response(event, filename, duration, history=None):
+    quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(label='查看回覆 Lookup', data=f'action=chat&lookup=true')),
+    ])
+    if history and len(history.questions) >= 5:
+        quick_reply.items.append(QuickReplyItem(action=PostbackAction(label='查看摘要 Summary', data=f'action=chat&summary=true')))
+    await line_bot_api.reply_message(
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[AudioMessage(originalContentUrl=f'{URL}/templates/{filename}', quickReply=quick_reply, duration=duration)]
+        )
+    )
+
+
+async def chat_summary_message(summary: ChatSummary):
+    contents = [FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                justifyContent='center',
+                alignItems='center',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text='聊天摘要\nChat Summary',
+                        wrap=True,
+                        weight='bold',
+                        size='xxl',
+                        align='center',
+                        color="#001174",
+                    ),
+                ]
+            )
+        ),
+        FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text=f'{summary.eng_summary}'
+                        if summary.eng_summary else 'No summary.',
+                        wrap=True,
+                        size='md',
+                    ),
+                ]
+            )
+        ),
+        FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text=f'{summary.chi_summary}'
+                        if summary.chi_summary else '無摘要',
+                        wrap=True,
+                        size='md',
+                    ),
+                ]
+            )
+        ),]
+    return FlexMessage(altText='聊天摘要 Chat Summary', contents=FlexCarousel(contents=contents))
+
+
+async def progress_message(user_id):
+    questions = question_manager.questions 
+    progress: dict[str: list[int]] = {}
+    total = 0
+    
+    for category, question in questions.items():
+        if not isEnabled(category):
+            continue
+        if any([keyword in category for keyword in ['ex4', 'ex5', 'ex6']]):
+            continue
+        for num, _ in enumerate(question.content):
+            total += 1
+            if getHistory(user_id, f'{category}-{num}'):
+                continue
+            if category not in progress:
+                progress[category] = []
+            progress[category].append(num)
+                
+    if len(progress) == 0:
+        return TextMessage(text="您已完成所有問題。\nYou have completed all questions.")
+    
+    message = f"您尚未回答 Questions Unanswered ({sum(len(v) for v in progress.values())}):\n"
+    for category, subs in progress.items():
+        if len(subs) > 0:
+            message += f"\n{rich_menu_manager.get_display_name(category).split('#')[0].strip()}:\n"
+        for i, sub in enumerate(subs):
+            message += f"{chr(10) if i > 0 else ''} - Q{sub+1}"
+    
+    return TextMessage(text=message)
+
+
+async def chat_message(user_id, sub):
+    completion = await client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        response_format=QuestionSet,
+        max_completion_tokens=512,
+        temperature=1.4,
+        top_p=0.9,
+        frequency_penalty=0.5,
+        presence_penalty=0.5,
+        messages=[
+            {
+                "role": "user",
+                "content": f"As a non-native English college student, generate three questions that are suitable for me to practice about {CHAT_CATEGORY[sub]} in English.\n",
+            }
+        ],
+    )
+    result = QuestionSet.model_validate_json(completion.choices[0].message.content)
+    messages = []
+    contents = [
+        FlexImage(
+            url=f'{URL}{CHAT_CATEGORY_IMAGE_URL[sub]}',
+            size='full',
+            aspect_ratio='1:1',
+            aspect_mode='cover',
+            margin='md',
+            flex=1,
+        ),
+        FlexText(
+            text=CHAT_CATEGORY[sub].replace(' ', '\n', 1) if len(CHAT_CATEGORY[sub]) > 12 else CHAT_CATEGORY[sub],
+            wrap=True,
+            weight='bold',
+            size='xxl',
+            flex=1,
+        ),
+        FlexText(
+            text=f'與 CoachGPT 進行語音對話！\nTalk with CoachGPT!',
+            color='#5b5b5b',
+            size='lg',
+            wrap=True,
+            flex=1,
+        ),
+    ]
+
+    messages.append(FlexBubble(  
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                wrap=True,
+                contents=contents,
+                justifyContent='space-around',
+            ),
+        )
+    )
+    messages.append(FlexBubble(
+        size='mega', 
+        body=FlexBox(
+            layout='vertical',
+            spacing='lg',
+            justifyContent='center',
+            contents=[
+                FlexText(
+                    text='參考聊天問題\nChatting questions',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                ),
+                FlexText(
+                    text='\n\n'.join([f'Q{i+1}. {q}' for i, q in enumerate(result.questions)]),
+                    wrap=True,
+                    size='lg',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            alignItems='center',
+            contents=[
+                FlexText(
+                    text='選擇問題開始聊天\nChoose a question to start!',
+                    size='md',
+                    wrap=True,
+                    align='center',
+                )
+            ]
+        )
+    ))
+    return FlexMessage(
+        altText='聊天Chat',
+        contents=FlexCarousel(contents=messages)
+    )
+
+
+async def carousel_message(user_id, category, unit):
+    if len(question_manager.get_all_questions(category)) < unit:
+        return None
+    cols = []
+    for sub,j in enumerate(question_manager.get_unit(category,unit-1)):
+        body = FlexBox(
+            layout='vertical',
+            spacing='lg',
+            contents=[
+                FlexText(
+                    text=f'口語練習 Q{unit}-{sub+1}',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                ),
+                FlexButton(
+                    action=PostbackAction(
+                        label='開始作答 Enter',
+                        data=f'action=record&unit={unit-1}&sub={sub}'
+                    ),
+                    height='sm',
+                    style='primary',
+                ),
+            ]
+        )
+        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
+            body.contents.append(
+                FlexButton(
+                    action=PostbackAction(
+                        label='查看結果 Result',
+                        data=f'action=result&category={category}&unit={unit-1}&sub={sub}'
+                    ),
+                    height='sm',
+                    style='secondary',
+                )
+            )
+        cols.append(FlexBubble(
+            hero=FlexImage(
+                url=f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg',
+                size='full',
+                aspect_ratio='20:13',
+                aspect_mode='cover',
+            ),
+            body=body
+        ))
+    if len(question_manager.get_all_questions(category)) > unit:
+        cols.append(FlexBubble(
+            body=FlexBox(
+                contents=[
+                    FlexText(
+                            text=f'前往下一單元\nNext',
+                            weight='bold',
+                            size='xl',
+                        ),],
+                layout='vertical',
+                alignItems='center',
+                justifyContent='center',
+                action=PostbackAction(
+                    label='下一單元',
+                    data=f'action=unit&unit={unit+1}'
+                )
+            ),
+        ))
+    msg = FlexMessage(
+        altText='單元導覽',
+        contents=FlexCarousel(contents=cols)
+    )
+    return msg
+
+
 async def convert_to_voice(text: str, voice: str):
     response = await client.audio.speech.create(
         model="gpt-4o-mini-tts",
