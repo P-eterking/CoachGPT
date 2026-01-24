@@ -1,12 +1,11 @@
 services:
   tunnel:
     image: cloudflare/cloudflared:latest
-    #network_mode: host
+    network_mode: host
     restart: unless-stopped
     env_file:
       - .env
-    #entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "--protocol", "http2", "run", "--token", "eyJhIjoiODM3YmVlY2VjOGQwZDRlNjFjN2RmNWZjNjMxMTU0ZGYiLCJ0IjoiZTFkYmVlZWMtNDUyMC00MmRjLWE4YTEtMmRkNGZjNmQ4Zjg5IiwicyI6IlkyWTVOVFF6TWpndE5HWTVNaTAwWVdabUxUbG1ZVEl0TVRFM09EQmxaVFZpTjJZMiJ9"]
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_AUTHTOKEN}
+    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "--protocol", "http2", "run", "--token", "eyJhIjoiODM3YmVlY2VjOGQwZDRlNjFjN2RmNWZjNjMxMTU0ZGYiLCJ0IjoiZTFkYmVlZWMtNDUyMC00MmRjLWE4YTEtMmRkNGZjNmQ4Zjg5IiwicyI6IlkyWTVOVFF6TWpndE5HWTVNaTAwWVdabUxUbG1ZVEl0TVRFM09EQmxaVFZpTjJZMiJ9"]
     container_name: cloudflared-tunnel
 
   service:
