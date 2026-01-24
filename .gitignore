@@ -7,6 +7,7 @@ __pycache__/
 *.so
 save.txt
 *.xlsx
+*.mp4
 # Python virtual environments
 .env/
 .venv/
