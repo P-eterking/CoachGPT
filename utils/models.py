@@ -1,5 +1,5 @@
-from typing import Annotated, List, Optional, Dict, Any
-from pydantic import BaseModel, Field, conlist
+from typing import Annotated, List, Optional, Dict, Any, Union
+from pydantic import BaseModel, Field, conlist, field_validator, model_validator
 
 class SpeechAssessment(BaseModel):
     chi_suggestion: str = Field(description="繁體中文建議 Traditional Chinese (zh-TW) suggestion", default_factory=lambda: "無建議。")  # 中文建議
@@ -237,7 +237,8 @@ class UserState(BaseModel):
     game_theme: Optional[str] = Field(description="目前遊戲主題", default=None)  # 目前遊戲主題
     game_level: Optional[int] = Field(description="目前遊戲關卡", default=-1)  # 目前遊戲關卡
     game_question: Optional[int] = Field(description="目前遊戲題目", default=-1)  # 目前遊戲題目
-    game_npc: Optional[int] = Field(description="目前NPC索引", default=0)  # 目前NPC索引
+    # [FIX] 改為 -1 表示尚未選擇 NPC，避免 npc_idx=0 被誤認為已選擇第一個 NPC
+    game_npc: Optional[int] = Field(description="目前NPC索引 (-1 表示未選擇)", default=-1)  # 目前NPC索引
     in_npc_chat: bool = Field(description="是否在NPC對話模式", default=False)  # NPC對話模式標記
     
 
@@ -268,15 +269,52 @@ class GameNPC(BaseModel):
     id: str = Field(description="NPC識別碼")  # NPC識別碼
     name: str = Field(description="NPC顯示名稱")  # NPC顯示名稱
     persona: str = Field(description="NPC人設/背景 (給AI用)")  # NPC人設/背景
-    description: str = Field(description="NPC描述 (顯示給使用者)", default="")  # 使用者可見的描述
+    # [FIX] 支援 theme_config.json 中的 "display_description" 欄位名稱
+    description: str = Field(
+        description="NPC描述 (顯示給使用者)", 
+        default="",
+        alias="display_description"  # 允許從 display_description 讀取
+    )
     file: str = Field(description="此NPC的RAG文件檔案")  # RAG文件檔案
     image: Optional[str] = Field(description="NPC頭像圖片檔名", default=None)  # 頭像圖片
+    # [FIX] 新增 background 欄位，theme_config.json 中有此欄位
+    background: Optional[str] = Field(description="NPC背景故事", default=None)
+    
+    class Config:
+        # 允許使用 alias 來解析 JSON，同時允許用原始名稱
+        populate_by_name = True
 
 class GameLevelQuestion(BaseModel):
     """遊戲關卡中的單一題目"""
     text: str = Field(description="題目文字")  # 題目文字
     hint: Optional[str] = Field(description="可選提示", default=None)  # 可選提示
     reference_answers: List[str] = Field(description="參考答案列表", default_factory=list)  # 參考答案
+    # [FIX] 支援單數形式的 reference_answer (theme_config.json 使用此欄位)
+    reference_answer: Optional[str] = Field(description="單一參考答案 (會被合併到 reference_answers)", default=None, exclude=True)
+    
+    @model_validator(mode='before')
+    @classmethod
+    def merge_reference_answer(cls, data: Any) -> Any:
+        """將單數的 reference_answer 合併到 reference_answers 列表中"""
+        if isinstance(data, dict):
+            # 取得已有的 reference_answers
+            ref_answers = data.get('reference_answers', [])
+            if isinstance(ref_answers, str):
+                ref_answers = [ref_answers]
+            elif ref_answers is None:
+                ref_answers = []
+            
+            # 取得單數的 reference_answer
+            single_answer = data.get('reference_answer')
+            if single_answer and single_answer not in ref_answers:
+                ref_answers.append(single_answer)
+            
+            data['reference_answers'] = ref_answers
+        return data
+    
+    def get_all_reference_answers(self) -> List[str]:
+        """取得所有參考答案"""
+        return self.reference_answers if self.reference_answers else []
 
 class GameLevel(BaseModel):
     """遊戲主題中的單一關卡"""
