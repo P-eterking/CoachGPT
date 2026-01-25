@@ -5,31 +5,31 @@
     "cover_image": "/templates/themes/theme1_cover.jpg",
     "npcs": [
         {
-            "id": "Dr. John Watson",
+            "id": "Watson",
             "name": "Dr. John Watson",
             "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from witnesses with a helpful, urgent demeanor.",
             "file": "Theme_1_Level_1_Dr. John Watson.md",
             "display_description": "A loyal British army doctor and Sherlock's trusted companion. He can provide information about physical evidence and witness testimonies.",
             "background": "Served in Afghanistan as an army doctor. Now assists Sherlock Holmes in solving mysteries around London.",
-            "image": "Dr. John Watson.jpg"
+            "image": "John_Watson.jpg"
         },
         {
-            "id": "Mycroft Holmes",
+            "id": "Mycroft",
             "name": "Mycroft Holmes",
             "persona": "A condescending British official who is the embodiment of the Government, responsible for authorizing codes and unlocking official data with an air of weary superiority.",
             "file": "Theme_1_Level_1_Mycroft Holmes.md",
             "display_description": "Sherlock's older brother and a senior British government official. He has access to classified information and security codes.",
             "background": "The most powerful man in British government. His word can open any door in the realm.",
-            "image": "Mycroft Holmes.jpg"
+            "image": "Mycroft_Holmes.jpg"
         },
         {
-            "id": "Sherlock Holmes",
+            "id": "Sherlock",
             "name": "Sherlock Holmes",
             "persona": "A arrogant and hyper-observant British consulting detective who provides answers about precise visual details and calculations while frequently insulting the user's lack of intellect.",
             "file": "Theme_1_Level_1_Sherlock Holmes.md",
             "display_description": "The world's only consulting detective. He notices every detail and can deduce facts that others miss. Ask him about visual clues and deductions.",
             "background": "221B Baker Street's famous detective. His methods of deduction are legendary.",
-            "image": "Sherlock Holmes.jpg"
+            "image": "Sherlock_Holmes.jpg"
         }
     ],
     "levels": [
