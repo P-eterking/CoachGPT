@@ -50,7 +50,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Score", "data": "action=game_score" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -63,7 +63,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Score", "data": "action=game_score" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -76,7 +76,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Score", "data": "action=game_score" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -159,7 +159,7 @@
             ]
         },
         "ex2": {
-            "file": "preposttest.jpg",
+            "file": "exercises_2.jpg",
             "chat_bar_text": "Exercise 2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
@@ -172,102 +172,101 @@
             ]
         },
         "ex3": {
-            "file": "exercises_page1.jpg",
-            "chat_bar_text": "Exercise 3 #1",
+            "file": "exercises_3.jpg",
+            "chat_bar_text": "Exercise 3",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "next", "data": "action=idle" },
-                { "type": "switch", "label": "next", "alias_id": "ex3-2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
             ]
         },
         "ex3-2": {
-            "file": "exercises_page2-2.jpg",
-            "chat_bar_text": "Exercise 3 #2",
+            "file": "exercises_3.jpg",
+            "chat_bar_text": "Exercise 3",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
-                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
                 { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "postback", "label": "q7", "data": "action=record&sub=6" },
+                { "type": "postback", "label": "q8", "data": "action=record&sub=7" },
                 { "type": "switch", "label": "prev", "alias_id": "ex3" },
                 { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises" }
             ]
         },
         "ex4": {
-            "file": "exercises_page1.jpg",
-            "chat_bar_text": "Exercise 4 #1",
+            "file": "exercises_4.jpg",
+            "chat_bar_text": "Exercise 4",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "switch", "label": "next", "alias_id": "ex4-2" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "ex4-2": {
-            "file": "exercises_page2.jpg",
-            "chat_bar_text": "Exercise 4 #2",
+            "file": "exercises_4.jpg",
+            "chat_bar_text": "Exercise 4",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
                 { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "postback", "label": "q7", "data": "action=record&sub=6" },
                 { "type": "switch", "label": "prev", "alias_id": "ex4" },
                 { "type": "switch", "label": "next", "alias_id": "ex4-3" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "ex4-3": {
-            "file": "exercises_page3.jpg",
-            "chat_bar_text": "Exercise 4 #3",
+            "file": "exercises_4.jpg",
+            "chat_bar_text": "Exercise 4",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q7", "data": "action=record&sub=6" },
                 { "type": "postback", "label": "q8", "data": "action=record&sub=7" },
                 { "type": "postback", "label": "q9", "data": "action=record&sub=8" },
+                { "type": "postback", "label": "q10", "data": "action=record&sub=9" },
                 { "type": "switch", "label": "prev", "alias_id": "ex4-2" },
                 { "type": "switch", "label": "next", "alias_id": "ex4-4" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "ex4-4": {
-            "file": "exercises_page4.jpg",
-            "chat_bar_text": "Exercise 4 #4",
+            "file": "exercises_4.jpg",
+            "chat_bar_text": "Exercise 4",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q10", "data": "action=record&sub=9" },
                 { "type": "postback", "label": "q11", "data": "action=record&sub=10" },
                 { "type": "postback", "label": "q12", "data": "action=record&sub=11" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "prev", "alias_id": "ex4-3" },
                 { "type": "postback", "label": "next", "data": "action=idle" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "ex5": {
-            "file": "exercises_page1.jpg",
-            "chat_bar_text": "Exercise 5 #1",
+            "file": "exercises_5.jpg",
+            "chat_bar_text": "Exercise 5",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
                 { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "switch", "label": "next", "alias_id": "ex5-2" },
                 { "type": "switch", "label": "menu", "alias_id": "exercises2" }
             ]
         },
         "ex5-2": {
-            "file": "exercises_page2-2.jpg",
-            "chat_bar_text": "Exercise 5 #2",
+            "file": "exercises_5.jpg",
+            "chat_bar_text": "Exercise 5",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
                 { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
                 { "type": "switch", "label": "prev", "alias_id": "ex5" },

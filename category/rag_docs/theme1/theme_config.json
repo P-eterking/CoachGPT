@@ -8,19 +8,28 @@
             "id": "Dr. John Watson",
             "name": "Dr. John Watson",
             "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from witnesses with a helpful, urgent demeanor.",
-            "file": "Theme_1_Level_1_Dr. John Watson.md"
+            "file": "Theme_1_Level_1_Dr. John Watson.md",
+            "display_description": "A loyal British army doctor and Sherlock's trusted companion. He can provide information about physical evidence and witness testimonies.",
+            "background": "Served in Afghanistan as an army doctor. Now assists Sherlock Holmes in solving mysteries around London.",
+            "image": "Dr. John Watson.jpg"
         },
         {
             "id": "Mycroft Holmes",
             "name": "Mycroft Holmes",
             "persona": "A condescending British official who is the embodiment of the Government, responsible for authorizing codes and unlocking official data with an air of weary superiority.",
-            "file": "Theme_1_Level_1_Mycroft Holmes.md"
+            "file": "Theme_1_Level_1_Mycroft Holmes.md",
+            "display_description": "Sherlock's older brother and a senior British government official. He has access to classified information and security codes.",
+            "background": "The most powerful man in British government. His word can open any door in the realm.",
+            "image": "Mycroft Holmes.jpg"
         },
         {
             "id": "Sherlock Holmes",
             "name": "Sherlock Holmes",
             "persona": "A arrogant and hyper-observant British consulting detective who provides answers about precise visual details and calculations while frequently insulting the user's lack of intellect.",
-            "file": "Theme_1_Level_1_Sherlock Holmes.md"
+            "file": "Theme_1_Level_1_Sherlock Holmes.md",
+            "display_description": "The world's only consulting detective. He notices every detail and can deduce facts that others miss. Ask him about visual clues and deductions.",
+            "background": "221B Baker Street's famous detective. His methods of deduction are legendary.",
+            "image": "Sherlock Holmes.jpg"
         }
     ],
     "levels": [
@@ -32,15 +41,18 @@
             "questions": [
                 {
                     "text": "What exact time is displayed on the clock face?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "04:18:37"
                 },
                 {
                     "text": "What is the maintenance code provided?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "CROWN-X-1859"
                 },
                 {
                     "text": "Based on the clues, what mode of transportation did the suspect use to escape?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "Red Double-decker Bus"
                 }
             ]
         },
@@ -52,15 +64,18 @@
             "questions": [
                 {
                     "text": "What is the hidden license plate number of this bus?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "SH-221B"
                 },
                 {
                     "text": "What is the emergency requisition command to get on the bus?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "OVERRIDE-PROTOCOL-007"
                 },
                 {
                     "text": "Who is the registered owner of this mysterious Oyster Card?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "H. Carter"
                 }
             ]
         },
@@ -72,15 +87,18 @@
             "questions": [
                 {
                     "text": "Which hieroglyph on the Rosetta Stone is glowing (showing it was tampered with)?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "Cobra"
                 },
                 {
                     "text": "What is the secret catalog number of this stone fragment?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "BM-EA24"
                 },
                 {
                     "text": "A shopping receipt was dropped on the floor. What did the suspect buy?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "A Guide to London's Taxi Routes"
                 }
             ]
         },
@@ -92,15 +110,18 @@
             "questions": [
                 {
                     "text": "What is the driver's license number?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "TFL-58390"
                 },
                 {
                     "text": "What is the exact fare (in pounds) to Westminster Abbey?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "12.40"
                 },
                 {
                     "text": "Victoria Street, Which street under construction must you avoid on the way to the Abbey?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "Victoria Street"
                 }
             ]
         },
@@ -112,15 +133,18 @@
             "questions": [
                 {
                     "text": "Which mythical creature statue at the base of the Coronation Chair is the document hidden behind?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "Lion"
                 },
                 {
                     "text": "What is the official name of this stolen document?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "The Treaty of Succession"
                 },
                 {
                     "text": "A key is needed to open the document. Next to which famous poet's tomb is it hidden?",
-                    "hint": ""
+                    "hint": "",
+                    "reference_answer": "Geoffrey Chaucer"
                 }
             ]
         }
