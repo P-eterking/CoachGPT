@@ -1,17 +1,17 @@
 import json
-import aiofiles
+import aiofiles  # 非同步檔案處理庫，用於讀取與寫入資料
 import asyncio
 import os
 import re
-import time
 import numpy as np
+import time
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from config import USER_DATA_FILE, CONFIG_FILE, client
 from utils.models import (
     ChatHistory, User, SpeechAssessment, UserState, RagChunk,
     GameThemeConfig, GameScores, GameThemeScore, GameLevelScore, GameQuestionScore,
-    GameInteractionLog
+    GameInteractionLog  # 修改7: 新增
 )
 
 # 使用者狀態和資料
@@ -27,13 +27,13 @@ DEFAULT_CONFIG = {
     'response': [],
     'rag_mode': False,
     'display_feedback': True,
-    'service_number': 4,
-    # 遊戲設定
-    'game_themes': ['theme1', 'theme2', 'theme3'],
-    'levels_per_theme': 5,
-    'questions_per_level': 3,
-    'max_score_per_question': 10,
-    'min_score_to_pass': 6
+    # 新增: 遊戲設定
+    'game_themes': ['theme1', 'theme2', 'theme3'],  # 遊戲主題列表
+    'levels_per_theme': 5,  # 每個主題的關卡數
+    'questions_per_level': 3,  # 每個關卡的題目數
+    'max_score_per_question': 10,  # 每題滿分
+    # 修改7: 新增 service_number
+    'service_number': 4  # 服務編號，用於區分資料檔案
 }
 
 # 設定檔案
@@ -42,30 +42,8 @@ config = DEFAULT_CONFIG.copy()
 _rag_cache: Dict[str, List[RagChunk]] = {}
 _rag_lock = asyncio.Lock()
 
-# 遊戲主題配置快取
+# 新增: 遊戲主題配置快取
 _game_theme_cache: Dict[str, GameThemeConfig] = {}
-
-# ========== 檔案路徑處理 (修復 Docker 持久化問題) ==========
-
-def get_user_data_file() -> str:
-    """
-    取得使用者資料檔案路徑。
-    修復說明：在 Docker 環境中，主機的 data/user_data{N}.json 會被掛載為容器內的 /app/user_data.json。
-    因此程式碼應直接操作 user_data.json (由 config.USER_DATA_FILE 定義)，
-    而非嘗試在容器內建立 data/user_data{N}.json。
-    """
-    return USER_DATA_FILE
-
-def get_interaction_log_file() -> str:
-    """取得服務特定的互動紀錄檔案路徑"""
-    # 互動紀錄同樣建議寫入掛載目錄，這裡假設寫入 data 資料夾(若有掛載)或專案根目錄
-    return 'data/interaction_log.json'
-
-def get_display_feedback() -> bool:
-    """取得是否顯示回饋的設定"""
-    return config.get('display_feedback', True)
-
-# ========== 使用者狀態管理 ==========
 
 def get_user_state(user_id: str) -> UserState | None:
     global user_state
@@ -88,14 +66,11 @@ def get_rich_menu_category_from_id(rich_menu_id: str) -> str | None:
 def set_rich_menu_id(rich_menu_id: str, category: str):
     config['rich_menu_ids'][category] = rich_menu_id
 
-# ========== 使用者資料操作 ==========
-
 # 初始化使用者資料
 def initData(user_id, classTime, dep, id, name):
     user_data[user_id] = User(
         dep=dep, id=id, name=name, class_time=classTime, 
-        history={}, chat={}, game_scores=GameScores(),
-        npc_chat_history={}, question_history={}
+        history={}, chat={}, game_scores=GameScores()
     )
 
 # 刪除使用者資料
@@ -132,8 +107,6 @@ def updateHistory(user_id, key, history: SpeechAssessment):
 def getHistory(user_id, key) -> list[SpeechAssessment] | None:
     return user_data[user_id].history.get(key, None)
 
-# ========== 管理員與功能開關 ==========
-
 def isAdmin(user_id) -> bool:
     return user_id in config['admin']
 
@@ -161,7 +134,55 @@ def removeResponse(category):
 def isResponse(category):
     return category in config['response']
 
-# ========== 遊戲主題功能 ==========
+# ========== 修改7: 服務特定資料檔案功能 ==========
+
+def get_service_number() -> int:
+    """取得服務編號"""
+    return config.get('service_number', 4)
+
+def get_user_data_file() -> str:
+    """取得服務特定的使用者資料檔案路徑"""
+    service_num = get_service_number()
+    return f'data/user_data{service_num}.json'
+
+def get_interaction_log_file() -> str:
+    """取得服務特定的互動紀錄檔案路徑"""
+    service_num = get_service_number()
+    return f'data/interaction_log{service_num}.json'
+
+def get_display_feedback() -> bool:
+    """取得是否顯示回饋的設定"""
+    return config.get('display_feedback', True)
+
+async def save_interaction_log(log: GameInteractionLog):
+    """儲存遊戲互動紀錄"""
+    log_file = get_interaction_log_file()
+    
+    # 確保目錄存在
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    
+    try:
+        # 讀取現有紀錄
+        existing_logs = []
+        if os.path.exists(log_file):
+            async with aiofiles.open(log_file, 'r', encoding='utf-8') as f:
+                content = await f.read()
+                if content:
+                    existing_logs = json.loads(content)
+        
+        # 新增紀錄
+        existing_logs.append(log.to_dict())
+        
+        # 寫入檔案
+        async with aiofiles.open(log_file, 'w', encoding='utf-8') as f:
+            await f.write(json.dumps(existing_logs, indent=2, ensure_ascii=False))
+            
+    except Exception as e:
+        print(f"Error saving interaction log: {e}")
+
+# ========== 結束修改7 ==========
+
+# ========== 新增: 遊戲主題功能 ==========
 
 def get_game_themes() -> List[str]:
     """取得可用的遊戲主題ID列表"""
@@ -178,10 +199,6 @@ def get_questions_per_level() -> int:
 def get_max_score_per_question() -> int:
     """取得每題滿分"""
     return config.get('max_score_per_question', 10)
-
-def get_min_score_to_pass() -> int:
-    """取得及格分數"""
-    return config.get('min_score_to_pass', 6)
 
 def load_game_theme_config(theme_id: str) -> Optional[GameThemeConfig]:
     """從JSON檔案載入遊戲主題配置"""
@@ -237,14 +254,15 @@ def get_game_level_info(theme_id: str, level_idx: int) -> Optional[dict]:
                     {
                         "text": q.text, 
                         "hint": q.hint,
-                        "reference_answers": q.get_all_reference_answers() # 支援多個參考答案
-                    } for q in level.questions
+                        "reference_answer": q.reference_answer  # 新增: 參考答案
+                    } 
+                    for q in level.questions
                 ]
             }
     return None
 
 def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
-    """取得NPC資訊供RAG使用 (修正 Bug #1 與 #5)"""
+    """取得NPC資訊供RAG使用"""
     theme_config = load_game_theme_config(theme_id)
     if theme_config:
         npc = theme_config.get_npc(npc_idx)
@@ -253,10 +271,8 @@ def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
                 "id": npc.id,
                 "name": npc.name,
                 "persona": npc.persona,
-                "description": npc.description,  # 使用者可見的描述
                 "file": npc.file,
-                "image": npc.image,
-                "background": npc.background # 新增 background 欄位支援
+                "image": npc.image  # 修改5: 新增 image
             }
     return None
 
@@ -270,46 +286,21 @@ def update_game_score(user_id: str, theme_id: str, level_idx: int, question_idx:
     if not user:
         return False, 0
     
-    # 確保 game_scores 已初始化
-    if not user.game_scores:
-        user.game_scores = GameScores()
-
     is_new_high = user.game_scores.update_score(theme_id, level_idx, question_idx, score)
     theme_total = user.game_scores.get_theme_score(theme_id)
     return is_new_high, theme_total
 
-def check_and_unlock_next_level(user_id: str, theme_id: str, level_idx: int) -> bool:
-    """檢查並解鎖下一關"""
-    user = user_data.get(user_id)
-    if not user or not user.game_scores:
-        return False
-    
-    questions_per_level = get_questions_per_level()
-    min_score = get_min_score_to_pass()
-    max_levels = get_levels_per_theme()
-    
-    return user.game_scores.check_and_unlock_level(
-        theme_id, level_idx, questions_per_level, min_score, max_levels
-    )
-
-def get_user_unlocked_level(user_id: str, theme_id: str) -> int:
-    """取得使用者在某主題已解鎖的最高關卡"""
-    user = user_data.get(user_id)
-    if not user or not user.game_scores:
-        return 0
-    return user.game_scores.get_unlocked_level(theme_id)
-
 def get_user_game_score(user_id: str, theme_id: str) -> int:
     """取得使用者在某主題的總分"""
     user = user_data.get(user_id)
-    if not user or not user.game_scores:
+    if not user:
         return 0
     return user.game_scores.get_theme_score(theme_id)
 
 def get_user_level_score(user_id: str, theme_id: str, level_idx: int) -> int:
     """取得使用者在某關卡的總分"""
     user = user_data.get(user_id)
-    if not user or not user.game_scores:
+    if not user:
         return 0
     
     if theme_id in user.game_scores.themes:
@@ -321,7 +312,7 @@ def get_user_level_score(user_id: str, theme_id: str, level_idx: int) -> int:
 def get_user_question_score(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:
     """取得使用者在某題目的最高分"""
     user = user_data.get(user_id)
-    if not user or not user.game_scores:
+    if not user:
         return 0
     
     if theme_id in user.game_scores.themes:
@@ -342,129 +333,31 @@ def get_max_theme_score() -> int:
 def get_user_game_progress(user_id: str, theme_id: str) -> dict:
     """取得使用者在某主題的進度"""
     user = user_data.get(user_id)
-    if not user or not user.game_scores:
-        return {
-            "total_score": 0, 
-            "max_score": get_max_theme_score(), 
-            "levels_completed": 0, 
-            "questions_answered": 0,
-            "current_level": 0
-        }
+    if not user:
+        return {"total_score": 0, "max_score": get_max_theme_score(), "levels_completed": 0, "questions_answered": 0}
     
     total_score = user.game_scores.get_theme_score(theme_id)
     max_score = get_max_theme_score()
-    unlocked_level = user.game_scores.get_unlocked_level(theme_id)
     
     levels_completed = 0
     questions_answered = 0
+    questions_per_level = get_questions_per_level()
     
     if theme_id in user.game_scores.themes:
         theme = user.game_scores.themes[theme_id]
         for level in theme.levels.values():
             questions_answered += len(level.questions)
-            if level.completed:
+            if len(level.questions) >= questions_per_level:
                 levels_completed += 1
     
     return {
         "total_score": total_score,
         "max_score": max_score,
         "levels_completed": levels_completed,
-        "questions_answered": questions_answered,
-        "current_level": unlocked_level
+        "questions_answered": questions_answered
     }
 
-# ========== NPC聊天和問題回答紀錄功能 (新增，解決 Bug #2) ==========
-
-def save_npc_chat_record(user_id: str, theme_id: str, npc_idx: int, npc_name: str, 
-                          user_text: str, npc_reply: str, relevance_score: int, 
-                          language_score: int, feedback_chi: str, feedback_eng: str):
-    """儲存NPC聊天紀錄"""
-    user = user_data.get(user_id)
-    if not user:
-        return
-    
-    # 確保 npc_chat_history 已初始化
-    if not hasattr(user, 'npc_chat_history') or user.npc_chat_history is None:
-        user.npc_chat_history = {}
-
-    key = f"{theme_id}-npc-{npc_idx}"
-    if key not in user.npc_chat_history:
-        user.npc_chat_history[key] = []
-    
-    record = {
-        "timestamp": time.time(),
-        "npc_name": npc_name,
-        "user_text": user_text,
-        "npc_reply": npc_reply,
-        "relevance_score": relevance_score,
-        "language_score": language_score,
-        "total_score": (relevance_score + language_score) // 2,
-        "feedback_chi": feedback_chi,
-        "feedback_eng": feedback_eng
-    }
-    user.npc_chat_history[key].append(record)
-
-def save_question_answer_record(user_id: str, theme_id: str, level_idx: int, 
-                                  question_idx: int, question_text: str,
-                                  user_answer: str, score: int, is_correct: bool,
-                                  feedback_chi: str, feedback_eng: str, reference_comparison: str):
-    """儲存問題回答紀錄"""
-    user = user_data.get(user_id)
-    if not user:
-        return
-    
-    # 確保 question_history 已初始化
-    if not hasattr(user, 'question_history') or user.question_history is None:
-        user.question_history = {}
-
-    key = f"{theme_id}-{level_idx}-{question_idx}"
-    if key not in user.question_history:
-        user.question_history[key] = []
-    
-    record = {
-        "timestamp": time.time(),
-        "question_text": question_text,
-        "user_answer": user_answer,
-        "score": score,
-        "is_correct": is_correct,
-        "feedback_chi": feedback_chi,
-        "feedback_eng": feedback_eng,
-        "reference_comparison": reference_comparison
-    }
-    user.question_history[key].append(record)
-
-async def save_interaction_log(log: GameInteractionLog):
-    """儲存互動紀錄到檔案"""
-    log_file = get_interaction_log_file()
-    
-    # 確保目錄存在
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    
-    try:
-        # 讀取現有紀錄
-        logs = []
-        if os.path.exists(log_file):
-            async with aiofiles.open(log_file, 'r', encoding='utf-8') as f:
-                content = await f.read()
-                if content:
-                    try:
-                        logs = json.loads(content)
-                    except json.JSONDecodeError:
-                        logs = [] # 檔案格式錯誤時重置
-        
-        # 加入新紀錄
-        if hasattr(log, 'model_dump'):
-            logs.append(log.model_dump())
-        else:
-            logs.append(log)
-        
-        # 寫入檔案
-        async with aiofiles.open(log_file, 'w', encoding='utf-8') as f:
-            await f.write(json.dumps(logs, indent=2, ensure_ascii=False))
-    except Exception as e:
-        print(f"Error saving interaction log: {e}")
-
-# ========== RAG 功能 (保留 Embeddings 版本) ==========
+# ========== 結束新增 ==========
 
 class RagManager:
     @staticmethod
@@ -599,8 +492,6 @@ def load_rag_config(category: str) -> dict:
             return {}
     return {}
 
-# ========== 配置載入與儲存 ==========
-
 async def load_config():
     global config
     try:
@@ -631,50 +522,33 @@ async def save_all():
     await save_user_data()
     return 'All data saved.'
 
-# ========== User Data 載入與儲存 (核心修復：統一寫入 Docker 掛載點) ==========
-
+# 修改7: 使用服務特定檔案
 async def load_user_data():
-    """載入使用者資料 (修復：直接讀取 USER_DATA_FILE)"""
     global user_data
     user_data_file = get_user_data_file()
     
     # 確保目錄存在
-    if os.path.dirname(user_data_file):
-        os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
+    os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
     
     try:
         async with _lock:
             async with aiofiles.open(user_data_file, 'r', encoding='utf-8') as file:
                 content = await file.read()
         raw_data = json.loads(content)
-        
-        # 將舊格式資料轉換為新格式，並建立 User 物件
-        for key, value in raw_data.items():
-            # 確保新欄位存在
-            if 'npc_chat_history' not in value:
-                value['npc_chat_history'] = {}
-            if 'question_history' not in value:
-                value['question_history'] = {}
-            if 'game_scores' not in value:
-                value['game_scores'] = {'themes': {}}
-        
         user_data = {key: User(**value) for key, value in raw_data.items()}
         print(f"User data loaded successfully from {user_data_file}.")
     except FileNotFoundError:
         print(f"No previous data file found at {user_data_file}, starting fresh.")
-        user_data = {}
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from {user_data_file}, starting fresh.", e)
-        user_data = {}
 
+# 修改7: 使用服務特定檔案
 async def save_user_data():
-    """儲存使用者資料 (修復：直接寫入 USER_DATA_FILE)"""
     global user_data
     user_data_file = get_user_data_file()
     
     # 確保目錄存在
-    if os.path.dirname(user_data_file):
-        os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
+    os.makedirs(os.path.dirname(user_data_file), exist_ok=True)
     
     async with _lock:
         async with aiofiles.open(user_data_file, 'w', encoding='utf-8') as file:

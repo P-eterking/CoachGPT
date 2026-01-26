@@ -5,9 +5,8 @@ __pycache__/
 *.pyo
 *.pyd
 *.so
-save.txt
+
 *.xlsx
-*.mp4
 # Python virtual environments
 .env/
 .venv/
@@ -18,7 +17,6 @@ env.bak/
 venv.bak/
 data/
 audio/
-
 
 # Python package management
 pip-log.txt

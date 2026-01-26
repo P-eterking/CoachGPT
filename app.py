@@ -11,10 +11,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     await load_user_data()
     await load_config()
-    try:
-        await create_rich_menu()
-    except Exception as e:
-        print(f"Warning: Failed to create rich menus during startup. Error: {e}")
+    await create_rich_menu()
     asyncio.create_task(user_data_task())
     yield
     await save_config()
