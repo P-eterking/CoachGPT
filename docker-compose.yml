@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "--protocol", "http2", "run", "--token", "eyJhIjoiODM3YmVlY2VjOGQwZDRlNjFjN2RmNWZjNjMxMTU0ZGYiLCJ0IjoiZTFkYmVlZWMtNDUyMC00MmRjLWE4YTEtMmRkNGZjNmQ4Zjg5IiwicyI6IlkyWTVOVFF6TWpndE5HWTVNaTAwWVdabUxUbG1ZVEl0TVRFM09EQmxaVFZpTjJZMiJ9"]
+    entrypoint: ["cloudflared", "tunnel", "--no-autoupdate", "--protocol", "http2", "run", "--token", "eyJhIjoiODM3YmVlY2VjOGQwZDRlNjFjN2RmNWZjNjMxMTU0ZGYiLCJ0IjoiYjY0NDNlMWEtNGEwNy00YjZlLWEyOGYtNWM1NjFhYzQ2ZjQxIiwicyI6IlpqZzNORFJpWm1ZdFpHVmxNUzAwT1RCaExXRXlNbU10T0dKaU9ERmlaV0prTnpVMyJ9"]
     container_name: cloudflared-tunnel
 
   service:
@@ -70,12 +70,12 @@ services:
     container_name: linebot-service4
     restart: unless-stopped
     ports:
-      - "8003:8003"  # 映射 FastAPI 服務的端口
+      - "8005:8005"  # 映射 FastAPI 服務的端口
     env_file:
       - .env
     environment:
       - DOMAIN=${DOMAIN4}
-      - PORT=8003
+      - PORT=8005
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET4}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN4}
     volumes:
