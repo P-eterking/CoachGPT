@@ -70,12 +70,12 @@ services:
     container_name: linebot-service4
     restart: unless-stopped
     ports:
-      - "8004:8004"  # 映射 FastAPI 服務的端口
+      - "8003:8003"  # 映射 FastAPI 服務的端口
     env_file:
       - .env
     environment:
       - DOMAIN=${DOMAIN4}
-      - PORT=8004
+      - PORT=8003
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET4}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN4}
     volumes:

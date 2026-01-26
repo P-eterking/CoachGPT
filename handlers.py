@@ -313,7 +313,6 @@ async def handle_game_mode(event, user_id, user_state):
 # ========== NPC 對話處理 (不計分) ==========
 async def handle_npc_chat(event, user_id, user_state):
     """處理 NPC 對話 (不計分，僅劇情互動)"""
-    print(f"[NPC Chat] User {user_id} started chat with NPC {user_state.game_npc}") # Debug log
     try:
         theme_id = user_state.game_theme
         npc_idx = user_state.game_npc
@@ -322,11 +321,10 @@ async def handle_npc_chat(event, user_id, user_state):
             await send_text_message(event, "請先選擇角色。\nPlease select a character first.")
             return
         
-        # 1. 取得音訊並轉錄
+        # 取得音訊並轉錄
         try:
             message_content = await get_audio_content(event)
             text = await transcribe_audio(message_content, language="en")
-            print(f"[NPC Chat] Transcribed text: {text}") # Debug log
         except Exception as e:
             print("Audio error:", e)
             await send_text_message(event, "音訊處理錯誤，請稍後再試。\nAudio processing error.")
@@ -336,7 +334,7 @@ async def handle_npc_chat(event, user_id, user_state):
             await send_text_message(event, "聽不清楚，請再說一次。\nCould not hear clearly, please try again.")
             return
 
-        # 2. 取得 NPC 與 RAG 資訊
+        # 取得 NPC 資訊
         npc_info = get_game_npc_info(theme_id, npc_idx)
         if not npc_info:
             npc_info = {
@@ -345,13 +343,14 @@ async def handle_npc_chat(event, user_id, user_state):
                 "file": "narrator.md"
             }
         
+        # 取得 RAG 上下文
         rag_path = os.path.join("category", "rag_docs", theme_id, npc_info["file"])
         if not os.path.exists(rag_path):
             rag_path = os.path.join("category", "rag_docs", theme_id)
         
         context_content = await get_rag_context_v2(rag_path, query=text)
         
-        # 3. 準備 Prompt
+        # 取得對話歷史
         history_key = f'{theme_id}-npc-{npc_idx}'
         past_assessments = getHistory(user_id, history_key)
         history_str = ""
@@ -360,12 +359,14 @@ async def handle_npc_chat(event, user_id, user_state):
             for turn in recent:
                 history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
         
+        # 取得當前關卡上下文 (如果使用者有選擇關卡)
         level_context = ""
         if user_state.game_level >= 0:
             level_info = get_game_level_info(theme_id, user_state.game_level)
             if level_info:
                 level_context = f"Current Level: {level_info['title']}\n{level_info['description']}"
         
+        # 建構提示詞
         formatted_prompt = NPC_CHAT_SYSTEM_INSTRUCTION.format(
             persona=f"{npc_info['name']}: {npc_info['persona']}",
             context=context_content,
@@ -373,8 +374,7 @@ async def handle_npc_chat(event, user_id, user_state):
             level_context=level_context
         )
 
-        # 4. GPT 生成回應
-        print("[NPC Chat] Sending request to GPT-4o...") # Debug log
+        # 取得 AI 回應
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
             response_format=NPCChatResponse,
@@ -387,75 +387,60 @@ async def handle_npc_chat(event, user_id, user_state):
         )
 
         npc_res: NPCChatResponse = NPCChatResponse.model_validate_json(completion.choices[0].message.content)
-        print("[NPC Chat] GPT-4o response received.") # Debug log
 
-        # 5. [優先] 發送 LINE 訊息 (避免 Token 過期)
-        # 使用具名參數 (keyword arguments) 確保順序正確，並處理 None 值
-        await send_message(event, await game_npc_chat_response_message(
+        # 儲存對話歷史 (使用 SpeechAssessment 格式，score=0 表示非計分)
+        assessment = SpeechAssessment(
+            chi_suggestion=npc_res.feedback_chi,
+            eng_suggestion=npc_res.feedback_eng, 
+            score=0,  # NPC 對話不計分
+            transcript=text,
+            better_ans=npc_res.npc_reply,
+            timestamp=time.time()
+        )
+        
+        updateHistory(user_id, history_key, assessment)
+        
+        # 使用新的儲存函數記錄 NPC 聊天
+        save_npc_chat_record(
+            user_id, theme_id, npc_idx, npc_info['name'],
+            text, npc_res.npc_reply, 
+            npc_res.relevance_score, npc_res.language_score,
+            npc_res.feedback_chi, npc_res.feedback_eng
+        )
+        
+        # 儲存互動紀錄
+        interaction_log = GameInteractionLog(
+            user_id=user_id,
+            timestamp=time.time(),
+            interaction_type='npc_chat',
+            theme_id=theme_id,
+            npc_idx=npc_idx,
             npc_name=npc_info['name'],
-            npc_reply=npc_res.npc_reply,
+            user_transcript=text,
+            ai_response=npc_res.npc_reply,
             relevance_score=npc_res.relevance_score,
             language_score=npc_res.language_score,
-            feedback_eng=npc_res.feedback_eng or "",  # 防呆：如果是 None 轉為空字串
-            feedback_chi=npc_res.feedback_chi or "",  # 防呆：如果是 None 轉為空字串
-            is_english=npc_res.is_english,
-            theme_id=theme_id
+            feedback_chi=npc_res.feedback_chi,
+            feedback_eng=npc_res.feedback_eng
+        )
+        await save_interaction_log(interaction_log)
+        
+        # 發送回應訊息
+        await send_message(event, await game_npc_chat_response_message(
+            npc_info['name'],
+            npc_res.npc_reply,
+            npc_res.feedback_chi,
+            npc_res.feedback_eng,
+            npc_res.is_english
         ))
-        print("[NPC Chat] Message sent to user.") # Debug log
-
-        # 6. [後續] 處理資料儲存 (這部分失敗不影響使用者收到訊息)
-        try:
-            # 儲存對話歷史
-            assessment = SpeechAssessment(
-                chi_suggestion=npc_res.feedback_chi or "",
-                eng_suggestion=npc_res.feedback_eng or "", 
-                score=0,
-                transcript=text,
-                better_ans=npc_res.npc_reply,
-                timestamp=time.time()
-            )
-            updateHistory(user_id, history_key, assessment)
-            
-            # 使用新的儲存函數記錄 NPC 聊天
-            save_npc_chat_record(
-                user_id, theme_id, npc_idx, npc_info['name'],
-                text, npc_res.npc_reply, 
-                npc_res.relevance_score, npc_res.language_score,
-                npc_res.feedback_chi or "", npc_res.feedback_eng or ""
-            )
-            
-            # 儲存互動紀錄
-            interaction_log = GameInteractionLog(
-                user_id=user_id,
-                timestamp=time.time(),
-                interaction_type='npc_chat',
-                theme_id=theme_id,
-                npc_idx=npc_idx,
-                npc_name=npc_info['name'],
-                user_transcript=text,
-                ai_response=npc_res.npc_reply,
-                relevance_score=npc_res.relevance_score,
-                language_score=npc_res.language_score,
-                feedback_chi=npc_res.feedback_chi or "",
-                feedback_eng=npc_res.feedback_eng or ""
-            )
-            await save_interaction_log(interaction_log)
-            
-            # 儲存使用者資料
-            await save_user_data()
-            print("[NPC Chat] Data saved successfully.") # Debug log
-            
-        except Exception as e:
-            print(f"[NPC Chat] Warning: Data save failed but message was sent. Error: {e}")
-            import traceback
-            traceback.print_exc()
+        
+        # 儲存使用者資料
+        await save_user_data()
 
     except Exception as e:
-        print(f"[NPC Chat] Critical Error: {e}")
+        print(f"NPC Chat Error: {e}")
         import traceback
         traceback.print_exc()
-        # 只有在訊息還沒發送出去時，這裡的報錯才對使用者有意義
-        # 如果 Token 已過期，這裡的訊息也會失敗，但至少後台看得到 Log
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
 
 # 使用新的 QuestionAnswerResponse 模型
