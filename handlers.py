@@ -6,18 +6,19 @@ from utils.message_utils import (
     question_message, SYSTEM_INSTRUCTION, text_message, progress_message, 
     chat_message, show_loading, SYSTEM_SUMMARY_INSTRUCTION, CHAT_CATEGORY, 
     SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION, GAME_SYSTEM_INSTRUCTION, carousel_message,
-    # 新增: 遊戲訊息
+    # 遊戲訊息
     game_prologue_message, game_level_intro_message, game_questions_carousel,
     game_score_message, game_theme_select_message, game_npc_select_message,
-    game_level_select_message,
-    # 修改2&5: 新增 NPC 相關訊息
+    game_level_select_message, game_current_questions_message,
+    # NPC 相關訊息
     game_npc_card_message, game_npc_chat_response_message,
-    NPC_CHAT_SYSTEM_INSTRUCTION, QUESTION_ANSWER_SYSTEM_INSTRUCTION
+    NPC_CHAT_SYSTEM_INSTRUCTION, NPC_EVALUATION_SYSTEM_INSTRUCTION,
+    game_npc_evaluation_message, QUESTION_ANSWER_SYSTEM_INSTRUCTION
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
-    # 修改6: 新增回應模型
-    NPCChatResponse, QuestionAnswerResponse, GameInteractionLog
+    # 回應模型
+    NPCChatResponse, NPCChatEvaluation, QuestionAnswerResponse, GameInteractionLog
 )
 from utils.file_utils import *
 import tempfile
@@ -120,6 +121,8 @@ async def check_user_login(event, message: str = None) -> bool:
         await send_message(event, [
             await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message} !"), 
         ])
+        # 綁定完成後立即儲存
+        await save_user_data()
         return True
 
     info.append(message)
@@ -141,16 +144,16 @@ async def handle_audio_message(event):
     
     # 優先處理遊戲模式
     if config.get('rag_mode'):
-        # 修改2: 新增 - 檢查是否在 NPC 對話模式
+        # 檢查是否在 NPC 對話模式
         if user_state.in_npc_chat and user_state.game_theme and user_state.game_npc >= 0:
             await handle_npc_chat(event, user_id, user_state)
             return
         
-        # 新增: 檢查使用者是否在新遊戲模式中且已選擇題目
+        # 檢查使用者是否在新遊戲模式中且已選擇題目
         if user_state.game_theme and user_state.game_level >= 0 and user_state.game_question >= 0:
             await handle_game_answer(event, user_id, user_state)
             return
-        # 舊版: 處理舊的 rag_test 類別
+        # 處理舊的 rag_test 類別
         elif user_state.category == 'rag_test' and user_state.sub >= 0:
             await handle_game_mode(event, user_id, user_state)
             return
@@ -213,59 +216,53 @@ async def handle_audio_message(event):
             ],
         )
         
-        result: SpeechAssessment = SpeechAssessment.model_validate_json(completion.choices[0].message.content)
-        result.transcript = text
-        result.timestamp = time.time()
-        updateHistory(user_id, f'{category}-{sub}', result)
-        await send_message(event, await result_message(result, category, sub))
-    except Exception as e:
-        await send_text_message(event, "發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
-        print(e)
+        assessment = completion.choices[0].message.parsed
+        assessment.transcript = text
+        assessment.timestamp = time.time()
+        
+        history_key = f'{category}-{sub}'
+        updateHistory(user_id, history_key, assessment)
+        
+        if get_display_feedback():
+            await send_message(event, await result_message(assessment, category, sub))
+        else:
+            await send_text_message(event, "已收到您的回答！\nReceived your answer!")
+        
+        # 儲存使用者資料
+        await save_user_data()
 
-# 舊版: 保留以維持向後相容性
+    except Exception as e:
+        print(f"Audio Message Error: {e}")
+        import traceback
+        traceback.print_exc()
+        await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error.")
+
 async def handle_game_mode(event, user_id, user_state):
+    """處理舊的rag_test模式 (向下相容)"""
     try:
         category = user_state.category
         sub = user_state.sub
         
-        if not category or sub == -1:
-             await send_text_message(event, "請先選擇劇本與角色。\nPlease select a scenario first.")
-             return
+        message_content = await get_audio_content(event)
+        if not message_content:
+            await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
+            return
         
-        try:
-            message_content = await get_audio_content(event)
-            text = await transcribe_audio(message_content, language="en")
-        except Exception as e:
-            print("Audio error:", e)
-            await send_text_message(event, "音訊處理錯誤，請稍後再試。\nAudio error.")
+        text = await transcribe_audio(message_content, language="en")
+        
+        if not text or len(text) < 1:
+            await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
             return
-
-        if not text:
-            await send_text_message(event, "聽不清楚，請再說一次。\nCould not hear clearly.")
-            return
-
+        
         rag_config = load_rag_config(category)
+        npc_id = rag_config.get('npcs', [{}])[sub].get('id', 'narrator')
+        npc_name = rag_config.get('npcs', [{}])[sub].get('name', 'Narrator')
+        persona = rag_config.get('npcs', [{}])[sub].get('persona', '')
+        rag_file = rag_config.get('npcs', [{}])[sub].get('file', 'narrator.md')
+        rag_path = f'category/rag_docs/{category}/{rag_file}'
         
-        # 預設值
-        npc_name = "The Narrator"
-        persona = "A helpful guide in a mystery game."
-        rag_file = f"{sub}.md" 
-        
-        # 讀取特定角色設定
-        str_sub = str(sub)
-        if str_sub in rag_config:
-            npc_entry = rag_config[str_sub]
-            npc_name = npc_entry.get("name", npc_name)
-            persona = npc_entry.get("persona", persona)
-            rag_file = npc_entry.get("file", rag_file)
-        
-        rag_path = os.path.join("category", "rag_docs", category, rag_file)
-        if not os.path.exists(rag_path):
-             # Fallback
-             rag_path = os.path.join("category", "rag_docs", category, f"{sub}.md")
-
         context_content = await get_rag_context_v2(rag_path, query=text)
-
+        
         history_key = f'{category}-{sub}'
         past_assessments = getHistory(user_id, history_key)
         history_str = ""
@@ -283,7 +280,7 @@ async def handle_game_mode(event, user_id, user_state):
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
             response_format=GameResponse,
-            max_completion_tokens=1024,
+            max_completion_tokens=512,
             temperature=0.7, 
             messages=[
                 { "role": "system", "content": formatted_prompt },
@@ -304,14 +301,19 @@ async def handle_game_mode(event, user_id, user_state):
         
         updateHistory(user_id, history_key, assessment)
         await send_message(event, await result_message(assessment, category, sub))
+        
+        # 儲存使用者資料
+        await save_user_data()
 
     except Exception as e:
         print(f"Game Mode Error: {e}")
+        import traceback
+        traceback.print_exc()
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error.")
 
-# ========== 修改2: NPC 對話處理 (不計分) ==========
+# ========== NPC 對話處理 (優化版：異步兩階段) ==========
 async def handle_npc_chat(event, user_id, user_state):
-    """處理 NPC 對話 (不計分，僅劇情互動)"""
+    """處理 NPC 對話 - 階段1:快速回應(3-5秒) + 階段2:後台評估"""
     try:
         theme_id = user_state.game_theme
         npc_idx = user_state.game_npc
@@ -358,40 +360,100 @@ async def handle_npc_chat(event, user_id, user_state):
             for turn in recent:
                 history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
         
-        # 建構提示詞
-        formatted_prompt = NPC_CHAT_SYSTEM_INSTRUCTION.format(
+        # ===== 階段 1: 快速獲取 NPC 回覆 (目標: 3-5秒) =====
+        quick_prompt = NPC_CHAT_QUICK_RESPONSE.format(
             persona=f"{npc_info['name']}: {npc_info['persona']}",
             context=context_content,
             history=history_str
         )
 
-        # 取得 AI 回應
-        completion = await client.beta.chat.completions.parse(
+        quick_completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
             response_format=NPCChatResponse,
-            max_completion_tokens=512,
-            temperature=0.7, 
+            max_completion_tokens=256,  # 限制 token 數提升速度
+            temperature=0.7,
             messages=[
-                { "role": "system", "content": formatted_prompt },
+                { "role": "system", "content": quick_prompt },
                 { "role": "user", "content": text }
             ],
         )
 
-        npc_res: NPCChatResponse = NPCChatResponse.model_validate_json(completion.choices[0].message.content)
+        quick_res: NPCChatResponse = NPCChatResponse.model_validate_json(
+            quick_completion.choices[0].message.content
+        )
 
-        # 儲存對話歷史 (使用 SpeechAssessment 格式，score=0 表示非計分)
-        assessment = SpeechAssessment(
-            chi_suggestion=npc_res.feedback,
-            eng_suggestion="", 
-            score=0,  # NPC 對話不計分
-            transcript=text,
-            better_ans=npc_res.npc_reply,
-            timestamp=time.time()
+        # 立即發送 NPC 回覆給用戶（不等待評估）
+        await send_message(event, await game_npc_chat_response_message(
+            npc_info['name'],
+            quick_res.npc_reply,
+            quick_res.is_english
+        ))
+        
+        # ===== 階段 2: 後台異步評估和儲存（不阻塞用戶） =====
+        asyncio.create_task(
+            evaluate_and_save_npc_chat(
+                event, user_id, theme_id, npc_idx, npc_info,
+                text, quick_res.npc_reply, quick_res.is_english,
+                history_key
+            )
         )
         
+    except Exception as e:
+        print(f"NPC Chat Error: {e}")
+        import traceback
+        traceback.print_exc()
+        await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
+
+async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info,
+                                       user_text, npc_reply, is_english, history_key):
+    """異步評估和儲存 NPC 對話（後台執行，不影響用戶體驗）"""
+    try:
+        # 取得主題上下文用於評估
+        theme_config = load_game_theme_config(theme_id)
+        theme_context = f"Theme: {theme_config.name}\n{theme_config.prologue[:200]}" if theme_config else ""
+        
+        # 呼叫評估 API
+        eval_prompt = NPC_CHAT_EVALUATION.format(
+            user_text=user_text,
+            persona=f"{npc_info['name']}: {npc_info['persona']}",
+            theme_context=theme_context
+        )
+        
+        eval_completion = await client.beta.chat.completions.parse(
+            model="gpt-4o-mini",  # 使用更快的模型進行評估
+            response_format=NPCChatEvaluation,
+            max_completion_tokens=256,
+            temperature=0.3,  # 降低溫度提升一致性
+            messages=[
+                { "role": "system", "content": eval_prompt },
+                { "role": "user", "content": f"Question: {user_text}" }
+            ],
+        )
+        
+        eval_res: NPCChatEvaluation = NPCChatEvaluation.model_validate_json(
+            eval_completion.choices[0].message.content
+        )
+        
+        # 儲存詳細評估到歷史記錄
+        assessment = SpeechAssessment(
+            chi_suggestion=eval_res.feedback_chi,
+            eng_suggestion=eval_res.feedback_eng,
+            score=(eval_res.language_score + eval_res.relevance_score) // 2,
+            transcript=user_text,
+            better_ans=npc_reply,
+            timestamp=time.time()
+        )
         updateHistory(user_id, history_key, assessment)
         
-        # 修改7: 儲存互動紀錄
+        # 儲存到專門的 NPC 聊天記錄
+        save_npc_chat_record(
+            user_id, theme_id, npc_idx, npc_info['name'],
+            user_text, npc_reply,
+            eval_res.relevance_score, eval_res.language_score,
+            eval_res.feedback_chi, eval_res.feedback_eng
+        )
+        
+        # 儲存互動紀錄
         interaction_log = GameInteractionLog(
             user_id=user_id,
             timestamp=time.time(),
@@ -399,34 +461,40 @@ async def handle_npc_chat(event, user_id, user_state):
             theme_id=theme_id,
             npc_idx=npc_idx,
             npc_name=npc_info['name'],
-            user_transcript=text,
-            ai_response=npc_res.npc_reply,
-            feedback=npc_res.feedback
+            user_transcript=user_text,
+            ai_response=npc_reply,
+            score=(eval_res.language_score + eval_res.relevance_score) // 2,
+            feedback=f"{eval_res.feedback_eng}\n{eval_res.feedback_chi}" if eval_res.feedback_eng else None
         )
         await save_interaction_log(interaction_log)
         
-        # 發送回應訊息
-        await send_message(event, await game_npc_chat_response_message(
+        # 儲存使用者資料
+        await save_user_data()
+        
+        # 如果開啟回饋顯示且有評分，發送評估結果給用戶
+        eval_message = await game_npc_evaluation_message(
             npc_info['name'],
-            npc_res.npc_reply,
-            npc_res.feedback,
-            npc_res.is_english
-        ))
-
+            eval_res.language_score,
+            eval_res.relevance_score,
+            eval_res.feedback_eng,
+            eval_res.feedback_chi
+        )
+        
+        if eval_message:
+            await send_message(event, eval_message)
+        
     except Exception as e:
-        print(f"NPC Chat Error: {e}")
-        await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
+        print(f"NPC Chat Evaluation Error: {e}")
+        import traceback
+        traceback.print_exc()
+        # 評估失敗不影響用戶體驗，只記錄錯誤
 
-# ========== 結束修改2 ==========
-
-# 修改6: 使用新的 QuestionAnswerResponse 模型
 async def handle_game_answer(event, user_id, user_state):
     """處理遊戲題目的語音回答"""
     try:
         theme_id = user_state.game_theme
         level_idx = user_state.game_level
         question_idx = user_state.game_question
-        npc_idx = user_state.game_npc
         
         if not theme_id or level_idx < 0 or question_idx < 0:
             await send_text_message(event, "請先選擇題目。\nPlease select a question first.")
@@ -448,16 +516,19 @@ async def handle_game_answer(event, user_id, user_state):
         # 取得題目資訊
         level_info = get_game_level_info(theme_id, level_idx)
         question_text = ""
-        reference_answer = ""
+        reference_answers = []
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_data = level_info['questions'][question_idx]
             question_text = q_data['text']
-            reference_answer = q_data.get('reference_answer', '')
+            reference_answers = q_data.get('reference_answers', [])
         
-        # 修改6: 使用新的題目回答系統指令
+        # 格式化參考答案
+        reference_answers_str = "\n".join(f"- {ans}" for ans in reference_answers) if reference_answers else "No reference answers provided."
+        
+        # 使用新的題目回答系統指令
         formatted_prompt = QUESTION_ANSWER_SYSTEM_INSTRUCTION.format(
             question=question_text,
-            reference_answer=reference_answer if reference_answer else "No reference answer provided.",
+            reference_answers=reference_answers_str,
             user_answer=text
         )
 
@@ -488,12 +559,23 @@ async def handle_game_answer(event, user_id, user_state):
         history_key = f'{theme_id}-{level_idx}-{question_idx}'
         updateHistory(user_id, history_key, assessment)
         
+        # 使用新的儲存函數記錄問題回答
+        save_question_answer_record(
+            user_id, theme_id, level_idx, question_idx, question_text,
+            text, answer_res.score, answer_res.is_correct,
+            answer_res.feedback_chi, answer_res.feedback_eng,
+            answer_res.reference_comparison
+        )
+        
         # 更新遊戲分數
         is_new_high, theme_total = update_game_score(
             user_id, theme_id, level_idx, question_idx, answer_res.score
         )
         
-        # 修改7: 儲存互動紀錄
+        # 檢查並解鎖下一關
+        unlocked = check_and_unlock_next_level(user_id, theme_id, level_idx)
+        
+        # 儲存互動紀錄
         interaction_log = GameInteractionLog(
             user_id=user_id,
             timestamp=time.time(),
@@ -503,24 +585,35 @@ async def handle_game_answer(event, user_id, user_state):
             question_idx=question_idx,
             user_transcript=text,
             ai_response=answer_res.reference_comparison,
-            score=answer_res.score,
-            feedback=f"{answer_res.feedback_chi}\n{answer_res.feedback_eng}"
+            total_score=answer_res.score,
+            is_correct=answer_res.is_correct,
+            feedback_chi=answer_res.feedback_chi,
+            feedback_eng=answer_res.feedback_eng
         )
         await save_interaction_log(interaction_log)
         
         # 重置題目狀態 (退出答題模式)
         user_state.game_question = -1
         
-        # 發送結果訊息 - 修改6: 使用新的參數
+        # 發送結果訊息
         await send_message(event, await game_score_message(
             user_id, theme_id, level_idx, question_idx,
             answer_res.score, is_new_high,
             feedback_chi=answer_res.feedback_chi,
             feedback_eng=answer_res.feedback_eng
         ))
+        
+        # 如果解鎖了新關卡，發送提示
+        if unlocked:
+            await send_text_message(event, "恭喜！已解鎖下一關！\nCongratulations! Next level unlocked!")
+        
+        # 儲存使用者資料
+        await save_user_data()
 
     except Exception as e:
         print(f"Game Answer Error: {e}")
+        import traceback
+        traceback.print_exc()
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
 
 
@@ -543,6 +636,9 @@ async def handle_chat(event):
         return
     history = await send_audio_request(event, history, text, duration//1000)
     updateChatHistory(user_id, history)
+    
+    # 儲存使用者資料
+    await save_user_data()
 
 async def handle_chat_summary(event):
     user_id = event.source.user_id
@@ -708,7 +804,7 @@ async def handle_postback(event):
             return
         
         user_state.category = alias.split('-')[0]
-        # 修改2: 切換選單時重置 NPC 對話狀態
+        # 切換選單時重置 NPC 對話狀態
         user_state.in_npc_chat = False
         
         rich_menu_id = get_rich_menu_id(alias)
@@ -752,7 +848,7 @@ async def handle_postback(event):
         await save_all()
         await send_text_message(event, '儲存成功！\nSave successful!')
     
-    # ========== 新增: 遊戲動作 ==========
+    # ========== 遊戲動作 ==========
     elif action == 'game_themes':
         # 顯示主題選擇
         await send_message(event, await game_theme_select_message())
@@ -767,14 +863,14 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = -1
         user_state.game_question = -1
-        user_state.in_npc_chat = False  # 修改2: 重置 NPC 對話狀態
+        user_state.in_npc_chat = False  # 重置 NPC 對話狀態
         
         # 顯示前情提要並切換到主題選單
         theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
         if theme_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
         
-        # 修改4: game_prologue_message 現在回傳列表 (可能包含影片)
+        # game_prologue_message 現在回傳列表 (可能包含影片)
         messages = await game_prologue_message(theme_id)
         await send_message(event, messages)
     
@@ -798,9 +894,9 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_npc = npc_idx
         user_state.game_question = -1  # 確保不在答題模式
-        user_state.in_npc_chat = True  # 修改2: 設置 NPC 對話模式
+        user_state.in_npc_chat = True  # 設置 NPC 對話模式
         
-        # 修改5: 顯示 NPC 卡片而非純文字
+        # 顯示 NPC 卡片而非純文字
         await send_message(event, await game_npc_card_message(theme_id, npc_idx))
     
     elif action == 'game_levels':
@@ -823,7 +919,7 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = level_idx
         user_state.game_question = -1
-        user_state.in_npc_chat = False  # 修改2: 退出 NPC 對話模式
+        user_state.in_npc_chat = False  # 退出 NPC 對話模式
         
         messages = await game_level_intro_message(theme_id, level_idx, user_id)
         await send_message(event, messages)
@@ -839,6 +935,15 @@ async def handle_postback(event):
         
         await send_message(event, await game_questions_carousel(theme_id, level_idx, user_id))
     
+    elif action == 'game_current_questions':
+        # 顯示當前主題的當前關卡題目 (用於選單按鈕)
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        
+        await send_message(event, await game_current_questions_message(theme_id, user_id))
+    
     elif action == 'game_answer':
         # 選擇要回答的題目
         theme_id = vars.get('theme', user_state.game_theme)
@@ -852,7 +957,7 @@ async def handle_postback(event):
         user_state.game_theme = theme_id
         user_state.game_level = level_idx
         user_state.game_question = question_idx
-        user_state.in_npc_chat = False  # 修改2: 確保退出 NPC 對話模式
+        user_state.in_npc_chat = False  # 確保退出 NPC 對話模式
         
         # 取得題目文字
         level_info = get_game_level_info(theme_id, level_idx)
@@ -875,4 +980,3 @@ async def handle_postback(event):
             f"已回答題數 Questions Answered: {progress['questions_answered']}\n"
             f"已完成關卡 Levels Completed: {progress['levels_completed']}"
         )
-    # ========== 結束新增 ==========
