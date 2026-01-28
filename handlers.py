@@ -12,7 +12,7 @@ from utils.message_utils import (
     game_level_select_message, game_current_questions_message,
     # NPC 相關訊息
     game_npc_card_message, game_npc_chat_response_message,
-    NPC_CHAT_SYSTEM_INSTRUCTION, NPC_EVALUATION_SYSTEM_INSTRUCTION,
+    NPC_CHAT_QUICK_RESPONSE, NPC_CHAT_EVALUATION,
     game_npc_evaluation_message, QUESTION_ANSWER_SYSTEM_INSTRUCTION
 )
 from utils.models import (

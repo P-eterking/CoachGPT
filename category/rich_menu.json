@@ -1,17 +1,17 @@
 {
-  "rich_menus": {
+    "rich_menus": {
         "menu": {
             "file": "menu.jpg",
             "chat_bar_text": "CoachGPT",
             "selected": true,
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "switch", "label": "pretest", "alias_id": "pretest"},
+                { "type": "switch", "label": "pretest", "alias_id": "pretest" },
                 { "type": "switch", "label": "exercises", "alias_id": "exercises" },
-                { "type": "switch", "label": "posttest", "alias_id": "posttest"},
+                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
                 { "type": "postback", "label": "progress", "data": "action=progress" },
                 { "type": "switch", "label": "chat", "alias_id": "chat" },
-                { "type": "switch", "label": "admin", "alias_id": "admin"}
+                { "type": "switch", "label": "admin", "alias_id": "admin" }
             ]
         },
         "menu_game": {
@@ -20,17 +20,17 @@
             "selected": false,
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "switch", "label": "pretest", "alias_id": "pretest"},
+                { "type": "switch", "label": "pretest", "alias_id": "pretest" },
                 { "type": "switch", "label": "exercises", "alias_id": "exercises" },
-                { "type": "switch", "label": "posttest", "alias_id": "posttest"},
+                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
                 { "type": "postback", "label": "progress", "data": "action=progress" },
                 { "type": "postback", "label": "Game Mode", "data": "action=game_themes" },
-                { "type": "switch", "label": "admin", "alias_id": "admin"}
+                { "type": "switch", "label": "admin", "alias_id": "admin" }
             ]
         },
         "rag_test": {
             "file": "Game_Sel.jpg",
-            "chat_bar_text": "Select Role", 
+            "chat_bar_text": "Select Role",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "case1", "data": "action=record&sub=0" },
@@ -46,11 +46,11 @@
             "chat_bar_text": "Theme 1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&npc=0" },
-                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
-                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
-                { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme1&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme1&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme1&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme1" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme1" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -59,11 +59,11 @@
             "chat_bar_text": "Theme 2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&npc=0" },
-                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
-                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
-                { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme2&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme2&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme2&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme2" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme2" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -72,15 +72,15 @@
             "chat_bar_text": "Theme 3",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&npc=0" },
-                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&npc=1" },
-                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&npc=2" },
-                { "type": "postback", "label": "Levels", "data": "action=game_levels" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions" },
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme3&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme3&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme3&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme3" },
+                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme3" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
-        "pretest":{
+        "pretest": {
             "file": "preposttest.jpg",
             "chat_bar_text": "Pre-test",
             "grid": { "rows": 2, "columns": 3 },
