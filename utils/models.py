@@ -33,10 +33,21 @@ class NPCChatEvaluation(BaseModel):
 class QuestionAnswerResponse(BaseModel):
     """問題回答評估回應 (用於回答關卡問題時)"""
     score: int = Field(description="總分 (0-10)，根據答案正確性與語言品質", ge=0, le=10)
-    feedback_chi: str = Field(description="繁體中文回饋，指出錯誤並給建議", default="")
-    feedback_eng: str = Field(description="English feedback with corrections and suggestions", default="")
+    feedback_chi: str = Field(description="繁體中文回饋，針對文法和用詞準確度給建議", default="")
+    feedback_eng: str = Field(description="English feedback on grammar and vocabulary accuracy", default="")
     reference_comparison: str = Field(description="與參考答案的比較說明 (English)", default="")
     is_correct: bool = Field(description="答案是否基本正確", default=False)
+
+class ImprovementHintResponse(BaseModel):
+    """改善提示回應 - 不透露答案，只給方向性提示"""
+    hint_eng: str = Field(
+        description="English improvement hint - direction guidance without revealing answer",
+        default=""
+    )
+    hint_chi: str = Field(
+        description="繁體中文改善提示 - 方向性引導，不透露答案",
+        default=""
+    )
 
 # RAG 切片模型
 class RagChunk(BaseModel):
@@ -244,7 +255,17 @@ class UserState(BaseModel):
     # [FIX] 改為 -1 表示尚未選擇 NPC，避免 npc_idx=0 被誤認為已選擇第一個 NPC
     game_npc: Optional[int] = Field(description="目前NPC索引 (-1 表示未選擇)", default=-1)  # 目前NPC索引
     in_npc_chat: bool = Field(description="是否在NPC對話模式", default=False)  # NPC對話模式標記
-    
+    # 關卡內的答題進度追蹤 (格式: "theme_id-level_idx" -> 目前應回答的題目索引)
+    level_question_progress: Dict[str, int] = Field(
+        description="關卡內的題目進度追蹤", 
+        default_factory=dict
+    )
+    # 記錄上次回答的資訊，用於改善提示功能
+    last_answer_info: Optional[Dict[str, Any]] = Field(
+        description="上次回答的資訊 (題目、回答、分數等)", 
+        default=None
+    )
+
 
 class Question(BaseModel):
     text: str = Field(description="問題文本")  # 問題文本

@@ -13,12 +13,15 @@ from utils.message_utils import (
     # NPC 相關訊息
     game_npc_card_message, game_npc_chat_response_message,
     NPC_CHAT_QUICK_RESPONSE, NPC_CHAT_EVALUATION,
-    game_npc_evaluation_message, QUESTION_ANSWER_SYSTEM_INSTRUCTION
+    game_npc_evaluation_message, QUESTION_ANSWER_SYSTEM_INSTRUCTION,
+    # 改善提示相關
+    IMPROVEMENT_HINT_SYSTEM_INSTRUCTION, game_improvement_hint_message
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
     # 回應模型
-    NPCChatResponse, NPCChatEvaluation, QuestionAnswerResponse, GameInteractionLog
+    NPCChatResponse, NPCChatEvaluation, QuestionAnswerResponse, GameInteractionLog,
+    ImprovementHintResponse
 )
 from utils.file_utils import *
 import tempfile
@@ -382,11 +385,13 @@ async def handle_npc_chat(event, user_id, user_state):
             quick_completion.choices[0].message.content
         )
 
-        # 立即發送 NPC 回覆給用戶（不等待評估）
+        # 立即發送 NPC 回覆給用戶（不等待評估），包含NPC圖片
+        npc_image = npc_info.get('image') if npc_info else None
         await send_message(event, await game_npc_chat_response_message(
             npc_info['name'],
             quick_res.npc_reply,
-            quick_res.is_english
+            quick_res.is_english,
+            npc_image=npc_image
         ))
         
         # ===== 階段 2: 後台異步評估和儲存（不阻塞用戶） =====
@@ -544,7 +549,14 @@ async def handle_game_answer(event, user_id, user_state):
             ],
         )
 
-        answer_res: QuestionAnswerResponse = QuestionAnswerResponse.model_validate_json(completion.choices[0].message.content)
+        answer_res: QuestionAnswerResponse = completion.choices[0].message.parsed
+        # 若 parsed 為 None，嘗試 fallback
+        if answer_res is None:
+            content = completion.choices[0].message.content
+            if content:
+                answer_res = QuestionAnswerResponse.model_validate_json(content)
+            else:
+                raise ValueError("AI 回應為空")
 
         # 儲存評估結果
         assessment = SpeechAssessment(
@@ -574,6 +586,18 @@ async def handle_game_answer(event, user_id, user_state):
         
         # 檢查並解鎖下一關
         unlocked = check_and_unlock_next_level(user_id, theme_id, level_idx)
+        
+        # 儲存上次回答資訊，用於改善提示功能
+        user_state.last_answer_info = {
+            'theme_id': theme_id,
+            'level_idx': level_idx,
+            'question_idx': question_idx,
+            'question_text': question_text,
+            'reference_answers': reference_answers,
+            'user_answer': text,
+            'score': answer_res.score,
+            'is_correct': answer_res.is_correct
+        }
         
         # 儲存互動紀錄
         interaction_log = GameInteractionLog(
@@ -616,6 +640,71 @@ async def handle_game_answer(event, user_id, user_state):
         traceback.print_exc()
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
 
+async def handle_game_improvement_hint(event, user_id, user_state):
+    """處理改善提示請求 - 按需生成，不影響評分速度"""
+    try:
+        # 檢查是否有上次回答資訊
+        last_info = getattr(user_state, 'last_answer_info', None)
+        if not last_info:
+            await send_text_message(event, "找不到上次回答記錄，請先作答。\nNo previous answer found. Please answer a question first.")
+            return
+        
+        # 顯示載入動畫
+        await show_loading(event, 15)
+        
+        # 取得上次回答資訊
+        question_text = last_info.get('question_text', '')
+        reference_answers = last_info.get('reference_answers', [])
+        user_answer = last_info.get('user_answer', '')
+        score = last_info.get('score', 0)
+        theme_id = last_info.get('theme_id', '')
+        level_idx = last_info.get('level_idx', 0)
+        question_idx = last_info.get('question_idx', 0)
+        
+        # 格式化參考答案
+        reference_answers_str = "\n".join(f"- {ans}" for ans in reference_answers) if reference_answers else "No reference answers provided."
+        
+        # 使用改善提示系統指令
+        formatted_prompt = IMPROVEMENT_HINT_SYSTEM_INSTRUCTION.format(
+            question=question_text,
+            reference_answers=reference_answers_str,
+            user_answer=user_answer,
+            score=score
+        )
+        
+        # 取得 AI 回應
+        completion = await client.beta.chat.completions.parse(
+            model="gpt-4o",
+            response_format=ImprovementHintResponse,
+            max_completion_tokens=512,
+            temperature=0.7,
+            messages=[
+                { "role": "system", "content": formatted_prompt },
+                { "role": "user", "content": f"請給我改善提示。\nPlease give me improvement hints." }
+            ],
+        )
+        
+        hint_res: ImprovementHintResponse = completion.choices[0].message.parsed
+        
+        # 若 parsed 為 None，嘗試手動解析
+        if hint_res is None:
+            content = completion.choices[0].message.content
+            if content:
+                hint_res = ImprovementHintResponse.model_validate_json(content)
+            else:
+                raise ValueError("AI 回應為空")
+        
+        # 發送改善提示訊息
+        await send_message(event, await game_improvement_hint_message(
+            theme_id, level_idx, question_idx,
+            hint_res.hint_eng, hint_res.hint_chi
+        ))
+        
+    except Exception as e:
+        print(f"Improvement Hint Error: {e}")
+        import traceback
+        traceback.print_exc()
+        await send_text_message(event, "無法生成改善提示，請稍後再試。\nUnable to generate improvement hints. Please try again later.")
 
 def get_audio_duration(message_content: bytes, format: str = "m4a") -> int:
     audio_segment = AudioSegment.from_file(BytesIO(message_content), format=format)
@@ -990,6 +1079,10 @@ async def handle_postback(event):
         else:
             await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")
     
+    elif action == 'game_improvement_hint':
+        # 處理改善提示請求
+        await handle_game_improvement_hint(event, user_id, user_state)
+        
     elif action == 'game_score':
         # 顯示當前主題分數
         theme_id = vars.get('theme', user_state.game_theme)
@@ -1003,3 +1096,78 @@ async def handle_postback(event):
             f"已回答題數 Questions Answered: {progress['questions_answered']}\n"
             f"已完成關卡 Levels Completed: {progress['levels_completed']}"
         )
+    
+    elif action == 'game_improvement_hint':
+        # 顯示改善提示 (不直接說出答案)
+        theme_id = vars.get('theme', user_state.game_theme)
+        level_idx = int(vars.get('level', user_state.game_level))
+        question_idx = int(vars.get('question', -1))
+        
+        if not theme_id or level_idx < 0 or question_idx < 0:
+            await send_text_message(event, "無法取得題目資訊。\nCannot get question info.")
+            return
+        
+        # 取得上次回答資訊
+        last_info = user_state.last_answer_info
+        if not last_info or last_info.get('question_idx') != question_idx:
+            # 從歷史紀錄中取得最後一次回答
+            history_key = f'{theme_id}-{level_idx}-{question_idx}'
+            history = getHistory(user_id, history_key)
+            if not history:
+                await send_text_message(event, "請先作答此題目。\nPlease answer this question first.")
+                return
+            last_record = history[-1]
+            user_answer = last_record.transcript
+            score = last_record.score
+        else:
+            user_answer = last_info.get('user_answer', '')
+            score = last_info.get('score', 0)
+        
+        # 取得題目和參考答案
+        level_info = get_game_level_info(theme_id, level_idx)
+        if not level_info or question_idx >= len(level_info.get('questions', [])):
+            await send_text_message(event, "無法取得題目資訊。\nCannot get question info.")
+            return
+        
+        q_data = level_info['questions'][question_idx]
+        question_text = q_data['text']
+        reference_answers = q_data.get('reference_answers', [])
+        reference_answer = reference_answers[0] if reference_answers else ""
+        
+        await show_loading(user_id, secs=15)
+        
+        # 生成改善提示
+        from utils.message_utils import IMPROVEMENT_HINT_SYSTEM_INSTRUCTION
+        
+        hint_prompt = IMPROVEMENT_HINT_SYSTEM_INSTRUCTION.format(
+            question=question_text,
+            reference_answer=reference_answer,
+            user_answer=user_answer,
+            score=score
+        )
+        
+        try:
+            hint_completion = await client.beta.chat.completions.parse(
+                model="gpt-4o",
+                response_format=ImprovementHintResponse,
+                max_completion_tokens=256,
+                temperature=0.7,
+                messages=[
+                    { "role": "system", "content": hint_prompt },
+                    { "role": "user", "content": f"Question: {question_text}\nMy answer: {user_answer}" }
+                ],
+            )
+            
+            hint_res: ImprovementHintResponse = ImprovementHintResponse.model_validate_json(
+                hint_completion.choices[0].message.content
+            )
+            
+            await send_message(event, await game_improvement_hint_message(
+                theme_id, level_idx, question_idx,
+                hint_res.hint_eng, hint_res.hint_chi
+            ))
+        except Exception as e:
+            print(f"Improvement Hint Error: {e}")
+            import traceback
+            traceback.print_exc()
+            await send_text_message(event, "無法生成改善提示，請稍後再試。\nCannot generate improvement hint, please try again later.")

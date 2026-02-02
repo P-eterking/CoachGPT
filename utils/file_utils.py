@@ -95,7 +95,8 @@ def initData(user_id, classTime, dep, id, name):
     user_data[user_id] = User(
         dep=dep, id=id, name=name, class_time=classTime, 
         history={}, chat={}, game_scores=GameScores(),
-        npc_chat_history={}, question_history={}
+        npc_chat_history={}, question_history={},
+        hint_usage={}  # [NEW] 新增提示使用紀錄
     )
 
 # 刪除使用者資料
@@ -386,6 +387,163 @@ def get_user_game_progress(user_id: str, theme_id: str) -> dict:
         "current_level": unlocked_level
     }
 
+def is_level_all_questions_passed(user_id: str, theme_id: str, level_idx: int) -> bool:
+    """檢查使用者是否已通過該關卡的所有題目 (每題都達到及格分數)"""
+    questions_per_level = get_questions_per_level()
+    min_score = get_min_score_to_pass()
+    
+    user = user_data.get(user_id)
+    if not user or not user.game_scores:
+        return False
+    
+    if theme_id not in user.game_scores.themes:
+        return False
+    
+    theme = user.game_scores.themes[theme_id]
+    if level_idx not in theme.levels:
+        return False
+    
+    level = theme.levels[level_idx]
+    
+    # 檢查是否所有題目都有回答且達到及格分數
+    for q_idx in range(questions_per_level):
+        if q_idx not in level.questions:
+            return False
+        if level.questions[q_idx].best_score < min_score:
+            return False
+    
+    return True
+
+def get_level_answered_questions(user_id: str, theme_id: str, level_idx: int) -> list:
+    """取得使用者在該關卡已回答的題目索引列表"""
+    user = user_data.get(user_id)
+    if not user or not user.game_scores:
+        return []
+    
+    if theme_id not in user.game_scores.themes:
+        return []
+    
+    theme = user.game_scores.themes[theme_id]
+    if level_idx not in theme.levels:
+        return []
+    
+    return list(theme.levels[level_idx].questions.keys())
+
+def get_next_unanswered_question(user_id: str, theme_id: str, level_idx: int) -> int:
+    """取得下一個未回答的題目索引，若全部已回答則回傳 -1"""
+    questions_per_level = get_questions_per_level()
+    answered = get_level_answered_questions(user_id, theme_id, level_idx)
+    
+    for q_idx in range(questions_per_level):
+        if q_idx not in answered:
+            return q_idx
+    
+    return -1  # 全部已回答
+
+def get_next_unpassed_question(user_id: str, theme_id: str, level_idx: int) -> int:
+    """取得下一個未通過(分數低於及格)的題目索引，若全部已通過則回傳 -1"""
+    questions_per_level = get_questions_per_level()
+    min_score = get_min_score_to_pass()
+    
+    user = user_data.get(user_id)
+    if not user or not user.game_scores:
+        return 0  # 還沒回答任何題目，從第一題開始
+    
+    if theme_id not in user.game_scores.themes:
+        return 0
+    
+    theme = user.game_scores.themes[theme_id]
+    if level_idx not in theme.levels:
+        return 0
+    
+    level = theme.levels[level_idx]
+    
+    for q_idx in range(questions_per_level):
+        if q_idx not in level.questions:
+            return q_idx  # 未回答的題目
+        if level.questions[q_idx].best_score < min_score:
+            return q_idx  # 未通過的題目
+    
+    return -1  # 全部已通過
+
+# ========== [NEW] 提示使用次數追蹤功能 ==========
+
+def get_hint_usage_count(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:
+    """
+    取得使用者在某題目使用提示的次數
+    Get the number of times a user has used hints for a specific question
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    
+    # 確保 hint_usage 已初始化
+    if not hasattr(user, 'hint_usage') or user.hint_usage is None:
+        user.hint_usage = {}
+    
+    key = f"{theme_id}-{level_idx}-{question_idx}"
+    return user.hint_usage.get(key, 0)
+
+def increment_hint_usage(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:
+    """
+    增加使用者在某題目使用提示的次數，並回傳新的計數
+    Increment the hint usage count for a specific question and return the new count
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    
+    # 確保 hint_usage 已初始化
+    if not hasattr(user, 'hint_usage') or user.hint_usage is None:
+        user.hint_usage = {}
+    
+    key = f"{theme_id}-{level_idx}-{question_idx}"
+    current_count = user.hint_usage.get(key, 0)
+    user.hint_usage[key] = current_count + 1
+    return user.hint_usage[key]
+
+def get_all_hint_usage(user_id: str, theme_id: str) -> dict:
+    """
+    取得使用者在某主題所有題目的提示使用次數
+    Get all hint usage counts for a user in a specific theme
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return {}
+    
+    # 確保 hint_usage 已初始化
+    if not hasattr(user, 'hint_usage') or user.hint_usage is None:
+        user.hint_usage = {}
+    
+    result = {}
+    prefix = f"{theme_id}-"
+    for key, count in user.hint_usage.items():
+        if key.startswith(prefix):
+            result[key] = count
+    return result
+
+# ========== [NEW] 取得使用者最後回答的紀錄 (用於改善提示) ==========
+
+def get_last_question_answer(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> Optional[dict]:
+    """
+    取得使用者在某題目的最後一次回答紀錄
+    Get the user's last answer record for a specific question
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return None
+    
+    # 確保 question_history 已初始化
+    if not hasattr(user, 'question_history') or user.question_history is None:
+        return None
+    
+    key = f"{theme_id}-{level_idx}-{question_idx}"
+    records = user.question_history.get(key, [])
+    
+    if records:
+        return records[-1]  # 回傳最後一筆紀錄
+    return None
+
 # ========== NPC聊天和問題回答紀錄功能 (新增，解決 Bug #2) ==========
 
 def save_npc_chat_record(user_id: str, theme_id: str, npc_idx: int, npc_name: str, 
@@ -670,6 +828,9 @@ async def load_user_data():
                 value['question_history'] = {}
             if 'game_scores' not in value:
                 value['game_scores'] = {'themes': {}}
+            # [NEW] 確保 hint_usage 欄位存在
+            if 'hint_usage' not in value:
+                value['hint_usage'] = {}
         
         user_data = {key: User(**value) for key, value in raw_data.items()}
         print(f"User data loaded successfully from {user_data_file}.")
