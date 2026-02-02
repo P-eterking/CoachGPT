@@ -1,5 +1,5 @@
 from typing import Annotated, List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, conlist, field_validator, model_validator
+from pydantic import BaseModel, Field, conlist, field_validator, model_validator, ConfigDict
 
 class SpeechAssessment(BaseModel):
     chi_suggestion: str = Field(description="繁體中文建議 Traditional Chinese (zh-TW) suggestion", default_factory=lambda: "無建議。")  # 中文建議
@@ -270,10 +270,13 @@ class QuestionSet(BaseModel):
 # ========== 遊戲主題配置模型 ==========
 class GameNPC(BaseModel):
     """遊戲主題的NPC配置"""
+    # Pydantic v2 正確語法
+    model_config = ConfigDict(populate_by_name=True)
+    
     id: str = Field(description="NPC識別碼")  # NPC識別碼
     name: str = Field(description="NPC顯示名稱")  # NPC顯示名稱
     persona: str = Field(description="NPC人設/背景 (給AI用)")  # NPC人設/背景
-    # [FIX] 支援 theme_config.json 中的 "display_description" 欄位名稱
+    # 支援 theme_config.json 中的 "display_description" 欄位名稱
     description: str = Field(
         description="NPC描述 (顯示給使用者)", 
         default="",
@@ -281,12 +284,7 @@ class GameNPC(BaseModel):
     )
     file: str = Field(description="此NPC的RAG文件檔案")  # RAG文件檔案
     image: Optional[str] = Field(description="NPC頭像圖片檔名", default=None)  # 頭像圖片
-    # [FIX] 新增 background 欄位，theme_config.json 中有此欄位
     background: Optional[str] = Field(description="NPC背景故事", default=None)
-    
-    class Config:
-        # 允許使用 alias 來解析 JSON，同時允許用原始名稱
-        populate_by_name = True
 
 class GameLevelQuestion(BaseModel):
     """遊戲關卡中的單一題目"""

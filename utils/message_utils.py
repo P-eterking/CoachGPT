@@ -1507,18 +1507,32 @@ async def game_theme_select_message() -> FlexMessage:
 
 async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
     """顯示 NPC 選擇介面 - 含圖片和描述"""
+    print(f"[DEBUG] game_npc_select_message called with theme_id={theme_id}, user_id={user_id}")
+    
     theme_config = load_game_theme_config(theme_id)
     
     if not theme_config:
+        print(f"[WARNING] Theme config not found in game_npc_select_message for theme_id={theme_id}")
         return FlexMessage(
             altText='找不到主題 Theme not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='找不到主題。\nTheme not found.', wrap=True)]
+                    contents=[
+                        FlexText(text='找不到主題配置。\nTheme config not found.', wrap=True),
+                        FlexText(
+                            text=f'Theme ID: {theme_id}',
+                            wrap=True,
+                            size='sm',
+                            color='#888888',
+                            margin='md'
+                        )
+                    ]
                 )
             )
         )
+    
+    print(f"[DEBUG] Theme config loaded: name={theme_config.name}, npcs={len(theme_config.npcs)}")
     
     # 取得使用者進度
     progress = get_user_game_progress(user_id, theme_id)
@@ -1560,6 +1574,8 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
     
     # NPC 選擇卡片 - 含圖片和描述
     for npc_idx, npc in enumerate(theme_config.npcs):
+        print(f"[DEBUG] Processing NPC {npc_idx}: name={npc.name}, has_description={bool(npc.description)}")
+        
         body_contents = [
             FlexText(
                 text=npc.name,
@@ -1622,30 +1638,61 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
 
 async def game_npc_card_message(theme_id: str, npc_idx: int) -> FlexMessage:
     """顯示單一 NPC 卡片 - 含圖片和描述"""
+    print(f"[DEBUG] game_npc_card_message called with theme_id={theme_id}, npc_idx={npc_idx}")
+    
     theme_config = load_game_theme_config(theme_id)
     
     if not theme_config:
+        print(f"[WARNING] Theme config not found for theme_id={theme_id}")
         return FlexMessage(
             altText='找不到主題 Theme not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='找不到主題。\nTheme not found.', wrap=True)]
+                    contents=[
+                        FlexText(text='找不到主題配置。\nTheme config not found.', wrap=True),
+                        FlexText(
+                            text=f'Theme ID: {theme_id}',
+                            wrap=True,
+                            size='sm',
+                            color='#888888',
+                            margin='md'
+                        ),
+                        FlexText(
+                            text='請確認 theme_config.json 檔案存在。\nPlease check if theme_config.json exists.',
+                            wrap=True,
+                            size='sm',
+                            color='#888888',
+                            margin='md'
+                        )
+                    ]
                 )
             )
         )
     
     npc = theme_config.get_npc(npc_idx)
     if not npc:
+        print(f"[WARNING] NPC not found for theme_id={theme_id}, npc_idx={npc_idx}")
         return FlexMessage(
             altText='找不到角色 NPC not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='找不到角色。\nNPC not found.', wrap=True)]
+                    contents=[
+                        FlexText(text='找不到角色。\nNPC not found.', wrap=True),
+                        FlexText(
+                            text=f'NPC Index: {npc_idx} (Available: {len(theme_config.npcs)})',
+                            wrap=True,
+                            size='sm',
+                            color='#888888',
+                            margin='md'
+                        )
+                    ]
                 )
             )
         )
+    
+    print(f"[DEBUG] NPC found: name={npc.name}, has_description={bool(npc.description)}, has_image={bool(npc.image)}")
     
     body_contents = [
         FlexText(

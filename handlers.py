@@ -880,12 +880,25 @@ async def handle_postback(event):
         if not theme_id:
             await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
             return
-        await send_message(event, await game_npc_select_message(theme_id, user_id))
+        try:
+            npc_select = await game_npc_select_message(theme_id, user_id)
+            if npc_select:
+                await send_message(event, npc_select)
+            else:
+                await send_text_message(event, "無法載入角色列表。\nFailed to load NPC list.")
+        except Exception as e:
+            print(f"Error in game_npcs action: {e}")
+            import traceback
+            traceback.print_exc()
+            await send_text_message(event, "載入角色列表時發生錯誤。\nError loading NPC list.")
     
     elif action == 'game_npc':
         # 選擇要對話的NPC
         theme_id = vars.get('theme', user_state.game_theme)
-        npc_idx = int(vars.get('npc', 0))
+        try:
+            npc_idx = int(vars.get('npc', 0))
+        except (ValueError, TypeError):
+            npc_idx = 0
         
         if not theme_id:
             await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
@@ -897,7 +910,17 @@ async def handle_postback(event):
         user_state.in_npc_chat = True  # 設置 NPC 對話模式
         
         # 顯示 NPC 卡片而非純文字
-        await send_message(event, await game_npc_card_message(theme_id, npc_idx))
+        try:
+            npc_card = await game_npc_card_message(theme_id, npc_idx)
+            if npc_card:
+                await send_message(event, npc_card)
+            else:
+                await send_text_message(event, "無法載入角色資訊，請稍後再試。\nFailed to load NPC info, please try again.")
+        except Exception as e:
+            print(f"Error in game_npc action: {e}")
+            import traceback
+            traceback.print_exc()
+            await send_text_message(event, "載入角色時發生錯誤，請稍後再試。\nError loading NPC, please try again.")
     
     elif action == 'game_levels':
         # 顯示關卡選擇

@@ -191,17 +191,30 @@ def load_game_theme_config(theme_id: str) -> Optional[GameThemeConfig]:
         return _game_theme_cache[theme_id]
     
     config_path = Path(f'category/rag_docs/{theme_id}/theme_config.json')
-    if config_path.exists():
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                theme_config = GameThemeConfig(**data)
-                _game_theme_cache[theme_id] = theme_config
-                return theme_config
-        except Exception as e:
-            print(f"Error loading game theme config for {theme_id}: {e}")
-            return None
-    return None
+    print(f"[DEBUG] Attempting to load theme config from: {config_path.absolute()}")
+    
+    if not config_path.exists():
+        print(f"[WARNING] Theme config file not found: {config_path.absolute()}")
+        return None
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            print(f"[DEBUG] Successfully loaded JSON for theme: {theme_id}")
+            theme_config = GameThemeConfig(**data)
+            _game_theme_cache[theme_id] = theme_config
+            print(f"[DEBUG] Successfully parsed GameThemeConfig for theme: {theme_id}")
+            return theme_config
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] JSON decode error for {theme_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    except Exception as e:
+        print(f"[ERROR] Error loading game theme config for {theme_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def clear_game_theme_cache():
     """清除遊戲主題配置快取"""
