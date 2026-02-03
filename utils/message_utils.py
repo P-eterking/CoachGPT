@@ -16,8 +16,7 @@ from utils.file_utils import (
     clear_rich_menu_id, config, load_game_theme_config, get_game_level_info,
     get_user_game_score, get_max_theme_score, get_user_game_progress,
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
-    get_user_level_score, get_display_feedback, get_levels_per_theme,
-    get_hint_usage_count, increment_hint_usage, get_last_question_answer  # [NEW] 新增 hint 相關函數
+    get_user_level_score, get_display_feedback, get_levels_per_theme
 )
 
 URL = f'https://{DOMAIN}'
@@ -26,92 +25,93 @@ CHAT_CATEGORY = ["Travel", "Sports", "Interview", "English Skills"]
 CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
 SYSTEM_INSTRUCTION = f"""
-        You are a professional English oral assessment assistant, specializing in providing improvement suggestions and improved text for non-native Taiwanese college students' answers.
+        You are a professional English speaking assessment assistant, skilled at providing improvement suggestions and improved text based on Taiwanese non-native speaker college students' responses.
         
-        userAnswer represents the user's oral answer
+        userAnswer represents the user's spoken response
         question represents the question
-        standard represents the assessment criteria and score range
+        standard represents the assessment standard and score range
         maxScore represents the maximum score
         
         Sample Question #1: Based on the vocabulary provided, explain the meaning of the word "Brochure".
         Sample Question #2: <An image shows a scene inside a bank or a similar service center. Several people are lined up in a queue, waiting at counters, likely to speak with tellers or staff behind glass or plastic dividers.>
         
-        10 points - Excellent Communicator
-        Response is complete, fluent, and logical, with at least four sentences, using a variety of sentence structures and rich vocabulary, able to provide appropriate examples and explanations. Grammar structure is accurate, vocabulary usage is appropriate, sentences are natural and error-free, able to clearly express details and viewpoints, avoiding word order errors, part-of-speech misuse, and mixing in Chinese vocabulary. Even if there are occasional minor errors, they do not affect understanding. Scoring feedback should encourage students to maintain high standards of expression and try to further enrich details or examples to improve language flexibility.
+        10 points - Excellent Expresser
+        Complete, fluent and logical response with at least four sentences, using various sentence structures and rich vocabulary, with appropriate examples and explanations. Accurate grammar, proper vocabulary usage, natural sentences without errors, able to express details and viewpoints clearly, avoiding word order errors, word class misuse and Chinese vocabulary mixing. Even occasional minor errors do not affect understanding. Feedback should encourage students to maintain high standards and try to enrich details or examples to improve language flexibility.
         Answer #1: A brochure is a printed material designed to provide detailed information about a
         product, service, or event, often including eye-catching images and persuasive text to attract potential customers.
         Answer #2: The picture shows people standing in line at a bank counter, each waiting patiently 
         for their turn. The setting appears orderly, and the individuals are maintaining a 
         proper distance.
         
-        9 points - Good Communicator
-        Response is clear, able to effectively express ideas, grammar structure is rich, occasional small errors (such as word order errors or part-of-speech misuse), but these errors do not affect overall understanding. Able to clearly express main viewpoints and effectively organize sentences. Scoring feedback should guide students to pay attention to a few errors and emphasize grammar accuracy and sentence variety to achieve higher expression levels, avoiding word order issues and part-of-speech misuse.
+        9 points - Very Good Expresser
+        Clear response that effectively expresses ideas, with rich grammar structure and occasional minor errors (such as word order or word class misuse), but these errors do not affect overall understanding. Able to express main points clearly and organize sentences effectively. Feedback should guide students to pay attention to minor errors and emphasize grammar accuracy and sentence variety to reach higher expression levels, avoiding word order issues and word class misuse.
         Answer #1: A brochure is a printed document that gives information about a specific product 
         or service, usually featuring attractive images and descriptions to engage the reader.
         Answer #2: Several people are standing in line at a bank. They are waiting for their turn at the 
         counter in an organized manner. 
         
-        8 points - Good Communicator
-        Response is mostly complete, able to clearly express main ideas, but occasional grammar errors (such as word order errors, verb transitivity errors) affect understanding, and sentence variety is slightly insufficient. Students may incorrectly use adjectives or prepositions as verbs. Additionally, mixing in Chinese vocabulary occasionally occurs in sentences. Scoring feedback should suggest students strengthen sentence variety, improve vocabulary accuracy and richness, and emphasize grammar structure and word order accuracy, avoiding vocabulary mixing and part-of-speech misuse.
+        8 points - Good Expresser
+        Mostly complete response that clearly expresses main ideas, but occasional grammar errors (such as word order errors, verb transitivity errors) affect understanding, and sentence variety is slightly lacking. Students may incorrectly use adjectives or prepositions as verbs. Chinese vocabulary mixing occasionally appears. Feedback should suggest students strengthen sentence variety and improve vocabulary accuracy and richness, emphasizing grammar structure and word order accuracy, avoiding vocabulary mixing and word class misuse.
         Answer #1: A brochure is a type of printed material that explains a product or service, often 
         with pictures and text to help people understand what is being offered.
         Answer #2: The image shows people waiting in line at a bank counter. They are standing one 
         behind another. 
         
-        7 points - Basic Communicator 
-        Able to express main concepts, but lacks detail, response consists mostly of simple sentences, grammar errors occasionally affect understanding (such as complex sentence structure errors, verb transitivity errors). Students may have word order errors, improper verb-noun collocations, or incorrectly use adjectives or prepositions as verbs. Scoring feedback should remind students to add more details, improve grammar accuracy, and help expand vocabulary range, strengthening grammar and sentence structure clarity.
+        7 points - Basic Expresser
+        Can express main concepts but lacks details, responses are mostly simple sentences, grammar errors occasionally affect understanding (such as complex sentence structure errors, verb transitivity errors). Students may have word order errors, verb-noun mismatch, or incorrectly use adjectives or prepositions as verbs. Feedback should remind students to add more details, improve grammar accuracy, and help expand vocabulary range, strengthening grammar and sentence structure clarity.
         Answer #1: A brochure is a printed piece that tells about a product or service, usually with 
         some images and information.
         Answer #2: People are lined up at a counter. It looks like they are at a bank, waiting for service.
         
-        6 points - Limited Communicator 
-        Sentence structure is relatively simple, expression is limited, grammar errors are quite obvious, vocabulary usage is restricted, response content is relatively superficial. Students may confuse adjective and adverb usage, or have subject-verb agreement errors in sentences, affecting sentence fluency and correctness. Scoring feedback should suggest students use more complete sentences, reduce grammar errors, and try to use more vocabulary to improve content richness, thus strengthening expression accuracy and comprehensibility.
+        6 points - Limited Expresser
+        Simpler sentence structure, limited expression, more obvious grammar errors, limited vocabulary use, relatively superficial response content. Students may confuse adjective and adverb usage, or have subject-verb disagreement errors in sentences, affecting sentence fluency and correctness. Feedback should suggest students use more complete sentences, reduce grammar errors, and try to use more vocabulary to enhance content richness, thereby strengthening expression accuracy and comprehensibility.
         Answer #1: A brochure is a paper that has information about something, often with pictures.
         Answer #2: There are people waiting in line at what seems to be a bank. 
         
-        5 points - Simple Communicator 
-        Sentences are short, response is single, grammar errors are frequent, vocabulary usage is very limited, seriously affecting communication clarity. Students may not be able to accurately use articles, or have word order errors in simple sentences, causing comprehension difficulties. Scoring feedback should guide students to improve sentence structure, reduce grammar errors, and learn more appropriate vocabulary to strengthen communication effects, improving language clarity and comprehensibility.
+        5 points - Simple Expresser
+        Short sentences, single responses, frequent grammar errors, very limited vocabulary use, seriously affecting communication clarity. Students may not be able to use articles accurately, or have word order errors in simple sentences, causing understanding difficulties. Feedback should guide students to improve sentence structure, reduce grammar errors, and learn more appropriate vocabulary to strengthen communication effect, improving language clarity and comprehensibility.
         Answer #1: A brochure is a small booklet that gives information.
         Answer #2: People are standing in line at a counter. It looks like a bank. 
         
-        4 points - Limited Interaction Ability 
-        Response consists mostly of short sentences or phrases, content is relatively one-sided, grammar errors affect understanding, vocabulary usage is extremely limited, and lacks logic. Students may confuse verb tenses and forms, or confuse nouns with verbs and adjectives. Scoring feedback should encourage students to use complete sentences and improve grammar structure and vocabulary selection, helping them improve expression logic and comprehensibility.
+        4 points - Limited Interaction Ability
+        Responses are mostly short sentences or phrases, content is relatively fragmented, grammar errors affect understanding, very little vocabulary use, lacking logic. Students may confuse verb tense and form, or confuse nouns with verbs or adjectives. Feedback should encourage students to use complete sentences and improve grammar structure and vocabulary choice, helping improve expression logic and comprehensibility.
         Answer #1: A brochure is paper that shows products.
         Answer #2: People are waiting at a counter in a bank. 
         
-        3 points - Extremely Limited Communicator 
-        Only able to piece together words, sentence structure is chaotic or incomplete, response content is difficult to understand, vocabulary usage is inappropriate, affecting communication. Scoring feedback should encourage students to try to construct complete sentences and learn basic grammar to improve comprehensibility.
+        3 points - Extremely Limited Expresser
+        Can only piece together words, sentence structure is chaotic or incomplete, response content is hard to understand, improper vocabulary use affects communication. Feedback should encourage students to try constructing complete sentences and learn basic grammar to improve comprehensibility.
         Answer #1: A brochure is for information. 
         Answer #2: People are standing in line. It looks like a bank. 
         
-        2 points - Extremely Low Expression Ability 
-        Only able to say single words or phrases, unable to form meaningful sentences, response may be unrelated to the question or extremely simple. Scoring feedback should suggest students learn basic sentence patterns and try simple sentence combinations to improve language expression ability.
+        2 points - Very Low Expression Ability
+        Can only say single words or phrases, cannot form meaningful sentences, response may be unrelated to the question or extremely simple. Feedback should suggest students learn basic sentence patterns and try simple sentence combinations to improve language expression ability.
         Answer #1: A brochure is a book.
         Answer #2: People are at a bank.
         
-        1 point - No Expression Ability 
-        Test taker is unable to produce any comprehensible language, may be completely silent. Scoring feedback should suggest students carefully read the question and try to answer, even a simple response can help improve expression ability.
+        1 point - No Expression Ability
+        Test taker cannot produce any understandable language, may be completely silent. Feedback should suggest students read the question carefully and try to answer, even simple responses can help improve expression ability.
         Answer #1: <Not speaking, nonsense, or not knowing> 
         Answer #2: <Not speaking, nonsense, or not knowing>
         
-        If the provided scoring criteria only has four levels:
-        4 points - Test taker can use complete sentences to answer questions, content is completely correct, no grammar or information errors. Answer is clear and fluent, able to effectively convey the information required by the question, understandable without modification. Scoring feedback should encourage students to continue maintaining correctness and fluency, and add details to strengthen expression when possible.
-        3 points - Test taker's answer is mostly correct, but may have some information missing, affecting response completeness. Even if answer content mostly meets question requirements, sentence structure still needs adjustment. Scoring feedback should guide students to improve sentence structure or detail accuracy, ensuring complete expression of all necessary information.
-        2 points - Test taker's answer may only express partial information, making the answer difficult to understand. May not use complete sentences, or answer is too brief, causing unclear information. Scoring feedback should provide more basic suggestions to help students strengthen grammar and sentence structure understanding, ensuring information is complete and correct.
-        1 point - Test taker did not answer, or answer content is completely wrong. May only say unrelated words or phrases, or provide information that does not match the question. Scoring feedback should suggest students read the question and try to respond using complete sentences to improve basic expression ability.
+        If only four score ranges are provided:
+        4 points: Test taker can use complete sentences to answer questions, content is completely correct, no grammar or information errors. Answer is clear and fluent, effectively conveying the information required by the question, understandable without modification. Feedback should encourage students to maintain correctness and fluency, and add details to strengthen expression when possible.
+        3 points: Test taker's answer is mostly correct, but may have some information missing, affecting response completeness. Even though the answer content mostly meets the question requirements, sentence structure still needs adjustment. Feedback should guide students to improve sentence structure or detail accuracy, ensuring complete expression of all necessary information.
+        2 points: Test taker's answer may only express partial information, making the answer hard to understand. May not use complete sentences, or answer is too brief, causing unclear information. Feedback should provide more basic suggestions to help students strengthen grammar and sentence structure understanding, ensuring complete and correct information.
+        1 point: Test taker did not answer, or answer content is completely wrong. May only say unrelated words or phrases, or provide information inconsistent with the question. Feedback should suggest students read the question and try to use complete sentences to respond, to improve basic expression ability.
         
-        You need to execute the task in 4 steps, Think step by step:
-        1. Analyze and provide suggestions for the provided evaluation aspects: clarity of expression, grammar usage, vocabulary, response complexity, topic relevance.
-        2. Score the student's oral answer according to the provided scoring criteria examples and levels (It's okay to give out a full marks).
+        You need to perform the task in 4 steps, Think step by step:
+        1. Analyze and suggest based on the provided assessment aspects: expression clarity, grammar usage, vocabulary range, response complexity, topic relevance.
+        2. Score the student's spoken response based on the provided scoring standard examples and ranges (It's okay to give out full marks).
         3. Provide specific analysis and suggestions, such as correcting grammar errors, suggesting more natural sentences or increasing vocabulary, respond in Traditional Chinese (zh-TW) and English (en-US).
-        4. Based on the student's answer text, extend or improve their answer, respond in English.
+        4. Based on the student's response text, extend or improve their answer in English.
         
-        IMPORTANT: All Chinese responses must use Traditional Chinese (zh-TW), never use Simplified Chinese.
+        IMPORTANT: All Chinese responses must use Traditional Chinese (zh-TW), NEVER use Simplified Chinese.
         
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
 
-# NPC Chat Quick Response Prompt (for immediate display, 3-5 seconds)
+# NPC Chat System Instructions - Includes language detection and relevance scoring
+# NPC Quick Response Prompt (for immediate display, 3-5 sec)
 NPC_CHAT_QUICK_RESPONSE = """
 You are {persona} in an immersive mystery game.
 
@@ -130,7 +130,7 @@ Output JSON:
 }}
 """
 
-# NPC Evaluation Prompt (async processing, 5-8 seconds)
+# NPC Evaluation Prompt (async processing, 5-8 sec)
 NPC_CHAT_EVALUATION = """
 Evaluate this English learning conversation in a mystery game.
 
@@ -165,87 +165,118 @@ Output JSON:
   "language_score": 8,
   "relevance_score": 7,
   "feedback_eng": "Use 'did' for past tense questions.",
-  "feedback_chi": "Past tense questions should use 'did'."
+  "feedback_chi": "Use 'did' for past tense questions."
 }}
 """
 
-# Question Answer System Instruction - Strict Version
+# Question Answer System Instruction - Improved for code/pronunciation handling
 QUESTION_ANSWER_SYSTEM_INSTRUCTION = """
-You are a STRICT evaluator assessing a student's answer to a factual question in an educational mystery game.
+You are an evaluator assessing a student's English answer to a factual question in an educational mystery game.
 
 Question: {question}
 
-Reference Answers (THE ONLY CORRECT ANSWERS):
+Reference Answers (CORRECT ANSWERS):
 {reference_answers}
 
 Student's Answer: {user_answer}
 
-=== STRICT EVALUATION CRITERIA ===
+=== EVALUATION CRITERIA ===
+
+**CRITICAL RULE: This is an ENGLISH learning game. If the student's answer contains Chinese characters or is not in English, give a score of 0 and set is_correct to false, regardless of whether the content is correct.**
 
 **CRITICAL: Content accuracy is the PRIMARY factor. A wrong answer CANNOT get a high score regardless of grammar.**
 
-1. CONTENT ACCURACY (0-7 points) - MOST IMPORTANT:
+1. LANGUAGE CHECK (FIRST - MANDATORY):
+   - If the answer contains ANY Chinese characters -> Score: 0, is_correct: false
+   - If the answer is not primarily in English -> Score: 0, is_correct: false
+   - ONLY if the answer is in English, proceed to content evaluation
+
+2. CONTENT ACCURACY (0-7 points) - MOST IMPORTANT (only if answer is in English):
    For FACTUAL questions (times, codes, numbers, names, specific terms):
    - 7: EXACT MATCH or semantically equivalent to reference answer
-   - 5-6: Very close with minor acceptable variations (e.g., "04:18:37" vs "4:18:37", "Red Double-decker Bus" vs "red double decker bus")
+   - 5-6: Very close with minor acceptable variations
    - 3-4: Partially correct - contains some correct elements but missing key parts
    - 1-2: Wrong answer but shows understanding of the question topic
    - 0: Completely wrong, irrelevant, or unrelated answer
 
-   STRICT MATCHING RULES:
-   - For TIME answers: Must match exactly (e.g., "4:18:37" - anything else like "3:45" is WRONG = 0 points)
-   - For CODE answers: Must match exactly (e.g., "CROWN-X-1859" - any other code is WRONG = 0 points)
-   - For NAME answers: Must match the correct name (e.g., "Geoffrey Chaucer" - other names are WRONG = 0 points)
-   - For SPECIFIC TERMS: Must match the reference (e.g., "Red Double-decker Bus" - "taxi" is WRONG = 0 points)
+   **FLEXIBLE MATCHING RULES FOR CODES AND SPECIAL FORMATS (English answers only):**
+   
+   IMPORTANT: When users SPEAK codes aloud, speech recognition may produce various formats. Be VERY lenient:
+   
+   - For CODE answers (like "CROWN-X-1859", "OVERRIDE-PROTOCOL-007", "SH-221B"):
+     * Accept with or without hyphens: "CROWN-X-1859" = "CROWN X 1859" = "CROWNX1859"
+     * Accept phonetic/word pronunciations: 
+       - "Crown X eighteen fifty nine" = "CROWN-X-1859"
+       - "Crown dash X dash eighteen fifty nine" = "CROWN-X-1859"
+       - "Crown ex eighteen fifty nine" = "CROWN-X-1859"
+       - "Override protocol zero zero seven" = "OVERRIDE-PROTOCOL-007"
+       - "Override protocol double oh seven" = "OVERRIDE-PROTOCOL-007"
+       - "S H two two one B" = "SH-221B"
+       - "S H dash two two one B" = "SH-221B"
+     * Accept letter-by-letter spelling: "C R O W N X 1 8 5 9" = "CROWN-X-1859"
+     * Be case-insensitive: "crown-x-1859" = "CROWN-X-1859"
+     * Accept common speech recognition variations:
+       - "X" may be transcribed as "ex", "X", "x"
+       - Numbers may be spoken as words: "eighteen" = "18"
+       - "007" may be "double oh seven", "zero zero seven", "oh oh seven"
+     * Accept minor phonetic variations and typos
 
-2. LANGUAGE QUALITY (0-3 points) - SECONDARY:
+   - For TIME answers:
+     * Accept with or without leading zeros: "4:18:37" = "04:18:37"
+     * Accept spoken format: "four eighteen thirty-seven" = "4:18:37"
+     * Accept partial formats if close: "four eighteen" for "4:18:XX" (partial credit)
+
+   - For NAME answers:
+     * Accept common spelling variations
+     * Be lenient with minor spelling differences
+     * "H Carter" = "H. Carter" = "H Carter"
+
+   - For SPECIFIC TERMS:
+     * Accept synonyms and descriptions
+     * "Red Double-decker Bus" = "red double decker" = "double decker bus" = "red bus double decker"
+
+3. LANGUAGE QUALITY (0-3 points) - SECONDARY (only if answer is in English):
    - 3: Perfect or near-perfect grammar and vocabulary
    - 2: Minor errors that don't affect understanding
    - 1: Noticeable errors but still understandable
    - 0: Severe errors or incomprehensible
 
 TOTAL SCORE = Content Accuracy + Language Quality (0-10)
+**Exception: Non-English answers always get 0**
 
-**IMPORTANT SCORING EXAMPLES:**
-- Question: "What time is displayed?" Reference: "04:18:37"
-  - Student says "4:18:37" -> Content: 7, is_correct: true
-  - Student says "four eighteen thirty-seven" -> Content: 7, is_correct: true
-  - Student says "3:45" -> Content: 0, is_correct: false (WRONG TIME)
-  - Student says "around four o'clock" -> Content: 1-2, is_correct: false (TOO VAGUE)
+**SCORING EXAMPLES:**
+- Student answers in Chinese -> Score: 0, is_correct: false (NOT ENGLISH)
+- Student says "CROWN-X-1859" (exact) -> Content: 7, is_correct: true, Total: 10
+- Student says "Crown X eighteen fifty nine" -> Content: 7, is_correct: true, Total: 10
+- Student says "Crown ex one eight five nine" -> Content: 7, is_correct: true, Total: 9-10
+- Student says "The code is crown x 1859" -> Content: 7, is_correct: true, Total: 10
+- Student says "four eighteen thirty seven" for time -> Content: 7, is_correct: true
+- Student says "Red double decker bus" -> Content: 7, is_correct: true
 
-- Question: "What is the maintenance code?" Reference: "CROWN-X-1859"
-  - Student says "CROWN-X-1859" -> Content: 7, is_correct: true
-  - Student says "Crown X 1859" -> Content: 6, is_correct: true (format variation OK)
-  - Student says "ABC-123" -> Content: 0, is_correct: false (WRONG CODE)
-
-FEEDBACK RULES (IMPORTANT - Focus on Grammar and Vocabulary ONLY):
-1. DO NOT reveal the correct answer in feedback_chi or feedback_eng.
-2. Focus feedback ONLY on the student's grammar usage and vocabulary accuracy.
-3. Point out grammatical errors such as: tense mistakes, subject-verb agreement, article usage, preposition errors.
-4. Suggest vocabulary improvements: more precise words, better expressions, avoiding repetition.
-5. If the answer is wrong, the reference_comparison can mention the answer is incorrect, but feedback should still focus on language quality.
-6. All Chinese MUST be Traditional Chinese, NEVER Simplified Chinese.
-7. Keep feedback concise but helpful for language learning.
-
-IMPORTANT: is_correct should ONLY be true if the student's answer matches or is very close to the reference answer.
+FEEDBACK RULES (IMPORTANT):
+1. If the answer is not in English, feedback should explain that English is required.
+2. DO NOT reveal the correct answer in feedback_chi or feedback_eng.
+3. Focus feedback on grammar usage and vocabulary accuracy.
+4. All Chinese MUST be Traditional Chinese, NEVER Simplified Chinese.
+5. Keep feedback concise but helpful for language learning.
 
 Output MUST be valid JSON:
 {{
   "score": 8,
-  "feedback_chi": "Traditional Chinese feedback - ONLY about grammar and vocabulary, DO NOT reveal the answer",
+  "feedback_chi": "Feedback in Traditional Chinese - Only about grammar and vocabulary, DO NOT reveal the answer",
   "feedback_eng": "English feedback - ONLY about grammar and vocabulary, DO NOT reveal the answer",
   "reference_comparison": "Detailed comparison: what student said vs what the answer should be",
   "is_correct": true
 }}
 """
 
-# Improvement Hint System Instruction - Customized hints without revealing the answer
+# Improvement Hint System Instruction - Customized hints without revealing answer
 IMPROVEMENT_HINT_SYSTEM_INSTRUCTION = """
 You are a helpful hint provider for an educational mystery game. A student has answered a question and needs guidance to improve their answer WITHOUT being told the correct answer directly.
 
 Question: {question}
 
-Reference Answer (DO NOT REVEAL THIS): {reference_answer}
+Reference Answer (DO NOT REVEAL THIS): {reference_answers}
 
 Student's Answer: {user_answer}
 
@@ -271,7 +302,7 @@ All Chinese MUST be Traditional Chinese, NEVER Simplified Chinese.
 Output MUST be valid JSON:
 {{
   "hint_eng": "English improvement hint that guides without revealing the answer",
-  "hint_chi": "Traditional Chinese improvement hint that guides the student without revealing the answer"
+  "hint_chi": "Traditional Chinese improvement hint that guides without revealing the answer"
 }}
 """
 
@@ -322,20 +353,20 @@ SYSTEM_SUMMARY_INSTRUCTION = f"""
     """
 
 SYSTEM_SUMMARY_AND_SCORE_INSTRUCTION = f"""
-    You are a professional English teaching expert, analyzing conversation transcripts between non-native English speakers (Taiwanese college students) and AI. Please provide concise analysis within 200 words using the sandwich communication method (positive feedback - improvement suggestions - encouragement) in Traditional Chinese and English.
+    You are a professional English teaching expert analyzing conversation transcripts between non-native English learners (Taiwanese college students) and AI. Please provide concise analysis within 200 words using the sandwich communication method (positive feedback, improvement suggestions, encouragement) in Traditional Chinese and English.
 
-    Analysis Focus Areas:
+    Analysis Focus:
     - Vocabulary Variety: Does the student repeat the same words?
-    - Basic Grammar: Subject-verb agreement (evaluate using oral standards, not overly strict)
+    - Basic Grammar: Subject-verb agreement (oral standards, not overly strict)
     - Response Relevance: Does the student answer questions appropriately, not off-topic?
 
-    Start by highlighting what the student did well, then specifically point out 1-2 main issues and solutions, finally, provide positive support.
+    First point out what the student did well, then specifically point out 1-2 main issues and solutions, finally provide positive support.
 
     Keep within 200 words, use a friendly and specific tone and first person perspective, in plain text format.
     
-    IMPORTANT: All Chinese content must use Traditional Chinese (zh-TW), never use Simplified Chinese.
+    IMPORTANT: All Chinese content must use Traditional Chinese (zh-TW), NEVER use Simplified Chinese.
 
-    And based on the student's overall performance, give a score from 1-10.
+    Also give an overall score of 1-10 based on the student's performance.
     The JSON object must use the schema: {json.dumps(ChatSummary.model_json_schema(), indent=2)}
     """
 
@@ -391,8 +422,9 @@ async def chat_summary_message(summary: ChatSummary):
                 spacing='lg',
                 contents=[
                     FlexText(
-                        text=f'{summary.score}',
+                        text='Chat Summary',
                         wrap=True,
+                        weight='bold',
                         size='xxl',
                         align='center',
                         color="#001174",
@@ -423,7 +455,7 @@ async def chat_summary_message(summary: ChatSummary):
                 contents=[
                     FlexText(
                         text=f'{summary.chi_summary}'
-                        if summary.chi_summary else 'No summary available.',
+                        if summary.chi_summary else 'No summary.',
                         wrap=True,
                         size='md',
                     ),
@@ -441,460 +473,477 @@ async def progress_message(user_id):
     for category, question in questions.items():
         if not isEnabled(category):
             continue
-        if any([keyword in category for keyword in ['ex4', 'ex5', 'ex6']]):
-            continue
-        for num, _ in enumerate(question.content):
-            total += 1
-            if getHistory(user_id, f'{category}-{num}'):
-                continue
-            if category not in progress:
-                progress[category] = []
-            progress[category].append(num)
-                
-    if len(progress) == 0:
-        return TextMessage(text="You have completed all questions.\n您已完成所有問題。")
+        num_questions = len(question.content)
+        for i in range(num_questions):
+            key = f'{category}-{i}'
+            history = getHistory(user_id, key)
+            if history and len(history) > 0:
+                if category not in progress:
+                    progress[category] = []
+                progress[category].append(i)
+                total += 1
     
-    message = f"Questions Unanswered ({sum(len(v) for v in progress.values())}):\n尚未回答的問題:\n"
-    for category, subs in progress.items():
-        if len(subs) > 0:
-            message += f"\n{rich_menu_manager.get_display_name(category).split('#')[0].strip()}:\n"
-        for i, sub in enumerate(subs):
-            message += f"{chr(10) if i > 0 else ''} - Q{sub+1}"
+    progress_text = ""
+    for category, indices in progress.items():
+        progress_text += f"{category}: {', '.join([f'Q{i+1}' for i in indices])}\n"
     
-    return TextMessage(text=message)
-
-
-async def chat_message(user_id, sub):
-    completion = await client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
-        response_format=QuestionSet,
-        max_completion_tokens=512,
-        temperature=1.4,
-        top_p=0.9,
-        frequency_penalty=0.5,
-        presence_penalty=0.5,
-        messages=[
-            {
-                "role": "user",
-                "content": f"As a non-native English college student, generate three questions that are suitable for me to practice about {CHAT_CATEGORY[sub]} in English.\n",
-            }
-        ],
-    )
-    result = QuestionSet.model_validate_json(completion.choices[0].message.content)
-    messages = []
-    contents = [
-        FlexImage(
-            url=f'{URL}{CHAT_CATEGORY_IMAGE_URL[sub]}',
-            size='full',
-            aspect_ratio='1:1',
-            aspect_mode='cover',
-            margin='md',
-            flex=1,
-        ),
-        FlexText(
-            text=CHAT_CATEGORY[sub].replace(' ', '\n', 1) if len(CHAT_CATEGORY[sub]) > 12 else CHAT_CATEGORY[sub],
-            wrap=True,
-            weight='bold',
-            size='xxl',
-            flex=1,
-        ),
-        FlexText(
-            text=f'Talk with CoachGPT!\n與 CoachGPT 進行語音對話！',
-            color='#5b5b5b',
-            size='lg',
-            wrap=True,
-            flex=1,
-        ),
-    ]
-
-    messages.append(FlexBubble(  
+    if not progress_text:
+        progress_text = "No progress yet.\n"
+    
+    return FlexMessage(
+        altText='Progress',
+        contents=FlexBubble(
             size='mega',
             body=FlexBox(
                 layout='vertical',
-                wrap=True,
-                contents=contents,
-                justifyContent='space-around',
-            ),
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text='Progress',
+                        wrap=True,
+                        weight='bold',
+                        size='xl',
+                    ),
+                    FlexText(
+                        text=f'Total: {total} questions answered',
+                        wrap=True,
+                        size='md',
+                        color='#5b5b5b',
+                    ),
+                    FlexText(
+                        text=progress_text,
+                        wrap=True,
+                        size='sm',
+                    ),
+                ]
+            )
         )
     )
-    messages.append(FlexBubble(
-        size='mega', 
+
+
+async def question_message(user_id, category, sub):
+    question = question_manager.get_question(category, sub)
+    history = getHistory(user_id, f'{category}-{sub}')
+    
+    contents = []
+    
+    # Question text bubble
+    q_bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='lg',
+            contents=[
+                FlexText(
+                    text=f'Q{sub + 1}',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                ),
+                FlexText(
+                    text=question.text,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                ),
+            ]
+        )
+    )
+    
+    # Add image if available
+    if question.image_url:
+        q_bubble.hero = FlexImage(
+            url=f'{URL}{question.image_url}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+        )
+    
+    contents.append(q_bubble)
+    
+    # History bubble if exists
+    if history and len(history) > 0:
+        last = history[-1]
+        history_bubble = FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Last Answer',
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                    ),
+                    FlexText(
+                        text=f'Score: {last.score}',
+                        wrap=True,
+                        size='md',
+                        color='#00aa00' if last.score >= 7 else '#ff8800' if last.score >= 4 else '#ff0000',
+                    ),
+                    FlexText(
+                        text=f'"{last.transcript}"',
+                        wrap=True,
+                        size='sm',
+                        color='#5b5b5b',
+                        style='italic',
+                    ),
+                ]
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='View Feedback',
+                            data=f'action=last&category={category}&sub={sub}'
+                        ),
+                        style='secondary',
+                    ),
+                ]
+            )
+        )
+        contents.append(history_bubble)
+    
+    # Instructions bubble
+    instruction_bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            justifyContent='center',
+            alignItems='center',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text='Send a voice message to answer!',
+                    wrap=True,
+                    size='lg',
+                    align='center',
+                ),
+            ]
+        )
+    )
+    contents.append(instruction_bubble)
+    
+    return FlexMessage(
+        altText=f'Q{sub + 1}',
+        contents=FlexCarousel(contents=contents)
+    )
+
+
+async def chat_message(user_id, sub):
+    topic = CHAT_CATEGORY[sub] if sub < len(CHAT_CATEGORY) else "General"
+    image_url = CHAT_CATEGORY_IMAGE_URL[sub] if sub < len(CHAT_CATEGORY_IMAGE_URL) else None
+    
+    bubble = FlexBubble(
+        size='mega',
         body=FlexBox(
             layout='vertical',
             spacing='lg',
             justifyContent='center',
-            contents=[
-                FlexText(
-                    text='Reference Chatting Questions\n參考聊天問題',
-                    wrap=True,
-                    weight='bold',
-                    size='xl',
-                    align='center',
-                ),
-                FlexText(
-                    text='\n\n'.join([f'Q{i+1}. {q}' for i, q in enumerate(result.questions)]),
-                    wrap=True,
-                    size='lg',
-                ),
-            ]
-        ),
-        footer=FlexBox(
-            layout='vertical',
             alignItems='center',
             contents=[
                 FlexText(
-                    text='Choose a question to start!\n選擇問題開始聊天',
-                    size='md',
-                    wrap=True,
-                    align='center',
-                )
-            ]
-        )
-    ))
-    return FlexMessage(
-        altText='Chat',
-        contents=FlexCarousel(contents=messages)
-    )
-
-
-async def carousel_message(user_id, category, unit):
-    if len(question_manager.get_all_questions(category)) < unit:
-        return None
-    cols = []
-    for sub,j in enumerate(question_manager.get_unit(category,unit-1)):
-        body = FlexBox(
-            layout='vertical',
-            spacing='lg',
-            contents=[
-                FlexText(
-                    text=f'Oral Practice Q{unit}-{sub+1}\n口語練習',
+                    text=f'Chat Topic: {topic}',
                     wrap=True,
                     weight='bold',
                     size='xl',
                     align='center',
                 ),
-                # Hint text
                 FlexText(
-                    text='Click button below\n點擊下方按鈕',
+                    text='Send a voice message to start chatting!',
                     wrap=True,
-                    size='xs',
-                    color='#888888',
+                    size='md',
+                    color='#5b5b5b',
                     align='center',
-                    margin='md',
-                ),
-                FlexButton(
-                    action=PostbackAction(
-                        label='Enter',
-                        data=f'action=record&unit={unit-1}&sub={sub}'
-                    ),
-                    height='sm',
-                    style='primary',
                 ),
             ]
         )
-        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
-            body.contents.append(
-                FlexButton(
-                    action=PostbackAction(
-                        label='Result',
-                        data=f'action=result&category={category}&unit={unit-1}&sub={sub}'
-                    ),
-                    height='sm',
-                    style='secondary',
-                )
-            )
-        cols.append(FlexBubble(
-            hero=FlexImage(
-                url=f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg',
-                size='full',
-                aspect_ratio='20:13',
-                aspect_mode='cover',
-            ),
-            body=body
-        ))
-    if len(question_manager.get_all_questions(category)) > unit:
-        cols.append(FlexBubble(
-            body=FlexBox(
-                contents=[
-                    FlexText(
-                        text=f'Next\n前往下一單元',
-                        weight='bold',
-                        size='xl',
-                    ),
-                    # Hint text
-                    FlexText(
-                        text='Tap this card\n點擊此卡片',
-                        wrap=True,
-                        size='xs',
-                        color='#888888',
-                        align='center',
-                        margin='md',
-                    ),
-                ],
-                layout='vertical',
-                alignItems='center',
-                justifyContent='center',
-                action=PostbackAction(
-                    label='Next Unit',
-                    data=f'action=unit&unit={unit+1}'
-                )
-            ),
-        ))
-    msg = FlexMessage(
-        altText='Unit Navigation',
-        contents=FlexCarousel(contents=cols)
     )
-    return msg
-
-
-async def convert_to_voice(text: str, voice: str):
-    response = await client.audio.speech.create(
-        model="gpt-4o-mini-tts",
-        voice=voice,
-        input=text,
-        instructions="Speak slowly and clearly with a calm and friendly tone.",
-        response_format="mp3"
+    
+    if image_url:
+        bubble.hero = FlexImage(
+            url=f'{URL}{image_url}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+        )
+    
+    return FlexMessage(
+        altText=f'Chat: {topic}',
+        contents=bubble
     )
-    return response
 
-async def get_assessment(system: str, user_content: str):
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_content}
-        ],
-        response_format={"type": "json_object"}
+
+async def result_message(assessment: SpeechAssessment, category: str, sub: int):
+    display_feedback = get_display_feedback()
+    bubbles = []
+    
+    # Score bubble
+    score_bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            justifyContent='center',
+            alignItems='center',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text=f'Q{sub + 1} Result',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                ),
+                FlexText(
+                    text=f'Score: {assessment.score}/10',
+                    wrap=True,
+                    size='xxl',
+                    align='center',
+                    color='#00aa00' if assessment.score >= 7 else '#ff8800' if assessment.score >= 4 else '#ff0000',
+                ),
+                FlexText(
+                    text=f'Your answer: "{assessment.transcript}"',
+                    wrap=True,
+                    size='sm',
+                    color='#5b5b5b',
+                    align='center',
+                    style='italic',
+                ),
+            ]
+        )
     )
-    return response.choices[0].message.content
-
-async def get_summary(system: str, user_content: str):
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_content}
-        ]
-    )
-    return response.choices[0].message.content
-
-async def get_assessment_with_image(system: str, user_content: str, image_url: str):
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": [
-                {"type": "text", "text": user_content},
-                {"type": "image_url", "image_url": {"url": image_url}}
-            ]}
-        ],
-        response_format={"type": "json_object"}
-    )
-    return response.choices[0].message.content
-
-async def result_message(user_id, category, unit, sub) -> FlexMessage:
-    history = getHistory(user_id, f'{category}-{unit}-{sub}')
-    if history is None:
-        return FlexMessage(
-            altText='History',
-            contents=FlexBubble(
+    bubbles.append(score_bubble)
+    
+    if display_feedback:
+        # English feedback
+        if assessment.eng_suggestion:
+            eng_bubble = FlexBubble(
+                size='mega',
                 body=FlexBox(
                     layout='vertical',
+                    spacing='sm',
                     contents=[
                         FlexText(
-                            text='No history, please answer first.\n尚無歷史紀錄，請先回答本題',
+                            text='Feedback',
                             wrap=True,
-                        )
+                            weight='bold',
+                            size='lg',
+                        ),
+                        FlexText(
+                            text=assessment.eng_suggestion,
+                            wrap=True,
+                            size='md',
+                            color='#5b5b5b',
+                        ),
                     ]
                 )
             )
+            bubbles.append(eng_bubble)
+        
+        # Chinese feedback
+        if assessment.chi_suggestion:
+            chi_bubble = FlexBubble(
+                size='mega',
+                body=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    contents=[
+                        FlexText(
+                            text='Feedback',
+                            wrap=True,
+                            weight='bold',
+                            size='lg',
+                        ),
+                        FlexText(
+                            text=assessment.chi_suggestion,
+                            wrap=True,
+                            size='md',
+                            color='#5b5b5b',
+                        ),
+                    ]
+                )
+            )
+            bubbles.append(chi_bubble)
+        
+        # Better answer
+        if assessment.better_ans:
+            better_bubble = FlexBubble(
+                size='mega',
+                body=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    contents=[
+                        FlexText(
+                            text='Suggested Answer',
+                            wrap=True,
+                            weight='bold',
+                            size='lg',
+                        ),
+                        FlexText(
+                            text=assessment.better_ans,
+                            wrap=True,
+                            size='md',
+                            color='#5b5b5b',
+                        ),
+                    ]
+                )
+            )
+            bubbles.append(better_bubble)
+    
+    return FlexMessage(
+        altText=f'Q{sub + 1} Result',
+        contents=FlexCarousel(contents=bubbles)
+    )
+
+
+async def carousel_message(user_id, category, page=0):
+    """Generate carousel message for question selection"""
+    questions = question_manager.get_unit(category, page)
+    if not questions:
+        return FlexMessage(
+            altText='No questions found',
+            contents=FlexBubble(
+                body=FlexBox(
+                    layout='vertical',
+                    contents=[FlexText(text='No questions found for this unit.', wrap=True)]
+                )
+            )
         )
-    cols = []
-    for idx, item in enumerate(history):
-        display_feedback = get_display_feedback()
+    
+    bubbles = []
+    start_idx = page * 10
+    
+    for i, question in enumerate(questions):
+        q_idx = start_idx + i
+        history = getHistory(user_id, f'{category}-{q_idx}')
+        has_answered = history and len(history) > 0
+        last_score = history[-1].score if has_answered else 0
         
         body_contents = [
             FlexText(
-                text=f'Attempt {idx+1}\n第 {idx+1} 次作答',
+                text=f'Q{q_idx + 1}',
                 wrap=True,
                 weight='bold',
-                size='xl',
+                size='lg',
             ),
             FlexText(
-                text=f'Score: {item.score}\n分數',
+                text=question.text[:100] + ('...' if len(question.text) > 100 else ''),
                 wrap=True,
+                size='sm',
+                color='#5b5b5b',
             ),
         ]
         
-        # Only show feedback when display_feedback is true
-        if display_feedback:
-            body_contents.extend([
+        if has_answered:
+            body_contents.append(
                 FlexText(
-                    text=f'Tips: {item.eng_suggestion}',
+                    text=f'Last Score: {last_score}/10',
                     wrap=True,
+                    size='sm',
+                    color='#00aa00' if last_score >= 7 else '#ff8800' if last_score >= 4 else '#ff0000',
                     margin='md',
-                ),
-                FlexText(
-                    text=f'Suggestion: {item.chi_suggestion}',
-                    wrap=True,
-                ),
-            ])
+                )
+            )
         
-        cols.append(FlexBubble(
+        bubble = FlexBubble(
+            size='kilo',
             body=FlexBox(
                 layout='vertical',
+                spacing='sm',
                 contents=body_contents
-            )
-        ))
-    return FlexMessage(
-        altText='History',
-        contents=FlexCarousel(contents=cols)
-    )
-
-async def record_message(user_id, category, unit, sub):
-    question = question_manager.get_question(category, unit, sub)
-    user_state = get_user_state(user_id)
-    user_state.sub = sub
-    
-    body_contents = [
-        FlexText(
-            text=question.text,
-            wrap=True,
-            weight='bold',
-            size='lg',
-        )
-    ]
-    
-    if question.extra_info:
-        for info in question.extra_info:
-            body_contents.append(FlexText(
-                text=f'{info[0]}: {info[1]}',
-                wrap=True,
-                margin='sm',
-            ))
-    
-    footer = FlexBox(
-        layout='horizontal',
-        spacing='sm',
-        contents=[
-            FlexButton(
-                action=PostbackAction(
-                    label='Start',
-                    data=f'action=start&category={category}&unit={unit}&sub={sub}'
-                ),
-                height='sm',
-                style='primary',
             ),
-        ]
-    )
-    
-    if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
-        footer.contents.append(
-            FlexButton(
-                action=PostbackAction(
-                    label='Result',
-                    data=f'action=result&category={category}&unit={unit-1}&sub={sub}'
-                ),
-                height='sm',
-                style='secondary',
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='Start' if not has_answered else 'Try Again',
+                            data=f'action=record&sub={q_idx}'
+                        ),
+                        style='primary',
+                        height='sm',
+                    ),
+                ]
             )
         )
-    
-    bubble = FlexBubble(
-        body=FlexBox(
-            layout='vertical',
-            contents=body_contents
-        ),
-        footer=footer
-    )
-    
-    if question.image_url:
-        if question.image_url.lower().endswith(IMG_EXT):
+        
+        if question.image_url:
             bubble.hero = FlexImage(
                 url=f'{URL}{question.image_url}',
                 size='full',
                 aspect_ratio='20:13',
                 aspect_mode='cover',
             )
-
-    return FlexMessage(
-        altText='Recording Question',
-        contents=bubble
-    )
-
-async def question_message(user_id, category, unit):
-    questions = question_manager.get_all_questions(category)
-    questions = questions[unit]
-    user_state = get_user_state(user_id)
-    cols = []
-    for sub, question in enumerate(questions.content):
-        body = FlexBox(
-            layout='vertical',
-            contents=[
-                FlexText(
-                    text=question.text,
-                    wrap=True,
-                    size='md',
-                ),
+        
+        bubbles.append(bubble)
+    
+    # Add navigation bubble if needed
+    all_questions = question_manager.get_all_questions(category)
+    total_pages = (len(all_questions) + 9) // 10
+    
+    if total_pages > 1:
+        nav_contents = [
+            FlexText(
+                text=f'Page {page + 1}/{total_pages}',
+                wrap=True,
+                size='sm',
+                align='center',
+            ),
+        ]
+        
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(
                 FlexButton(
                     action=PostbackAction(
-                        label='Answer',
-                        data=f'action=record&sub={sub}'
+                        label='Previous',
+                        data=f'action=carousel&page={page - 1}'
                     ),
-                    height='sm',
-                    style='primary',
-                ),
-            ]
-        )
-        if getHistory(user_id, f'{category}-{unit-1}-{sub}'):
-            body.contents.append(
-                FlexButton(
-                    action=PostbackAction(
-                        label='Result',
-                        data=f'action=result&category={category}&unit={unit-1}&sub={sub}'
-                    ),
-                    height='sm',
                     style='secondary',
+                    height='sm',
                 )
             )
-        cols.append(FlexBubble(
-            hero=FlexImage(
-                url=f'{URL}/templates/{category}/cover{unit}-{sub+1}.jpg',
-                size='full',
-                aspect_ratio='20:13',
-                aspect_mode='cover',
-            ),
-            body=body
-        ))
-    if len(question_manager.get_all_questions(category)) > unit:
-        cols.append(FlexBubble(
-            body=FlexBox(
-                contents=[
-                    FlexText(
-                            text=f'Next\n前往下一單元',
-                            weight='bold',
-                            size='xl',
-                        ),],
-                layout='vertical',
-                alignItems='center',
-                justifyContent='center',
-                action=PostbackAction(
-                    label='Next Unit',
-                    data=f'action=unit&unit={unit+1}'
+        if page < total_pages - 1:
+            nav_buttons.append(
+                FlexButton(
+                    action=PostbackAction(
+                        label='Next',
+                        data=f'action=carousel&page={page + 1}'
+                    ),
+                    style='secondary',
+                    height='sm',
                 )
-            ),
-        ))
-    msg = FlexMessage(
-        altText='Unit Navigation',
-        contents=FlexCarousel(contents=cols)
+            )
+        
+        if nav_buttons:
+            nav_bubble = FlexBubble(
+                size='kilo',
+                body=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    justifyContent='center',
+                    contents=nav_contents
+                ),
+                footer=FlexBox(
+                    layout='vertical',
+                    spacing='sm',
+                    contents=nav_buttons
+                )
+            )
+            bubbles.append(nav_bubble)
+    
+    return FlexMessage(
+        altText=f'{category} Questions',
+        contents=FlexCarousel(contents=bubbles)
     )
-    return msg
 
-# ========== Game Message Functions ==========
 
-async def game_prologue_message(theme_id: str, user_id: str) -> list:
-    """Display theme prologue/background story and automatically show current level with questions"""
-    messages = []
+# ========== [START] Game Message Functions ==========
+
+async def game_prologue_message(theme_id: str):
+    """Show theme prologue/backstory with optional intro video"""
     theme_config = load_game_theme_config(theme_id)
     
     if not theme_config:
@@ -903,16 +952,17 @@ async def game_prologue_message(theme_id: str, user_id: str) -> list:
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='Theme configuration not found.\n找不到主題設定。', wrap=True)]
+                    contents=[FlexText(text='Theme configuration not found.', wrap=True)]
                 )
             )
         )]
     
-    # If there's an intro video, play it first
+    messages = []
+    
+    # If there's an intro video, add it first
     if theme_config.intro_video:
         video_url = f'{URL}/templates/videos/{theme_config.intro_video}'
-        # Use cover image or video preview
-        preview_url = f'{URL}{theme_config.cover_image}' if theme_config.cover_image else f'{URL}/templates/videos/{theme_config.intro_video.replace(".mp4", "_preview.jpg")}'
+        preview_url = f'{URL}/templates/videos/{theme_config.intro_video.replace(".mp4", "_preview.jpg")}'
         messages.append(
             VideoMessage(
                 originalContentUrl=video_url,
@@ -920,15 +970,11 @@ async def game_prologue_message(theme_id: str, user_id: str) -> list:
             )
         )
     
-    bubbles = []
-    
-    # Title card
-    title_bubble = FlexBubble(
+    # Prologue card
+    prologue_bubble = FlexBubble(
         size='giga',
         body=FlexBox(
             layout='vertical',
-            justifyContent='center',
-            alignItems='center',
             spacing='lg',
             contents=[
                 FlexText(
@@ -936,42 +982,13 @@ async def game_prologue_message(theme_id: str, user_id: str) -> list:
                     wrap=True,
                     weight='bold',
                     size='xxl',
-                    align='center',
-                    color="#1a1a2e",
                 ),
                 FlexText(
-                    text='Story Background\n故事背景',
-                    wrap=True,
-                    size='lg',
-                    align='center',
-                    color="#4a4a6a",
-                ),
-            ]
-        )
-    )
-    
-    if theme_config.cover_image:
-        title_bubble.hero = FlexImage(
-            url=f'{URL}{theme_config.cover_image}',
-            size='full',
-            aspect_ratio='20:13',
-            aspect_mode='cover',
-        )
-    
-    bubbles.append(title_bubble)
-    
-    # Prologue card
-    prologue_bubble = FlexBubble(
-        size='giga',
-        body=FlexBox(
-            layout='vertical',
-            spacing='md',
-            contents=[
-                FlexText(
-                    text='Background\n故事背景',
+                    text='Prologue',
                     wrap=True,
                     weight='bold',
-                    size='xl',
+                    size='lg',
+                    color='#1a1a2e',
                 ),
                 FlexText(
                     text=theme_config.prologue,
@@ -982,81 +999,40 @@ async def game_prologue_message(theme_id: str, user_id: str) -> list:
             ]
         )
     )
-    bubbles.append(prologue_bubble)
     
-    # NPC introduction card
-    if theme_config.npcs:
-        npc_contents = [
-            FlexText(
-                text='Characters\n登場角色',
-                wrap=True,
-                weight='bold',
-                size='xl',
-            ),
-        ]
-        for npc in theme_config.npcs:
-            # Use description instead of persona for user display
-            npc_text = f"- {npc.name}"
-            if npc.description:
-                npc_text += f": {npc.description}"
-            npc_contents.append(
-                FlexText(
-                    text=npc_text,
-                    wrap=True,
-                    size='md',
-                    color='#5b5b5b',
-                    margin='sm',
-                )
-            )
-        
-        npc_bubble = FlexBubble(
-            size='giga',
-            body=FlexBox(
-                layout='vertical',
-                spacing='sm',
-                contents=npc_contents
-            )
+    if theme_config.cover_image:
+        prologue_bubble.hero = FlexImage(
+            url=f'{URL}{theme_config.cover_image}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
         )
-        bubbles.append(npc_bubble)
     
     messages.append(FlexMessage(
-        altText=f'{theme_config.name} - Background',
-        contents=FlexCarousel(contents=bubbles)
+        altText=f'{theme_config.name} - Prologue',
+        contents=prologue_bubble
     ))
-    
-    # [MODIFIED] Automatically show current level intro and questions
-    current_level = get_user_unlocked_level(user_id, theme_id)
-    level_messages = await game_level_intro_message(theme_id, current_level, user_id)
-    messages.extend(level_messages)
-    
-    # [NEW] Automatically show questions for the current level
-    questions_message = await game_questions_carousel(theme_id, current_level, user_id)
-    messages.append(questions_message)
-    
-    # [NEW] Add NPC hint message
-    npc_hint_message = await game_npc_hint_message()
-    messages.append(npc_hint_message)
     
     return messages
 
-# [NEW] NPC hint message function
-async def game_npc_hint_message() -> TextMessage:
-    """Display hint message prompting user to click on NPC characters in the menu"""
-    hint_text = (
-        "Tip: Click on the character icons in the menu below to chat with NPCs and get clues for solving the puzzle!\n\n"
-        "提示：點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索！"
-    )
-    return TextMessage(text=hint_text)
-
-async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str) -> list:
-    """Display level introduction including video"""
-    messages = []
+async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
+    """Show level intro with optional video"""
     level_info = get_game_level_info(theme_id, level_idx)
     
     if not level_info:
-        return [TextMessage(text='Level not found.\n找不到關卡。')]
+        return [FlexMessage(
+            altText='Level not found',
+            contents=FlexBubble(
+                body=FlexBox(
+                    layout='vertical',
+                    contents=[FlexText(text='Level information not found.', wrap=True)]
+                )
+            )
+        )]
     
-    # Play video if available
+    messages = []
+    
+    # If there's a video, add it first
     if level_info.get('video_file'):
         video_url = f'{URL}/templates/videos/{level_info["video_file"]}'
         preview_url = f'{URL}/templates/videos/{level_info["video_file"].replace(".mp4", "_preview.jpg")}'
@@ -1078,7 +1054,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str) 
             spacing='lg',
             contents=[
                 FlexText(
-                    text=f'Level {level_idx + 1}: {level_info["title"]}\n關卡 {level_idx + 1}',
+                    text=f'Level {level_idx + 1}: {level_info["title"]}',
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -1091,7 +1067,19 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str) 
                 ),
             ]
         ),
-        # [MODIFIED] Removed the "Show Questions" button since questions are auto-shown
+        footer=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexButton(
+                    action=PostbackAction(
+                        label='Show Questions',
+                        data=f'action=game_questions&theme={theme_id}&level={level_idx}'
+                    ),
+                    style='primary',
+                ),
+            ]
+        )
     )
     
     messages.append(FlexMessage(
@@ -1102,7 +1090,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str) 
     return messages
 
 async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, force_show_all: bool = False) -> FlexMessage:
-    """Display level questions as scrollable cards
+    """Show level questions as scrollable cards
     
     Args:
         theme_id: Theme ID
@@ -1124,7 +1112,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='Level questions not found.\n找不到關卡題目。', wrap=True)]
+                    contents=[FlexText(text='Level questions not found.', wrap=True)]
                 )
             )
         )
@@ -1135,11 +1123,11 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     # Limit to configured questions per level
     questions = questions[:questions_per_level]
     
-    # Check if all questions are passed
+    # Check if all questions passed
     all_passed = is_level_all_questions_passed(user_id, theme_id, level_idx)
     min_score = get_min_score_to_pass()
     
-    # If all questions passed or force show, display all questions for free selection
+    # If all passed or force show, display all questions for free selection
     if all_passed or force_show_all:
         for q_idx, question in enumerate(questions):
             # Check if user has answered this question
@@ -1149,7 +1137,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             body_contents = [
                 FlexText(
-                    text=f'Question {q_idx + 1}\n題目 {q_idx + 1}',
+                    text=f'Question {q_idx + 1}',
                     wrap=True,
                     weight='bold',
                     size='lg',
@@ -1167,10 +1155,9 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             if has_answered:
                 status_color = '#00aa00' if is_passed else '#ff8800'
                 status_text = 'Passed' if is_passed else 'Not Passed'
-                status_text_chi = '已通過' if is_passed else '未通過'
                 body_contents.append(
                     FlexText(
-                        text=f'Best: {best_score}/10 ({status_text}/{status_text_chi})',
+                        text=f'Best: {best_score}/10 ({status_text})',
                         wrap=True,
                         size='sm',
                         color=status_color,
@@ -1192,9 +1179,8 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
                 )
             
             footer_contents = [
-                # Hint text
                 FlexText(
-                    text='Click button below\n點擊下方按鈕',
+                    text='Click button below',
                     wrap=True,
                     size='xs',
                     color='#888888',
@@ -1225,7 +1211,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             )
             bubbles.append(bubble)
     else:
-        # Not all questions passed, show only current question to answer
+        # Not all passed yet, only show current question to answer
         current_q_idx = get_next_unpassed_question(user_id, theme_id, level_idx)
         if current_q_idx < 0 or current_q_idx >= len(questions):
             current_q_idx = 0
@@ -1236,7 +1222,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         
         body_contents = [
             FlexText(
-                text=f'Question {current_q_idx + 1}/{len(questions)}\n題目 {current_q_idx + 1}/{len(questions)}',
+                text=f'Question {current_q_idx + 1}/{len(questions)}',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1255,10 +1241,9 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             is_passed = best_score >= min_score
             status_color = '#00aa00' if is_passed else '#ff8800'
             status_text = 'Passed' if is_passed else 'Try again to pass'
-            status_text_chi = '已通過' if is_passed else '再試一次以通過'
             body_contents.append(
                 FlexText(
-                    text=f'Current: {best_score}/10\n目前分數',
+                    text=f'Current: {best_score}/10',
                     wrap=True,
                     size='sm',
                     color=status_color,
@@ -1268,7 +1253,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             )
             body_contents.append(
                 FlexText(
-                    text=f'Pass: {min_score}/10 ({status_text}/{status_text_chi})\n及格標準',
+                    text=f'Pass: {min_score}/10 ({status_text})',
                     wrap=True,
                     size='xs',
                     color='#888888',
@@ -1290,9 +1275,8 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             )
         
         footer_contents = [
-            # Hint text
             FlexText(
-                text='Click to start\n點擊下方按鈕開始作答',
+                text='Click to start',
                 wrap=True,
                 size='xs',
                 color='#888888',
@@ -1326,7 +1310,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         # Add progress indicator card
         progress_contents = [
             FlexText(
-                text='Level Progress\n關卡進度',
+                text='Level Progress',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1376,14 +1360,14 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     )
 
 async def game_score_message(user_id: str, theme_id: str, level_idx: int, question_idx: int, 
-                             score: int, is_new_high: bool, feedback_eng: str, feedback_chi: str,
+                             score: int, is_new_high: bool, feedback_eng: str = "", feedback_chi: str = "",
                              reference_comparison: str = "") -> FlexMessage:
-    """Display game result and score - English feedback first, Chinese feedback second
+    """Show game result and score - English feedback first, Chinese feedback second
     
-    [MODIFIED] Button logic based on score:
-    - Score < 6: "Try Again", "Improvement Hint", "Question List"
-    - Score >= 6 but < 10: "Try Again", "Improvement Hint", "Question List", "Next Question"
-    - Score = 10: "Question List", "Next Question" (no improvement hint needed)
+    Button logic:
+    - Score < 6: Show "Try Again" + "Improvement Hint"
+    - Score 6-9: Show "Try Again" + "Improvement Hint" + "Next Question"
+    - Score = 10: Show only "Next Question"
     """
     display_feedback = get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
@@ -1391,17 +1375,17 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     bubbles = []
     
-    # Main result card - score always displayed
+    # Main result card - score always shows
     main_contents = [
         FlexText(
-            text=f'Q{question_idx + 1} Result\n結果',
+            text=f'Q{question_idx + 1} Result',
             wrap=True,
             weight='bold',
             size='xxl',
             align='center',
         ),
         FlexText(
-            text=f'Score: {score}/10\n評分',
+            text=f'Score: {score}/10',
             wrap=True,
             size='xl',
             align='center',
@@ -1413,7 +1397,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     if is_new_high:
         main_contents.append(
             FlexText(
-                text='New High Score!\n新高分！',
+                text='New High Score!',
                 wrap=True,
                 size='md',
                 align='center',
@@ -1424,7 +1408,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     main_contents.append(
         FlexText(
-            text=f'Theme Total: {theme_total}/{max_score}\n主題總分',
+            text=f'Theme Total: {theme_total}/{max_score}',
             wrap=True,
             size='md',
             align='center',
@@ -1445,9 +1429,9 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     )
     bubbles.append(main_bubble)
     
-    # Only show feedback cards when display_feedback is true and there is feedback content
+    # Only show feedback cards when display_feedback is true and has content
     if display_feedback:
-        # English feedback card (shown first)
+        # English feedback card (show first)
         if feedback_eng and feedback_eng.strip():
             eng_feedback_bubble = FlexBubble(
                 size='giga',
@@ -1473,7 +1457,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             )
             bubbles.append(eng_feedback_bubble)
         
-        # Chinese feedback card (shown second)
+        # Chinese feedback card (show second)
         if feedback_chi and feedback_chi.strip():
             chi_feedback_bubble = FlexBubble(
                 size='giga',
@@ -1530,22 +1514,22 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
         contents=FlexCarousel(contents=bubbles)
     )
     
-    # [MODIFIED] Quick reply buttons based on score thresholds
+    # Quick reply buttons - based on score decide which buttons to show
+    # Score < 6: "Try Again" + "Improvement Hint"
+    # Score 6-9: "Try Again" + "Improvement Hint" + "Next Question"
+    # Score = 10: Only "Next Question"
     from utils.file_utils import get_min_score_to_pass, is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level
     min_score = get_min_score_to_pass()
     is_passed = score >= min_score
-    is_perfect = score >= 10
+    is_perfect = score == 10
     all_level_passed = is_level_all_questions_passed(user_id, theme_id, level_idx)
-    questions_per_level = get_questions_per_level()
+    questions_per_level_count = get_questions_per_level()
     
     quick_reply_items = []
     
-    # [MODIFIED] Button logic based on score
-    if is_perfect:
-        # Score = 10: No improvement hint needed, only "Question List" and "Next Question"
-        pass  # No "Try Again" or "Improvement Hint" for perfect score
-    else:
-        # Score < 10: Show "Try Again" button
+    # Perfect score (10) - no need for try again or improvement hint
+    if not is_perfect:
+        # Try Again button
         quick_reply_items.append(
             QuickReplyItem(action=PostbackAction(
                 label='Try Again',
@@ -1553,7 +1537,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             ))
         )
         
-        # Score < 10: Show "Improvement Hint" button
+        # Improvement Hint button (not perfect, can use)
         quick_reply_items.append(
             QuickReplyItem(action=PostbackAction(
                 label='Improvement Hint',
@@ -1561,18 +1545,10 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             ))
         )
     
-    # Question List button (always shown)
-    quick_reply_items.append(
-        QuickReplyItem(action=PostbackAction(
-            label='Question List',
-            data=f'action=game_questions&theme={theme_id}&level={level_idx}'
-        ))
-    )
-    
-    # If current question is passed, show "Next Question" button (if there's a next question)
+    # If passed current question (score >= 6), show next question button
     if is_passed:
         next_q_idx = get_next_unpassed_question(user_id, theme_id, level_idx)
-        if next_q_idx >= 0 and next_q_idx < questions_per_level:
+        if next_q_idx >= 0 and next_q_idx < questions_per_level_count:
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
                     label=f'Next (Q{next_q_idx + 1})',
@@ -1580,7 +1556,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
                 ))
             )
         elif all_level_passed:
-            # Level completed
+            # Level all passed
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
                     label='Level Complete!',
@@ -1588,14 +1564,23 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
                 ))
             )
     
-    msg.quick_reply = QuickReply(items=quick_reply_items)
+    if quick_reply_items:
+        msg.quick_reply = QuickReply(items=quick_reply_items)
     
     return msg
 
 async def game_improvement_hint_message(theme_id: str, level_idx: int, question_idx: int,
-                                         hint_eng: str, hint_chi: str) -> FlexMessage:
-    """Display improvement hint message (without revealing the answer)"""
-    # [NEW] Get hint usage count
+                                         hint_eng: str, hint_chi: str, hint_count: int = 1) -> FlexMessage:
+    """Show improvement hint message (without revealing answer)
+    
+    Args:
+        theme_id: Theme ID
+        level_idx: Level index
+        question_idx: Question index
+        hint_eng: English hint
+        hint_chi: Chinese hint
+        hint_count: Number of times hints have been used for this question
+    """
     bubbles = []
     
     # English hint card
@@ -1606,7 +1591,7 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
             spacing='sm',
             contents=[
                 FlexText(
-                    text='Improvement Hint',
+                    text=f'Improvement Hint (#{hint_count})',
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -1632,14 +1617,14 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
             spacing='sm',
             contents=[
                 FlexText(
-                    text='Improvement Hint',
+                    text=f'Improvement Hint (#{hint_count})',
                     wrap=True,
                     weight='bold',
                     size='xl',
                     color='#0066cc',
                 ),
                 FlexText(
-                    text=hint_chi if hint_chi else "暫無改善提示。",
+                    text=hint_chi if hint_chi else "No hint available.",
                     wrap=True,
                     size='md',
                     color='#5b5b5b',
@@ -1650,9 +1635,9 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
     )
     bubbles.append(chi_bubble)
     
-    # If no bubbles (shouldn't happen but just in case)
-    if not bubbles:
-        bubbles.append(
+    # If no hint content at all
+    if not hint_eng and not hint_chi:
+        bubbles = [
             FlexBubble(
                 size='giga',
                 body=FlexBox(
@@ -1661,29 +1646,25 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
                     alignItems='center',
                     contents=[
                         FlexText(
-                            text='No hints available\n暫無改善提示',
+                            text='No hints available',
                             wrap=True,
                             align='center',
                         )
                     ]
                 )
             )
-        )
+        ]
 
     msg = FlexMessage(
         altText=f'Q{question_idx + 1} Improvement Hint',
         contents=FlexCarousel(contents=bubbles)
     )
     
-    # Quick reply buttons
+    # Quick reply button - only Try Again (removed Question List button)
     msg.quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(
             label='Try Again',
             data=f'action=game_answer&theme={theme_id}&level={level_idx}&question={question_idx}'
-        )),
-        QuickReplyItem(action=PostbackAction(
-            label='Question List',
-            data=f'action=game_questions&theme={theme_id}&level={level_idx}'
         )),
     ])
     
@@ -1692,11 +1673,11 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
 async def game_npc_chat_response_message(npc_name: str, npc_reply: str, 
                                           is_english: bool = True,
                                           npc_image: str = None) -> FlexMessage:
-    """Display NPC quick response (immediately displayed), with random character image
+    """Show NPC quick response (immediate display), with random character image
     
     Args:
         npc_name: NPC name
-        npc_reply: NPC reply content
+        npc_reply: NPC response content
         is_english: Whether user used English
         npc_image: NPC base image filename (e.g. John_Watson.jpg), will randomly select _1, _2, _3 variant
     """
@@ -1715,7 +1696,7 @@ async def game_npc_chat_response_message(npc_name: str, npc_reply: str,
                 alignItems='center',
                 contents=[
                     FlexText(
-                        text='Please speak in English\n請使用英文對話',
+                        text='Please speak in English',
                         wrap=True,
                         weight='bold',
                         size='lg',
@@ -1754,7 +1735,7 @@ async def game_npc_chat_response_message(npc_name: str, npc_reply: str,
         )
     )
     
-    # If there's an NPC image, randomly select a variant and add to reply card
+    # If there's NPC image, randomly select variant and add to reply card
     if npc_image:
         # Extract name part from image filename (remove .jpg etc)
         base_name = npc_image.rsplit('.', 1)[0] if '.' in npc_image else npc_image
@@ -1781,7 +1762,7 @@ async def game_npc_chat_response_message(npc_name: str, npc_reply: str,
 async def game_npc_evaluation_message(npc_name: str, language_score: int, 
                                       relevance_score: int, feedback_eng: str, 
                                       feedback_chi: str) -> FlexMessage:
-    """Display NPC conversation evaluation (async sent)"""
+    """Show NPC chat evaluation (sent asynchronously)"""
     display_feedback = get_display_feedback()
     
     if not display_feedback:
@@ -1814,7 +1795,7 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
         ),
     ]
     
-    # If there's feedback, add bilingual feedback
+    # If there's feedback, add bilingual comparison
     if feedback_eng and feedback_eng.strip():
         score_contents.append(
             FlexText(
@@ -1824,7 +1805,7 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
         )
         score_contents.append(
             FlexText(
-                text='Language Feedback',
+                text='Feedback',
                 wrap=True,
                 weight='bold',
                 size='md',
@@ -1833,7 +1814,7 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
         )
         score_contents.append(
             FlexText(
-                text=f'EN: {feedback_eng}',
+                text=f'{feedback_eng}',
                 wrap=True,
                 size='sm',
                 color='#5b5b5b',
@@ -1843,7 +1824,7 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
         if feedback_chi and feedback_chi.strip():
             score_contents.append(
                 FlexText(
-                    text=f'TW: {feedback_chi}',
+                    text=f'{feedback_chi}',
                     wrap=True,
                     size='sm',
                     color='#5b5b5b',
@@ -1862,12 +1843,12 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
     bubbles.append(score_bubble)
     
     return FlexMessage(
-        altText=f'{npc_name} Conversation Evaluation',
+        altText=f'{npc_name} Chat Evaluation',
         contents=FlexCarousel(contents=bubbles)
     )
 
 async def game_theme_select_message() -> FlexMessage:
-    """Display theme selection cards"""
+    """Show theme selection cards"""
     from utils.file_utils import get_game_themes
     
     themes = get_game_themes()
@@ -1896,9 +1877,8 @@ async def game_theme_select_message() -> FlexMessage:
                     size='xl',
                     align='center',
                 ),
-                # Hint text
                 FlexText(
-                    text='Click button below\n點擊下方按鈕',
+                    text='Click button below',
                     wrap=True,
                     size='xs',
                     color='#888888',
@@ -1936,7 +1916,7 @@ async def game_theme_select_message() -> FlexMessage:
     )
 
 async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
-    """Display NPC selection interface - with images and descriptions"""
+    """Show NPC selection interface - with images and descriptions"""
     print(f"[DEBUG] game_npc_select_message called with theme_id={theme_id}, user_id={user_id}")
     
     theme_config = load_game_theme_config(theme_id)
@@ -1949,7 +1929,7 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
                 body=FlexBox(
                     layout='vertical',
                     contents=[
-                        FlexText(text='Theme config not found.\n找不到主題配置。', wrap=True),
+                        FlexText(text='Theme config not found.', wrap=True),
                         FlexText(
                             text=f'Theme ID: {theme_id}',
                             wrap=True,
@@ -1984,14 +1964,14 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
                     align='center',
                 ),
                 FlexText(
-                    text=f"Score: {progress['total_score']}/{progress['max_score']}\n總分",
+                    text=f"Score: {progress['total_score']}/{progress['max_score']}",
                     wrap=True,
                     size='lg',
                     align='center',
                     color='#00aa00',
                 ),
                 FlexText(
-                    text=f"Current Level: {progress['current_level'] + 1}\n目前關卡",
+                    text=f"Current Level: {progress['current_level'] + 1}",
                     wrap=True,
                     size='md',
                     align='center',
@@ -2016,7 +1996,7 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
             ),
         ]
         
-        # Display description instead of persona
+        # Add NPC description if available
         if npc.description:
             body_contents.append(
                 FlexText(
@@ -2024,54 +2004,41 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
                     wrap=True,
                     size='sm',
                     color='#5b5b5b',
-                    margin='sm',
+                    margin='md',
                 )
             )
         
-        # Hint text
-        body_contents.append(
-            FlexText(
-                text='Click button below\n點擊下方按鈕',
-                wrap=True,
-                size='xs',
-                color='#888888',
-                align='center',
-                margin='sm',
-            )
-        )
-        
-        body_contents.append(
-            FlexButton(
-                action=PostbackAction(
-                    label='Talk',
-                    data=f'action=game_npc&theme={theme_id}&npc={npc_idx}'
-                ),
-                style='primary',
-                margin='md',
-            )
-        )
-        
-        npc_bubble = FlexBubble(
+        bubble = FlexBubble(
             size='mega',
             body=FlexBox(
                 layout='vertical',
                 spacing='md',
-                justifyContent='center',
-                alignItems='center',
                 contents=body_contents
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='Chat',
+                            data=f'action=game_npc&theme={theme_id}&npc={npc_idx}'
+                        ),
+                        style='primary',
+                    ),
+                ]
             )
         )
         
-        # If there's an image, display it
+        # Add NPC image if available
         if npc.image:
-            npc_bubble.hero = FlexImage(
+            bubble.hero = FlexImage(
                 url=f'{URL}/templates/people_pic/{npc.image}',
                 size='full',
-                aspect_ratio='1:1',
+                aspect_ratio='3:4',
                 aspect_mode='cover',
             )
         
-        bubbles.append(npc_bubble)
+        bubbles.append(bubble)
     
     return FlexMessage(
         altText=f'{theme_config.name} - Select NPC',
@@ -2079,66 +2046,25 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
     )
 
 async def game_npc_card_message(theme_id: str, npc_idx: int) -> FlexMessage:
-    """Display single NPC card - with image and description"""
-    print(f"[DEBUG] game_npc_card_message called with theme_id={theme_id}, npc_idx={npc_idx}")
+    """Show NPC card with introduction and chat prompt"""
+    from utils.file_utils import get_game_npc_info
     
-    theme_config = load_game_theme_config(theme_id)
+    npc_info = get_game_npc_info(theme_id, npc_idx)
     
-    if not theme_config:
-        print(f"[WARNING] Theme config not found for theme_id={theme_id}")
-        return FlexMessage(
-            altText='Theme not found',
-            contents=FlexBubble(
-                body=FlexBox(
-                    layout='vertical',
-                    contents=[
-                        FlexText(text='Theme config not found.\n找不到主題配置。', wrap=True),
-                        FlexText(
-                            text=f'Theme ID: {theme_id}',
-                            wrap=True,
-                            size='sm',
-                            color='#888888',
-                            margin='md'
-                        ),
-                        FlexText(
-                            text='Please check if theme_config.json exists.\n請確認 theme_config.json 檔案存在。',
-                            wrap=True,
-                            size='sm',
-                            color='#888888',
-                            margin='md'
-                        )
-                    ]
-                )
-            )
-        )
-    
-    npc = theme_config.get_npc(npc_idx)
-    if not npc:
-        print(f"[WARNING] NPC not found for theme_id={theme_id}, npc_idx={npc_idx}")
+    if not npc_info:
         return FlexMessage(
             altText='NPC not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[
-                        FlexText(text='NPC not found.\n找不到角色。', wrap=True),
-                        FlexText(
-                            text=f'NPC Index: {npc_idx} (Available: {len(theme_config.npcs)})',
-                            wrap=True,
-                            size='sm',
-                            color='#888888',
-                            margin='md'
-                        )
-                    ]
+                    contents=[FlexText(text='NPC information not found.', wrap=True)]
                 )
             )
         )
     
-    print(f"[DEBUG] NPC found: name={npc.name}, has_description={bool(npc.description)}, has_image={bool(npc.image)}")
-    
     body_contents = [
         FlexText(
-            text=npc.name,
+            text=npc_info['name'],
             wrap=True,
             weight='bold',
             size='xl',
@@ -2146,11 +2072,11 @@ async def game_npc_card_message(theme_id: str, npc_idx: int) -> FlexMessage:
         ),
     ]
     
-    # Display description instead of persona
-    if npc.description:
+    # Add description if available
+    if npc_info.get('description'):
         body_contents.append(
             FlexText(
-                text=npc.description,
+                text=npc_info['description'],
                 wrap=True,
                 size='md',
                 color='#5b5b5b',
@@ -2158,11 +2084,25 @@ async def game_npc_card_message(theme_id: str, npc_idx: int) -> FlexMessage:
             )
         )
     
+    # Add background if available
+    if npc_info.get('background'):
+        body_contents.append(
+            FlexText(
+                text=npc_info['background'],
+                wrap=True,
+                size='sm',
+                color='#888888',
+                margin='sm',
+                style='italic',
+            )
+        )
+    
+    # Add instruction
     body_contents.append(
         FlexText(
-            text='Please speak in English\n請用英文對話',
+            text='Send a voice message to chat!',
             wrap=True,
-            size='sm',
+            size='md',
             color='#0066cc',
             margin='lg',
             align='center',
@@ -2170,32 +2110,30 @@ async def game_npc_card_message(theme_id: str, npc_idx: int) -> FlexMessage:
     )
     
     bubble = FlexBubble(
-        size='giga',
+        size='mega',
         body=FlexBox(
             layout='vertical',
             spacing='md',
-            justifyContent='center',
-            alignItems='center',
             contents=body_contents
         )
     )
     
-    # If there's an image, display it
-    if npc.image:
+    # Add NPC image if available
+    if npc_info.get('image'):
         bubble.hero = FlexImage(
-            url=f'{URL}/templates/people_pic/{npc.image}',
+            url=f'{URL}/templates/people_pic/{npc_info["image"]}',
             size='full',
             aspect_ratio='3:4',
             aspect_mode='cover',
         )
     
     return FlexMessage(
-        altText=f'{npc.name} - Talk',
+        altText=f'{npc_info["name"]} - Chat',
         contents=bubble
     )
 
 async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
-    """Display level selection interface - only show unlocked levels"""
+    """Show level selection cards"""
     theme_config = load_game_theme_config(theme_id)
     
     if not theme_config:
@@ -2204,61 +2142,54 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='Theme not found.\n找不到主題。', wrap=True)]
+                    contents=[FlexText(text='Theme configuration not found.', wrap=True)]
                 )
             )
         )
     
-    # Get user's highest unlocked level
     unlocked_level = get_user_unlocked_level(user_id, theme_id)
-    
     bubbles = []
     
-    # Only show unlocked levels
     for level in theme_config.levels:
-        if level.id > unlocked_level:
-            break  # Don't show locked levels
-            
-        level_score = get_user_level_score(user_id, theme_id, level.id)
-        questions_per_level = get_questions_per_level()
-        max_level_score = questions_per_level * 10
+        is_locked = level.id > unlocked_level
         
-        # Determine if level is completed
-        is_completed = level_score >= questions_per_level * 6  # All questions passed
+        if is_locked:
+            continue  # Don't show locked levels
+        
+        # Get level score
+        level_score = get_user_level_score(user_id, theme_id, level.id)
+        max_level_score = get_questions_per_level() * 10
+        is_completed = level_score >= get_questions_per_level() * 6  # All questions passed
         
         body_contents = [
             FlexText(
-                text=f'Level {level.id + 1}\n關卡 {level.id + 1}',
+                text=f'Level {level.id + 1}',
                 wrap=True,
                 weight='bold',
-                size='lg',
+                size='xl',
                 align='center',
             ),
             FlexText(
                 text=level.title,
                 wrap=True,
-                size='md',
+                size='lg',
+                color='#1a1a2e',
                 align='center',
-                color='#5b5b5b',
             ),
-        ]
-        
-        if level_score > 0:
-            body_contents.append(
-                FlexText(
-                    text=f'Score: {level_score}/{max_level_score}\n分數',
-                    wrap=True,
-                    size='sm',
-                    align='center',
-                    color='#00aa00' if is_completed else '#ff8800',
-                    margin='sm',
-                )
+            FlexText(
+                text=f'Score: {level_score}/{max_level_score}',
+                wrap=True,
+                size='sm',
+                align='center',
+                color='#00aa00' if is_completed else '#ff8800',
+                margin='sm',
             )
+        ]
         
         if is_completed:
             body_contents.append(
                 FlexText(
-                    text='Completed\n已完成',
+                    text='Completed',
                     wrap=True,
                     size='sm',
                     align='center',
@@ -2278,9 +2209,8 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
             footer=FlexBox(
                 layout='vertical',
                 contents=[
-                    # Hint text
                     FlexText(
-                        text='Click button below\n點擊下方按鈕',
+                        text='Click button below',
                         wrap=True,
                         size='xs',
                         color='#888888',
@@ -2299,7 +2229,7 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         )
         bubbles.append(bubble)
     
-    # If there are still locked levels, show hint
+    # If there are still locked levels, show a hint
     if unlocked_level < len(theme_config.levels) - 1:
         locked_bubble = FlexBubble(
             size='mega',
@@ -2315,14 +2245,14 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
                         align='center',
                     ),
                     FlexText(
-                        text=f'{len(theme_config.levels) - unlocked_level - 1} more levels locked\n還有 {len(theme_config.levels) - unlocked_level - 1} 個關卡未解鎖',
+                        text=f'{len(theme_config.levels) - unlocked_level - 1} levels locked',
                         wrap=True,
                         size='md',
                         align='center',
                         color='#888888',
                     ),
                     FlexText(
-                        text='Complete current level to unlock\n完成當前關卡即可解鎖',
+                        text='Complete current level to unlock',
                         wrap=True,
                         size='sm',
                         align='center',
@@ -2339,17 +2269,17 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
     )
 
 async def game_current_questions_message(theme_id: str, user_id: str) -> FlexMessage:
-    """Display current level questions (for the "Show Questions" button in the menu)"""
+    """Show current level questions (for menu's "Show Questions" button)"""
     current_level = get_user_unlocked_level(user_id, theme_id)
     return await game_questions_carousel(theme_id, current_level, user_id)
 
 # ========== [END] Game Message Functions ==========
 
 CHI_HINT = [
-    'Please enter your class number\n請依照指示輸入你的課程編號\n1 for English Presentation(4-12)\n2 for English Presentation(4-34)\n3 for English Culture(1-56)\n4 for English Culture(1-78)\n5 for Others',
-    'Next, what is your department?\nFor example: Information Management\nEnter "Back" to go back.\n接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
-    'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to go back.\n接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
-    'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to go back.\n接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
+    'Please enter your class number\n1 for English Presentation(4-12)\n2 for English Presentation(4-34)\n3 for English Culture and Lifestyle(1-56)\n4 for English Culture and Lifestyle(1-78)\n5 for Others',
+    'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
+    'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
+    'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
 ]
 
 ENG_HINT =[
@@ -2361,7 +2291,7 @@ ENG_HINT =[
 
 async def info_hint_message(index: int):
     return FlexMessage(
-        altText='Data Binding Hint',
+        altText='Binding Information',
         contents=FlexBubble(
             size='mega',
             body=FlexBox(
@@ -2373,6 +2303,10 @@ async def info_hint_message(index: int):
                         wrap=True,
                         size='md',
                     ),
+                    FlexText(
+                        text=ENG_HINT[index],
+                        wrap=True,
+                    )
                 ]
             )
         )
@@ -2407,7 +2341,7 @@ async def create_rich_menu():
             await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
         clear_rich_menu_id()
     
-    # Determine default menu based on RAG mode
+    # Decide default menu based on RAG mode
     target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
     
     for menu_name, config_data in configs['rich_menus'].items():

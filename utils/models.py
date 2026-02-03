@@ -73,6 +73,7 @@ class GameQuestionScore(BaseModel):
     question_idx: int = Field(description="題目索引")  # 題目索引
     best_score: int = Field(description="最高分數", default=0)  # 最高分數
     attempts: int = Field(description="嘗試次數", default=0)  # 嘗試次數
+    hint_count: int = Field(description="使用改善提示次數", default=0)  # 新增：提示使用次數
 
 class GameLevelScore(BaseModel):
     """追蹤單一關卡的分數 (包含多個題目)"""
@@ -168,6 +169,45 @@ class GameScores(BaseModel):
                 return True
             return False
     
+    def increment_hint_count(self, theme_id: str, level_idx: int, question_idx: int) -> int:
+        """增加特定題目的提示使用次數，並回傳新的使用次數"""
+        # 若主題不存在則初始化
+        if theme_id not in self.themes:
+            self.themes[theme_id] = GameThemeScore(theme_id=theme_id)
+        
+        theme = self.themes[theme_id]
+        
+        # 若關卡不存在則初始化
+        if level_idx not in theme.levels:
+            theme.levels[level_idx] = GameLevelScore(level_idx=level_idx)
+        
+        level = theme.levels[level_idx]
+        
+        # 若題目不存在則初始化
+        if question_idx not in level.questions:
+            level.questions[question_idx] = GameQuestionScore(
+                question_idx=question_idx,
+                best_score=0,
+                attempts=0,
+                hint_count=1
+            )
+            return 1
+        else:
+            level.questions[question_idx].hint_count += 1
+            return level.questions[question_idx].hint_count
+    
+    def get_hint_count(self, theme_id: str, level_idx: int, question_idx: int) -> int:
+        """取得特定題目的提示使用次數"""
+        if theme_id not in self.themes:
+            return 0
+        theme = self.themes[theme_id]
+        if level_idx not in theme.levels:
+            return 0
+        level = theme.levels[level_idx]
+        if question_idx not in level.questions:
+            return 0
+        return level.questions[question_idx].hint_count
+    
     def check_and_unlock_level(self, theme_id: str, level_idx: int, 
                                 questions_per_level: int = 3, 
                                 min_score_per_question: int = 6,
@@ -181,8 +221,6 @@ class GameScores(BaseModel):
             return False
         
         level = theme.levels[level_idx]
-        
-        # 檢查關卡是否完成
         if level.check_completion(questions_per_level, min_score_per_question):
             level.completed = True
             # 如果當前關卡等於已解鎖關卡，則解鎖下一關
