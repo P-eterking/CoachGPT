@@ -468,6 +468,63 @@ def get_next_unpassed_question(user_id: str, theme_id: str, level_idx: int) -> i
     
     return -1  # 全部已通過
 
+# ========== 跨關卡題目進度追蹤功能 (新增) ==========
+
+def get_next_unanswered_question_global(user_id: str, theme_id: str) -> tuple:
+    """
+    取得整個主題中下一個未回答或未通過的題目。
+    回傳 (level_idx, question_idx)，若全部已通過則回傳 (-1, -1)。
+    搜尋順序：按關卡順序、題目順序檢查。
+    Get the next unanswered or unpassed question across all levels in a theme.
+    Returns (level_idx, question_idx), or (-1, -1) if all completed.
+    """
+    theme_config = load_game_theme_config(theme_id)
+    if not theme_config:
+        return (-1, -1)
+    
+    levels_count = len(theme_config.levels)
+    min_score = get_min_score_to_pass()
+    
+    user = user_data.get(user_id)
+    
+    # 遍歷所有關卡和題目
+    for level_idx in range(levels_count):
+        level_info = theme_config.get_level(level_idx)
+        if not level_info:
+            continue
+        
+        actual_questions = len(level_info.questions)
+        
+        for q_idx in range(actual_questions):
+            # 檢查是否未回答或未通過
+            if not user or not user.game_scores:
+                return (level_idx, q_idx)
+            
+            if theme_id not in user.game_scores.themes:
+                return (level_idx, q_idx)
+            
+            theme = user.game_scores.themes[theme_id]
+            if level_idx not in theme.levels:
+                return (level_idx, q_idx)
+            
+            level = theme.levels[level_idx]
+            if q_idx not in level.questions:
+                return (level_idx, q_idx)
+            
+            if level.questions[q_idx].best_score < min_score:
+                return (level_idx, q_idx)
+    
+    # 全部已通過
+    return (-1, -1)
+
+def is_all_questions_completed(user_id: str, theme_id: str) -> bool:
+    """
+    檢查使用者是否已完成該主題的所有題目
+    Check if user has completed all questions in a theme
+    """
+    level_idx, q_idx = get_next_unanswered_question_global(user_id, theme_id)
+    return level_idx == -1 and q_idx == -1
+
 # ========== 提示使用次數追蹤功能 (新增) ==========
 
 def increment_hint_count(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:

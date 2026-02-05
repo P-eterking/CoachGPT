@@ -1161,3 +1161,37 @@ async def handle_postback(event):
             f"已回答題數 Questions Answered: {progress['questions_answered']}\n"
             f"已完成關卡 Levels Completed: {progress['levels_completed']}"
         )
+    
+    elif action == 'game_next_answer':
+        # Jump to the next unanswered question across all levels
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            return
+        
+        # Find the next unanswered question globally
+        level_idx, question_idx = get_next_unanswered_question_global(user_id, theme_id)
+        
+        if level_idx == -1 and question_idx == -1:
+            # All questions completed
+            await send_text_message(event, "所有題目皆已作答完畢！\nAll questions have been answered!")
+            return
+        
+        # Update user state
+        user_state.game_theme = theme_id
+        user_state.game_level = level_idx
+        user_state.game_question = question_idx
+        user_state.in_npc_chat = False  # Ensure exit NPC chat mode
+        
+        # Get question text
+        level_info = get_game_level_info(theme_id, level_idx)
+        if level_info and question_idx < len(level_info.get('questions', [])):
+            q_text = level_info['questions'][question_idx]['text']
+            level_title = level_info.get('title', f'Level {level_idx + 1}')
+            await send_text_message(event, 
+                f"關卡 Level {level_idx + 1}: {level_title}\n"
+                f"Q{question_idx + 1}: {q_text}\n\n"
+                f"請發送語音訊息作答！\nSend a voice message with your answer!"
+            )
+        else:
+            await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")

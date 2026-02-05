@@ -996,6 +996,29 @@ async def game_prologue_message(theme_id: str):
                     size='md',
                     color='#5b5b5b',
                 ),
+                # Hint text for user guidance (bilingual)
+                FlexText(
+                    text='---',
+                    wrap=True,
+                    size='xxs',
+                    color='#cccccc',
+                    align='center',
+                    margin='lg',
+                ),
+                FlexText(
+                    text='[Tip] Click "Answer" in the menu to answer questions, or click "Levels" to select a level. Chat with NPCs to get clues!',
+                    wrap=True,
+                    size='xs',
+                    color='#888888',
+                    margin='sm',
+                ),
+                FlexText(
+                    text='[提示] 點選選單中的「作答」以回答題目，點擊「顯示關卡」則可以選擇關卡。與 NPC 聊天以獲得解謎線索！',
+                    wrap=True,
+                    size='xs',
+                    color='#888888',
+                    margin='xs',
+                ),
             ]
         )
     )

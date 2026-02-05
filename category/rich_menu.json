@@ -50,7 +50,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme1&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme1&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme1" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme1" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme1" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -63,7 +63,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme2&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme2&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme2" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme2" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme2" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
@@ -76,7 +76,7 @@
                 { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme3&npc=1" },
                 { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme3&npc=2" },
                 { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme3" },
-                { "type": "postback", "label": "Questions", "data": "action=game_current_questions&theme=theme3" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme3" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
