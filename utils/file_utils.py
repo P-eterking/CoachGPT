@@ -312,7 +312,7 @@ def get_user_unlocked_level(user_id: str, theme_id: str) -> int:
         return 0
     return user.game_scores.get_unlocked_level(theme_id)
 
-# Alias for backward compatibility - handlers.py 使用此函數名稱
+# Alias for backward compatibility
 get_user_current_level = get_user_unlocked_level
 
 def get_user_game_score(user_id: str, theme_id: str) -> int:
