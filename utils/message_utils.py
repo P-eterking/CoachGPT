@@ -16,7 +16,8 @@ from utils.file_utils import (
     clear_rich_menu_id, config, load_game_theme_config, get_game_level_info,
     get_user_game_score, get_max_theme_score, get_user_game_progress,
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
-    get_user_level_score, get_display_feedback, get_levels_per_theme
+    get_user_level_score, get_display_feedback, get_levels_per_theme,
+    get_game_progress_detail, get_novel_text
 )
 
 URL = f'https://{DOMAIN}'
@@ -1006,7 +1007,7 @@ async def game_prologue_message(theme_id: str):
                     margin='lg',
                 ),
                 FlexText(
-                    text='[Tip] Click "Answer" in the menu to answer questions, or click "Levels" to select a level. Chat with NPCs to get clues!',
+                    text='[Tip] Click "Answer the questions" in the menu to answer questions, or click "Show Levels" to select a level. Chat with NPCs to get clues!',
                     wrap=True,
                     size='xs',
                     color='#888888',
@@ -1031,10 +1032,21 @@ async def game_prologue_message(theme_id: str):
             aspect_mode='cover',
         )
     
-    messages.append(FlexMessage(
+    prologue_msg = FlexMessage(
         altText=f'{theme_config.name} - Prologue',
         contents=prologue_bubble
-    ))
+    )
+    
+    # [Fix #5] Add "Novel Full Text" quick reply button on prologue
+    if getattr(theme_config, 'novel_text', None) or getattr(theme_config, 'novel_text_chi', None):
+        prologue_msg.quick_reply = QuickReply(items=[
+            QuickReplyItem(action=PostbackAction(
+                label='Novel Full Text / 小說全文',
+                data=f'action=game_novel&theme={theme_id}'
+            )),
+        ])
+    
+    messages.append(prologue_msg)
     
     return messages
 
@@ -1160,7 +1172,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             body_contents = [
                 FlexText(
-                    text=f'Question {q_idx + 1}\n題目 {q_idx + 1}',
+                    text=f'Question {level_idx + 1}-{q_idx + 1}\n題目 {level_idx + 1}-{q_idx + 1}',
                     wrap=True,
                     weight='bold',
                     size='lg',
@@ -1246,7 +1258,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         
         body_contents = [
             FlexText(
-                text=f'Question {current_q_idx + 1}/{len(questions)}\n題目 {current_q_idx + 1}/{len(questions)}',
+                text=f'Question {level_idx + 1}-{current_q_idx + 1}\n題目 {level_idx + 1}-{current_q_idx + 1}',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1361,7 +1373,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             progress_contents.append(
                 FlexText(
-                    text=f'Q{q_i + 1}: {status}',
+                    text=f'{level_idx + 1}-{q_i + 1}: {status}',
                     wrap=True,
                     size='sm',
                     color=color,
@@ -1403,7 +1415,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     # Main result card - score always shows
     main_contents = [
         FlexText(
-            text=f'Q{question_idx + 1} Result\n結果',
+            text=f'{level_idx + 1}-{question_idx + 1} Result\n結果',
             wrap=True,
             weight='bold',
             size='xxl',
@@ -1535,7 +1547,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             bubbles.append(ref_bubble)
     
     msg = FlexMessage(
-        altText=f'Q{question_idx + 1} Result',
+        altText=f'{level_idx + 1}-{question_idx + 1} Result',
         contents=FlexCarousel(contents=bubbles)
     )
     
@@ -1584,7 +1596,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             # Level all passed
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
-                    label='Level Complete!',
+                    label='Level Completed!',
                     data=f'action=game_levels&theme={theme_id}'
                 ))
             )
@@ -1681,7 +1693,7 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
         ]
 
     msg = FlexMessage(
-        altText=f'Q{question_idx + 1} Improvement Hint',
+        altText=f'{level_idx + 1}-{question_idx + 1} Improvement Hint',
         contents=FlexCarousel(contents=bubbles)
     )
     
@@ -1779,10 +1791,20 @@ async def game_npc_chat_response_message(npc_name: str, npc_reply: str,
     
     bubbles.append(reply_bubble)
     
-    return FlexMessage(
+    msg = FlexMessage(
         altText=f'{npc_name} Response',
         contents=FlexCarousel(contents=bubbles)
     )
+    
+    # [Fix #4] Add hint: if user has enough clues, go to answer
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer / 前往作答',
+            data='action=game_current_questions'
+        )),
+    ])
+    
+    return msg
 
 async def game_npc_evaluation_message(npc_name: str, language_score: int, 
                                       relevance_score: int, feedback_eng: str, 
@@ -1872,6 +1894,72 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
         contents=FlexCarousel(contents=bubbles)
     )
 
+async def game_rules_instruction_message() -> FlexMessage:
+    """Show game rules instruction card (bilingual) - displayed before theme selection"""
+    rules_eng = (
+        "Welcome to the Mystery Game! "
+        "In this scenario-based puzzle game, you will play the role of a detective assistant, "
+        "asking NPC characters about case details to solve a series of riddles. "
+        "Each of the three NPCs knows different information -- if you cannot find the answer, "
+        "try asking a different character! "
+        "There are 3 themes in total, each with 5 levels, and each level has 3 small puzzles. "
+        "Don't be intimidated by the number of questions -- the game will provide sufficient "
+        "clues and guidance to help you progress. Enjoy the game!"
+    )
+    rules_chi = (
+        "歡迎來到情境解謎遊戲！"
+        "在這個情境式解謎遊戲中，你將扮演偵探助手的角色，"
+        "向 NPC 角色詢問案件細節以破解一道道謎題。"
+        "三個 NPC 人物知道的資訊都不同，如果問不出答案不妨換個人問問看喔！"
+        "此遊戲總共有三個主題，每個主題有五道關卡，每個關卡又有三個小謎題，"
+        "請不要被題目數量嚇到，遊戲中一定會提供足夠的線索和引導協助你破關。請享受遊戲吧！"
+    )
+    
+    bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='lg',
+            contents=[
+                FlexText(
+                    text='Game Rules\n遊戲規則',
+                    wrap=True,
+                    weight='bold',
+                    size='xxl',
+                    align='center',
+                    color='#1a1a2e',
+                ),
+                FlexText(
+                    text=rules_eng,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                    margin='lg',
+                ),
+                FlexText(
+                    text='---',
+                    wrap=True,
+                    size='xxs',
+                    color='#cccccc',
+                    align='center',
+                    margin='lg',
+                ),
+                FlexText(
+                    text=rules_chi,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                    margin='sm',
+                ),
+            ]
+        )
+    )
+    
+    return FlexMessage(
+        altText='Game Rules / 遊戲規則',
+        contents=bubble
+    )
+
 async def game_theme_select_message() -> FlexMessage:
     """Show theme selection cards"""
     from utils.file_utils import get_game_themes
@@ -1912,7 +2000,7 @@ async def game_theme_select_message() -> FlexMessage:
                 ),
                 FlexButton(
                     action=PostbackAction(
-                        label='Enter',
+                        label=f'Enter Theme {idx + 1}',
                         data=f'action=game_theme&theme={theme_id}'
                     ),
                     style='primary',
@@ -2244,7 +2332,7 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
                     ),
                     FlexButton(
                         action=PostbackAction(
-                            label='Enter',
+                            label=f'Enter Level {level.id + 1}',
                             data=f'action=game_level&theme={theme_id}&level={level.id}'
                         ),
                         style='primary',
@@ -2270,7 +2358,7 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
                         align='center',
                     ),
                     FlexText(
-                        text=f'{len(theme_config.levels) - unlocked_level - 1} levels locked',
+                        text=f'{len(theme_config.levels) - unlocked_level - 1} remaining levels locked',
                         wrap=True,
                         size='md',
                         align='center',
@@ -2297,6 +2385,250 @@ async def game_current_questions_message(theme_id: str, user_id: str) -> FlexMes
     """Show current level questions (for menu's "Show Questions" button)"""
     current_level = get_user_unlocked_level(user_id, theme_id)
     return await game_questions_carousel(theme_id, current_level, user_id)
+
+async def progress_select_message() -> FlexMessage:
+    """Show progress category selection (for service4 menu_game)"""
+    categories = [
+        ("Pretest\n前測", "action=progress_detail&category=pretest"),
+        ("Game\n遊戲", "action=progress_detail&category=game"),
+        ("Posttest\n後測", "action=progress_detail&category=posttest"),
+        ("Other\n其他", "action=progress_detail&category=other"),
+    ]
+    
+    bubbles = []
+    for label, data in categories:
+        bubble = FlexBubble(
+            size='kilo',
+            body=FlexBox(
+                layout='vertical',
+                justifyContent='center',
+                alignItems='center',
+                spacing='md',
+                contents=[
+                    FlexText(
+                        text=label,
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                        align='center',
+                    ),
+                ]
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='View / 查看',
+                            data=data
+                        ),
+                        style='primary',
+                        height='sm',
+                    ),
+                ]
+            )
+        )
+        bubbles.append(bubble)
+    
+    # Add back button bubble
+    back_bubble = FlexBubble(
+        size='kilo',
+        body=FlexBox(
+            layout='vertical',
+            justifyContent='center',
+            alignItems='center',
+            contents=[
+                FlexText(
+                    text='Back\n返回',
+                    wrap=True,
+                    size='lg',
+                    align='center',
+                    color='#888888',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            contents=[
+                FlexButton(
+                    action=PostbackAction(
+                        label='Back',
+                        data='action=idle'
+                    ),
+                    style='secondary',
+                    height='sm',
+                ),
+            ]
+        )
+    )
+    bubbles.append(back_bubble)
+    
+    return FlexMessage(
+        altText='Select Progress Category / 選擇進度類別',
+        contents=FlexCarousel(contents=bubbles)
+    )
+
+async def game_progress_message(user_id: str) -> FlexMessage:
+    """Show detailed game progress across all themes"""
+    from utils.file_utils import get_game_themes, get_game_progress_detail
+    
+    themes = get_game_themes()
+    bubbles = []
+    
+    for theme_id in themes:
+        detail = get_game_progress_detail(user_id, theme_id)
+        if "error" in detail:
+            continue
+        
+        level_texts = []
+        for lv in detail.get("levels", []):
+            passed_count = sum(1 for q in lv["questions"] if q["passed"])
+            total_count = len(lv["questions"])
+            level_texts.append(
+                f'Lv{lv["level_idx"]+1} {lv["title"]}: {passed_count}/{total_count}'
+            )
+        
+        body_contents = [
+            FlexText(
+                text=detail.get("theme_name", theme_id),
+                wrap=True,
+                weight='bold',
+                size='lg',
+                align='center',
+            ),
+            FlexText(
+                text=f'Score: {detail["total_score"]}/{detail["max_score"]}',
+                wrap=True,
+                size='md',
+                color='#00aa00',
+                align='center',
+            ),
+        ]
+        
+        for lt in level_texts:
+            body_contents.append(
+                FlexText(
+                    text=lt,
+                    wrap=True,
+                    size='sm',
+                    color='#5b5b5b',
+                    margin='sm',
+                )
+            )
+        
+        bubble = FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=body_contents
+            )
+        )
+        bubbles.append(bubble)
+    
+    if not bubbles:
+        bubbles.append(FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                justifyContent='center',
+                alignItems='center',
+                contents=[
+                    FlexText(
+                        text='尚無遊戲進度。\nNo game progress yet.',
+                        wrap=True,
+                        align='center',
+                    )
+                ]
+            )
+        ))
+    
+    return FlexMessage(
+        altText='Game Progress / 遊戲進度',
+        contents=FlexCarousel(contents=bubbles)
+    )
+
+async def other_progress_message(user_id: str) -> FlexMessage:
+    """Show progress for exercises and chat"""
+    progress_items = []
+    
+    # Check exercises (ex1-ex6)
+    for i in range(1, 7):
+        cat = f'ex{i}'
+        if not isEnabled(cat):
+            continue
+        questions = question_manager.get_all_questions(cat)
+        answered = 0
+        for q_idx in range(len(questions)):
+            history = getHistory(user_id, f'{cat}-{q_idx}')
+            if history and len(history) > 0:
+                answered += 1
+        if len(questions) > 0:
+            progress_items.append(f'Exercise {i}: {answered}/{len(questions)}')
+    
+    # Check chat
+    from utils.file_utils import getChatHistory as get_chat_hist
+    try:
+        chat_hist = get_chat_hist(user_id)
+        if chat_hist and len(chat_hist.questions) > 0:
+            progress_items.append(f'Chat: {len(chat_hist.questions)} messages')
+        else:
+            progress_items.append('Chat: No messages yet')
+    except Exception:
+        progress_items.append('Chat: No messages yet')
+    
+    text = '\n'.join(progress_items) if progress_items else '尚無進度。\nNo progress yet.'
+    
+    return FlexMessage(
+        altText='Other Progress / 其他進度',
+        contents=FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Other Progress\n其他進度',
+                        wrap=True,
+                        weight='bold',
+                        size='xl',
+                    ),
+                    FlexText(
+                        text=text,
+                        wrap=True,
+                        size='md',
+                        color='#5b5b5b',
+                        margin='md',
+                    ),
+                ]
+            )
+        )
+    )
+
+async def novel_text_message(theme_id: str) -> list:
+    """Send novel full text for a theme (bilingual)"""
+    from utils.file_utils import get_novel_text
+    eng_text, chi_text = get_novel_text(theme_id)
+    
+    messages = []
+    
+    if eng_text:
+        # Split into chunks if too long (LINE limit ~5000 chars per message)
+        chunks = [eng_text[i:i+4500] for i in range(0, len(eng_text), 4500)]
+        for i, chunk in enumerate(chunks):
+            prefix = "Novel Full Text (English)\n\n" if i == 0 else ""
+            messages.append(TextMessage(text=f'{prefix}{chunk}'))
+    
+    if chi_text:
+        chunks = [chi_text[i:i+4500] for i in range(0, len(chi_text), 4500)]
+        for i, chunk in enumerate(chunks):
+            prefix = "小說全文 (中文)\n\n" if i == 0 else ""
+            messages.append(TextMessage(text=f'{prefix}{chunk}'))
+    
+    if not messages:
+        messages.append(TextMessage(text='此主題尚無小說全文。\nNovel text not available for this theme.'))
+    
+    return messages
 
 # ========== [END] Game Message Functions ==========
 
@@ -2346,9 +2678,12 @@ async def handle_rich_menu(user_id):
             raise ApiException('No rich menu category found.')
         user_state.category = category
     except ApiException as e:
-        rich_menu_id = get_rich_menu_id('menu')
+        # [FIX #2] For rag_mode (service4), default to menu_game instead of menu
+        is_rag = config.get('rag_mode', False)
+        default_menu = 'menu_game' if is_rag else 'menu'
+        rich_menu_id = get_rich_menu_id(default_menu)
         await rich_menu_manager.link_rich_menu_to_user(user_id=user_id, rich_menu_id=rich_menu_id)
-        user_state.category = 'menu'
+        user_state.category = default_menu
     except Exception as e:
         print(e)
 

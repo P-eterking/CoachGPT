@@ -638,6 +638,57 @@ async def save_interaction_log(log: GameInteractionLog):
     except Exception as e:
         print(f"Error saving interaction log: {e}")
 
+# ========== 遊戲進度查詢 (新增) ==========
+
+def get_game_progress_detail(user_id: str, theme_id: str) -> dict:
+    """
+    取得使用者在某主題的詳細遊戲進度
+    Get detailed game progress for a specific theme
+    """
+    theme_config = load_game_theme_config(theme_id)
+    if not theme_config:
+        return {"error": "Theme not found"}
+    
+    user = user_data.get(user_id)
+    levels_detail = []
+    
+    for level in theme_config.levels:
+        level_data = {
+            "level_idx": level.id,
+            "title": level.title,
+            "questions": []
+        }
+        for q_idx, q in enumerate(level.questions):
+            score = get_user_question_score(user_id, theme_id, level.id, q_idx)
+            level_data["questions"].append({
+                "q_idx": q_idx,
+                "text": q.text[:50],
+                "score": score,
+                "passed": score >= get_min_score_to_pass()
+            })
+        levels_detail.append(level_data)
+    
+    return {
+        "theme_id": theme_id,
+        "theme_name": theme_config.name,
+        "total_score": get_user_game_score(user_id, theme_id),
+        "max_score": get_max_theme_score(),
+        "unlocked_level": get_user_unlocked_level(user_id, theme_id),
+        "levels": levels_detail
+    }
+
+def get_novel_text(theme_id: str) -> tuple:
+    """
+    取得主題的小說全文
+    Returns (english_text, chinese_text) or (None, None)
+    """
+    theme_config = load_game_theme_config(theme_id)
+    if not theme_config:
+        return (None, None)
+    eng = getattr(theme_config, 'novel_text', None) or None
+    chi = getattr(theme_config, 'novel_text_chi', None) or None
+    return (eng, chi)
+
 # ========== RAG 功能 (保留 Embeddings 版本) ==========
 
 class RagManager:

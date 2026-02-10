@@ -15,7 +15,10 @@ from utils.message_utils import (
     NPC_CHAT_QUICK_RESPONSE, NPC_CHAT_EVALUATION,
     game_npc_evaluation_message, QUESTION_ANSWER_SYSTEM_INSTRUCTION,
     # Improvement hint related
-    IMPROVEMENT_HINT_SYSTEM_INSTRUCTION, game_improvement_hint_message
+    IMPROVEMENT_HINT_SYSTEM_INSTRUCTION, game_improvement_hint_message,
+    # New messages for service4 enhancements
+    game_rules_instruction_message, progress_select_message,
+    game_progress_message, other_progress_message, novel_text_message
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -926,7 +929,7 @@ async def handle_postback(event):
             if not is_rag:
                 alias = 'menu'
         
-        if alias not in ['rag_test'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
+        if alias not in ['rag_test', 'menu_other'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         
@@ -947,6 +950,21 @@ async def handle_postback(event):
 
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
+    elif action == 'progress_select':
+        # [Fix #1] Show progress category selection for service4
+        await send_message(event, await progress_select_message())
+    elif action == 'progress_detail':
+        # Show progress detail for specific category
+        category = vars.get('category', '')
+        if category == 'game':
+            await send_message(event, await game_progress_message(user_id))
+        elif category == 'other':
+            await send_message(event, await other_progress_message(user_id))
+        elif category in ['pretest', 'posttest']:
+            # Reuse existing progress message filtered by category
+            await send_message(event, await progress_message(user_id))
+        else:
+            await send_text_message(event, "未知的進度類別。\nUnknown progress category.")
     elif action == 'enabled':
         alias = vars.get('alias')
         if isEnabled(alias):
@@ -977,8 +995,10 @@ async def handle_postback(event):
     
     # ========== Game Actions ==========
     elif action == 'game_themes':
-        # Show theme selection
-        await send_message(event, await game_theme_select_message())
+        # [Fix #4] Show game rules instruction first, then theme selection
+        rules_msg = await game_rules_instruction_message()
+        theme_msg = await game_theme_select_message()
+        await send_message(event, [rules_msg, theme_msg])
     
     elif action == 'game_theme':
         # Enter theme - Show prologue and auto-enter latest level
@@ -991,6 +1011,7 @@ async def handle_postback(event):
         user_state.game_level = -1
         user_state.game_question = -1
         user_state.in_npc_chat = False  # Reset NPC chat state
+        user_state.has_talked_to_npc = False  # [Fix #4] Reset NPC interaction flag for new theme
         
         # Show prologue and switch to theme menu
         theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
@@ -1054,6 +1075,7 @@ async def handle_postback(event):
         user_state.game_npc = npc_idx
         user_state.game_question = -1  # Ensure not in answer mode
         user_state.in_npc_chat = True  # Set NPC chat mode
+        user_state.has_talked_to_npc = True  # [Fix #4] Mark that user has interacted with NPC
         
         # Show NPC card instead of plain text
         try:
@@ -1138,9 +1160,18 @@ async def handle_postback(event):
         
         # Get question text
         level_info = get_game_level_info(theme_id, level_idx)
+        # [Fix #6] Use level-question numbering format
+        q_label = f"{level_idx + 1}-{question_idx + 1}"
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
-            await send_text_message(event, f"Q{question_idx + 1}: {q_text}\n\n請發送語音訊息作答！\nSend a voice message with your answer!")
+            # [Fix #4] Check if user has talked to NPC before answering
+            npc_hint = ""
+            if not getattr(user_state, 'has_talked_to_npc', False):
+                npc_hint = (
+                    "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
+                    "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
+                )
+            await send_text_message(event, f"{q_label}: {q_text}\n\n請發送語音訊息作答！\nSend a voice message with your answer!{npc_hint}")
         else:
             await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")
     
@@ -1148,6 +1179,26 @@ async def handle_postback(event):
         # Handle improvement hint request
         await handle_game_improvement_hint(event, user_id, user_state)
         
+    elif action == 'game_novel':
+        # [Fix #5] Send novel full text
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+        else:
+            # Check if already sent
+            if theme_id in getattr(user_state, 'novel_sent_themes', []):
+                await send_text_message(event, 
+                    "小說全文已發送過，請向上滑動查看完整內容。\n"
+                    "The novel text has already been sent. Please scroll up to view the full content."
+                )
+            else:
+                msgs = await novel_text_message(theme_id)
+                await send_message(event, msgs)
+                # Mark as sent
+                if not hasattr(user_state, 'novel_sent_themes') or user_state.novel_sent_themes is None:
+                    user_state.novel_sent_themes = []
+                user_state.novel_sent_themes.append(theme_id)
+    
     elif action == 'game_score':
         # Show current theme score
         theme_id = vars.get('theme', user_state.game_theme)
@@ -1190,7 +1241,7 @@ async def handle_postback(event):
             level_title = level_info.get('title', f'Level {level_idx + 1}')
             await send_text_message(event, 
                 f"關卡 Level {level_idx + 1}: {level_title}\n"
-                f"Q{question_idx + 1}: {q_text}\n\n"
+                f"{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
                 f"請發送語音訊息作答！\nSend a voice message with your answer!"
             )
         else:

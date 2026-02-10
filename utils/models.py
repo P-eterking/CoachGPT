@@ -298,6 +298,13 @@ class UserState(BaseModel):
         description="關卡內的題目進度追蹤", 
         default_factory=dict
     )
+    # 記錄使用者已接收小說全文的主題 (用於避免重複發送)
+    novel_sent_themes: List[str] = Field(
+        description="已發送小說全文的主題列表",
+        default_factory=list
+    )
+    # 記錄使用者是否已與NPC對話過 (用於提示使用者先與NPC對話)
+    has_talked_to_npc: bool = Field(description="是否已與NPC對話過", default=False)
     # 記錄上次回答的資訊，用於改善提示功能
     last_answer_info: Optional[Dict[str, Any]] = Field(
         description="上次回答的資訊 (題目、回答、分數等)", 
@@ -392,6 +399,8 @@ class GameThemeConfig(BaseModel):
     prologue: str = Field(description="主題前情提要/背景故事")  # 前情提要
     cover_image: Optional[str] = Field(description="封面圖片網址", default=None)  # 封面圖片
     intro_video: Optional[str] = Field(description="主題介紹影片", default=None)  # 主題介紹影片
+    novel_text: Optional[str] = Field(description="小說全文 (English)", default=None)  # 小說全文
+    novel_text_chi: Optional[str] = Field(description="小說全文 (繁體中文)", default=None)  # 小說全文中文版
     npcs: List[GameNPC] = Field(description="可用的NPC列表")  # NPC列表
     levels: List[GameLevel] = Field(description="遊戲關卡列表")  # 關卡列表
     

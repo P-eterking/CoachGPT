@@ -21,11 +21,24 @@
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "switch", "label": "pretest", "alias_id": "pretest" },
-                { "type": "switch", "label": "exercises", "alias_id": "exercises" },
-                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
-                { "type": "postback", "label": "progress", "data": "action=progress" },
                 { "type": "postback", "label": "Game Mode", "data": "action=game_themes" },
+                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
+                { "type": "switch", "label": "Other", "alias_id": "menu_other" },
+                { "type": "postback", "label": "progress", "data": "action=progress_select" },
                 { "type": "switch", "label": "admin", "alias_id": "admin" }
+            ]
+        },
+        "menu_other": {
+            "file": "menu_other.jpg",
+            "chat_bar_text": "Other",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "exercises", "alias_id": "exercises" },
+                { "type": "switch", "label": "chat", "alias_id": "chat" },
+                {},
+                {},
+                {},
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
         "rag_test": {
@@ -112,10 +125,10 @@
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "switch", "label": "enabled", "alias_id": "enabled" },
-                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
-                { "type": "postback", "label": "save", "data": "action=save" },
                 { "type": "switch", "label": "respond", "alias_id": "respond" },
+                { "type": "postback", "label": "save", "data": "action=save" },
                 { "type": "postback", "label": "reload", "data": "action=reload" },
+                {},
                 { "type": "switch", "label": "menu", "alias_id": "menu" }
             ]
         },
@@ -331,11 +344,11 @@
             "chat_bar_text": "Enabled",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q7", "data": "action=enabled&alias=pretest" },
-                { "type": "postback", "label": "q8", "data": "action=enabled&alias=posttest" },
-                { "type": "postback", "label": "q9", "data": "action=enabled&alias=chat" },
+                { "type": "postback", "label": "pretest", "data": "action=enabled&alias=pretest" },
+                { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
+                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "enabled2" },
-                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "postback", "label": "rag_test", "data": "action=enabled&alias=rag_test" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -370,11 +383,11 @@
             "chat_bar_text": "Respond",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q7", "data": "action=respond&alias=pretest" },
-                { "type": "postback", "label": "q8", "data": "action=respond&alias=posttest" },
-                { "type": "postback", "label": "q9", "data": "action=respond&alias=chat" },
+                { "type": "postback", "label": "pretest", "data": "action=respond&alias=pretest" },
+                { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
+                { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "respond2" },
-                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "postback", "label": "rag_test", "data": "action=respond&alias=rag_test" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
