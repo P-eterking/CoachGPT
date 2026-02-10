@@ -461,7 +461,7 @@
                 { "type": "postback", "label": "ex2", "data": "action=enabled&alias=ex2" },
                 { "type": "postback", "label": "ex3", "data": "action=enabled&alias=ex3" },
                 { "type": "switch", "label": "prev", "alias_id": "game_enabled" },
-                { "type": "switch", "label": "next", "data": "game_enabled3" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled3" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
         },
@@ -500,7 +500,7 @@
                 { "type": "postback", "label": "ex2", "data": "action=respond&alias=ex2" },
                 { "type": "postback", "label": "ex3", "data": "action=respond&alias=ex3" },
                 { "type": "switch", "label": "prev", "alias_id": "game_respond" },
-                { "type": "switch", "label": "next", "data": "game_respond3" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond3" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
         },
