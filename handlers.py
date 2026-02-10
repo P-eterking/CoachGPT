@@ -18,7 +18,7 @@ from utils.message_utils import (
     IMPROVEMENT_HINT_SYSTEM_INSTRUCTION, game_improvement_hint_message,
     # New messages for service4 enhancements
     game_rules_instruction_message, progress_select_message,
-    game_progress_message, other_progress_message, novel_text_message
+    game_progress_message, other_progress_message
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -940,6 +940,9 @@ async def handle_postback(event):
         rich_menu_id = get_rich_menu_id(alias)
         if rich_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
+        else:
+            await send_text_message(event, f"Menu '{alias}' is not registered. Please ask admin to reload.\nMenu '{alias}' 尚未註冊，請通知管理員重新載入。")
+            return
         
         # Auto popup menu
         if question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
@@ -1012,55 +1015,50 @@ async def handle_postback(event):
             await send_text_message(event, "未指定主題。\nTheme not specified.")
             return
         
-        user_state.game_theme = theme_id
-        user_state.game_level = -1
-        user_state.game_question = -1
-        user_state.in_npc_chat = False  # Reset NPC chat state
-        user_state.has_talked_to_npc = False  # [Fix #4] Reset NPC interaction flag for new theme
-        
-        # Show prologue and switch to theme menu
-        theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
-        if theme_menu_id:
-            await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
-        
-        # Collect all messages into a single list (LINE reply token can only be used once)
-        all_messages = []
-        
-        # game_prologue_message returns a list (may include video)
-        prologue_msgs = await game_prologue_message(theme_id)
-        if prologue_msgs:
-            all_messages.extend(prologue_msgs if isinstance(prologue_msgs, list) else [prologue_msgs])
-        
-        # Auto-enter the latest unlocked level
-        current_level = get_user_unlocked_level(user_id, theme_id)
-        user_state.game_level = current_level
-        user_state.game_question = -1
-        user_state.in_npc_chat = False
-        
-        # Send level intro (returns a list)
-        level_intro = await game_level_intro_message(theme_id, current_level, user_id)
-        if level_intro:
-            all_messages.extend(level_intro if isinstance(level_intro, list) else [level_intro])
-        
-        # Send question selection
-        questions_carousel = await game_questions_carousel(theme_id, current_level, user_id)
-        if questions_carousel:
-            all_messages.append(questions_carousel)
-        
-        # LINE API allows max 5 messages per reply; send within limit
-        if all_messages:
-            # LINE API: QuickReply only works on the last message
-            # Move any QuickReply from earlier messages to the last one
-            quick_reply_to_move = None
-            for msg in all_messages[:-1]:
-                if hasattr(msg, 'quick_reply') and msg.quick_reply:
-                    quick_reply_to_move = msg.quick_reply
-                    msg.quick_reply = None
-            if quick_reply_to_move and len(all_messages) > 0:
-                last_msg = all_messages[min(4, len(all_messages) - 1)]
-                if not getattr(last_msg, 'quick_reply', None):
-                    last_msg.quick_reply = quick_reply_to_move
-            await send_message(event, all_messages[:5])
+        try:
+            user_state.game_theme = theme_id
+            user_state.game_level = -1
+            user_state.game_question = -1
+            user_state.in_npc_chat = False
+            user_state.has_talked_to_npc = False
+            
+            # Switch to theme menu
+            theme_menu_id = get_rich_menu_id(f'game_{theme_id}')
+            if theme_menu_id:
+                await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
+            
+            # Collect all messages (LINE reply token can only be used once)
+            all_messages = []
+            
+            # Prologue message (may include video)
+            prologue_msgs = await game_prologue_message(theme_id)
+            if prologue_msgs:
+                all_messages.extend(prologue_msgs if isinstance(prologue_msgs, list) else [prologue_msgs])
+            
+            # Auto-enter the latest unlocked level
+            current_level = get_user_unlocked_level(user_id, theme_id)
+            user_state.game_level = current_level
+            user_state.game_question = -1
+            user_state.in_npc_chat = False
+            
+            # Level intro (returns a list)
+            level_intro = await game_level_intro_message(theme_id, current_level, user_id)
+            if level_intro:
+                all_messages.extend(level_intro if isinstance(level_intro, list) else [level_intro])
+            
+            # Question selection
+            questions_carousel = await game_questions_carousel(theme_id, current_level, user_id)
+            if questions_carousel:
+                all_messages.append(questions_carousel)
+            
+            # LINE API allows max 5 messages per reply
+            if all_messages:
+                await send_message(event, all_messages[:5])
+        except Exception as e:
+            print(f"Error in game_theme action: {e}")
+            import traceback
+            traceback.print_exc()
+            await send_text_message(event, "載入主題時發生錯誤，請稍後再試。\nError loading theme, please try again later.")
     
     elif action == 'game_npcs':
         # Show current theme's NPC selection
@@ -1205,26 +1203,6 @@ async def handle_postback(event):
         # Handle improvement hint request
         await handle_game_improvement_hint(event, user_id, user_state)
         
-    elif action == 'game_novel':
-        # [Fix #5] Send novel full text
-        theme_id = vars.get('theme', user_state.game_theme)
-        if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
-        else:
-            # Check if already sent
-            if theme_id in getattr(user_state, 'novel_sent_themes', []):
-                await send_text_message(event, 
-                    "小說全文已發送過，請向上滑動查看完整內容。\n"
-                    "The novel text has already been sent. Please scroll up to view the full content."
-                )
-            else:
-                msgs = await novel_text_message(theme_id)
-                await send_message(event, msgs)
-                # Mark as sent
-                if not hasattr(user_state, 'novel_sent_themes') or user_state.novel_sent_themes is None:
-                    user_state.novel_sent_themes = []
-                user_state.novel_sent_themes.append(theme_id)
-    
     elif action == 'game_score':
         # Show current theme score
         theme_id = vars.get('theme', user_state.game_theme)

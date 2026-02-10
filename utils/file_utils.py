@@ -696,18 +696,6 @@ def get_game_progress_detail(user_id: str, theme_id: str) -> dict:
         "levels": levels_detail
     }
 
-def get_novel_text(theme_id: str) -> tuple:
-    """
-    取得主題的小說全文
-    Returns (english_text, chinese_text) or (None, None)
-    """
-    theme_config = load_game_theme_config(theme_id)
-    if not theme_config:
-        return (None, None)
-    eng = getattr(theme_config, 'novel_text', None) or None
-    chi = getattr(theme_config, 'novel_text_chi', None) or None
-    return (eng, chi)
-
 # ========== RAG 功能 (保留 Embeddings 版本) ==========
 
 class RagManager:

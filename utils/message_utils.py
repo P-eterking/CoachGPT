@@ -3,7 +3,7 @@ from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
     QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
     FlexText, FlexBox, FlexButton, AudioMessage, ShowLoadingAnimationRequest,
-    VideoMessage
+    VideoMessage, URIAction
 )
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
@@ -16,8 +16,7 @@ from utils.file_utils import (
     clear_rich_menu_id, config, load_game_theme_config, get_game_level_info,
     get_user_game_score, get_max_theme_score, get_user_game_progress,
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
-    get_user_level_score, get_display_feedback, get_levels_per_theme,
-    get_game_progress_detail, get_novel_text
+    get_user_level_score, get_display_feedback, get_levels_per_theme
 )
 
 URL = f'https://{DOMAIN}'
@@ -1037,14 +1036,21 @@ async def game_prologue_message(theme_id: str):
         contents=prologue_bubble
     )
     
-    # [Fix #5] Add "Novel Full Text" quick reply button on prologue
-    if getattr(theme_config, 'novel_text', None) or getattr(theme_config, 'novel_text_chi', None):
-        prologue_msg.quick_reply = QuickReply(items=[
-            QuickReplyItem(action=PostbackAction(
-                label='Novel Full Text / 小說全文',
-                data=f'action=game_novel&theme={theme_id}'
-            )),
-        ])
+    # Add "Novel Full Text" button to prologue bubble footer if novel_url is defined
+    if getattr(theme_config, 'novel_url', None):
+        prologue_bubble.footer = FlexBox(
+            layout='vertical',
+            contents=[
+                FlexButton(
+                    action=URIAction(
+                        label='Novel Full Text',
+                        uri=theme_config.novel_url
+                    ),
+                    style='secondary',
+                    height='sm',
+                ),
+            ]
+        )
     
     messages.append(prologue_msg)
     
@@ -2458,131 +2464,91 @@ async def progress_select_message() -> FlexMessage:
     )
 
 async def game_progress_message(user_id: str) -> FlexMessage:
-    """Show detailed game progress across all themes"""
-    from utils.file_utils import get_game_themes, get_game_progress_detail, get_min_score_to_pass
+    """Show game progress summary: x/15 per theme"""
+    from utils.file_utils import get_game_themes, get_min_score_to_pass, get_user_question_score, get_levels_per_theme, get_questions_per_level
     
     themes = get_game_themes()
-    bubbles = []
+    levels_per_theme = get_levels_per_theme()
+    questions_per_level = get_questions_per_level()
+    total_per_theme = levels_per_theme * questions_per_level  # 5 * 3 = 15
     min_pass = get_min_score_to_pass()
     
+    body_contents = [
+        FlexText(
+            text='Game Progress\n遊戲進度',
+            wrap=True,
+            weight='bold',
+            size='xl',
+            align='center',
+        ),
+    ]
+    
     for theme_id in themes:
-        detail = get_game_progress_detail(user_id, theme_id)
-        if "error" in detail:
-            continue
+        # Load theme name
+        theme_config = load_game_theme_config(theme_id)
+        theme_name = theme_config.name if theme_config else f'Theme {theme_id}'
         
-        body_contents = [
+        # Count passed questions across all levels
+        passed_count = 0
+        for lv_idx in range(levels_per_theme):
+            for q_idx in range(questions_per_level):
+                score = get_user_question_score(user_id, theme_id, lv_idx, q_idx)
+                if score >= min_pass:
+                    passed_count += 1
+        
+        color = '#00aa00' if passed_count == total_per_theme else '#5b5b5b'
+        body_contents.append(
             FlexText(
-                text=detail.get("theme_name", theme_id),
-                wrap=True,
-                weight='bold',
-                size='lg',
-                align='center',
-            ),
-            FlexText(
-                text=f'Score: {detail["total_score"]}/{detail["max_score"]}',
+                text=f'{theme_name}: {passed_count}/{total_per_theme}',
                 wrap=True,
                 size='md',
-                color='#00aa00',
-                align='center',
-            ),
-        ]
-        
-        for lv in detail.get("levels", []):
-            passed_count = sum(1 for q in lv["questions"] if q["passed"])
-            total_count = len(lv["questions"])
-            # Level header
-            body_contents.append(
-                FlexText(
-                    text=f'Lv{lv["level_idx"]+1} {lv["title"]}: {passed_count}/{total_count}',
-                    wrap=True,
-                    size='sm',
-                    weight='bold',
-                    color='#333333',
-                    margin='md',
-                )
+                color=color,
+                margin='lg',
             )
-            # Individual question details
-            for q in lv["questions"]:
-                q_idx = q["q_idx"]
-                q_score = q["score"]
-                q_passed = q["passed"]
-                status_icon = "[v]" if q_passed else "[x]"
-                status_color = '#00aa00' if q_passed else '#cc0000'
-                if q_score == 0:
-                    status_icon = "[ ]"
-                    status_color = '#999999'
-                body_contents.append(
-                    FlexText(
-                        text=f'  {status_icon} Q{lv["level_idx"]+1}-{q_idx+1}: {q_score}/{10} {q["text"]}',
-                        wrap=True,
-                        size='xs',
-                        color=status_color,
-                        margin='xs',
-                    )
-                )
-        
-        bubble = FlexBubble(
-            size='giga',
+        )
+    
+    return FlexMessage(
+        altText='Game Progress / 遊戲進度',
+        contents=FlexBubble(
+            size='mega',
             body=FlexBox(
                 layout='vertical',
                 spacing='sm',
                 contents=body_contents
             )
         )
-        bubbles.append(bubble)
-    
-    if not bubbles:
-        bubbles.append(FlexBubble(
-            size='mega',
-            body=FlexBox(
-                layout='vertical',
-                justifyContent='center',
-                alignItems='center',
-                contents=[
-                    FlexText(
-                        text='尚無遊戲進度。\nNo game progress yet.',
-                        wrap=True,
-                        align='center',
-                    )
-                ]
-            )
-        ))
-    
-    return FlexMessage(
-        altText='Game Progress / 遊戲進度',
-        contents=FlexCarousel(contents=bubbles)
     )
 
 async def other_progress_message(user_id: str) -> FlexMessage:
-    """Show progress for exercises and chat"""
-    progress_items = []
+    """Show progress for exercises (ex1-ex5)"""
+    body_contents = [
+        FlexText(
+            text='Other Progress\n其他進度',
+            wrap=True,
+            weight='bold',
+            size='xl',
+            align='center',
+        ),
+    ]
     
-    # Check exercises (ex1-ex6)
-    for i in range(1, 7):
+    # Show exercises ex1-ex5 regardless of enabled status
+    for i in range(1, 6):
         cat = f'ex{i}'
-        if not isEnabled(cat):
-            continue
-        questions = question_manager.get_all_questions(cat)
         answered = 0
-        for q_idx in range(len(questions)):
+        for q_idx in range(5):
             history = getHistory(user_id, f'{cat}-{q_idx}')
             if history and len(history) > 0:
                 answered += 1
-        if len(questions) > 0:
-            progress_items.append(f'Exercise {i}: {answered}/{len(questions)}')
-    
-    # Check chat
-    from utils.file_utils import getChatHistory as get_chat_hist
-    try:
-        chat_hist = get_chat_hist(user_id)
-        if chat_hist and len(chat_hist.questions) > 0:
-            progress_items.append(f'Chat: {len(chat_hist.questions)} messages')
-        else:
-            progress_items.append('Chat: No messages yet')
-    except Exception:
-        progress_items.append('Chat: No messages yet')
-    
-    text = '\n'.join(progress_items) if progress_items else '尚無進度。\nNo progress yet.'
+        color = '#00aa00' if answered == 5 else '#5b5b5b'
+        body_contents.append(
+            FlexText(
+                text=f'Exercise {i}: {answered}/5',
+                wrap=True,
+                size='md',
+                color=color,
+                margin='lg',
+            )
+        )
     
     return FlexMessage(
         altText='Other Progress / 其他進度',
@@ -2591,49 +2557,10 @@ async def other_progress_message(user_id: str) -> FlexMessage:
             body=FlexBox(
                 layout='vertical',
                 spacing='sm',
-                contents=[
-                    FlexText(
-                        text='Other Progress\n其他進度',
-                        wrap=True,
-                        weight='bold',
-                        size='xl',
-                    ),
-                    FlexText(
-                        text=text,
-                        wrap=True,
-                        size='md',
-                        color='#5b5b5b',
-                        margin='md',
-                    ),
-                ]
+                contents=body_contents
             )
         )
     )
-
-async def novel_text_message(theme_id: str) -> list:
-    """Send novel full text for a theme (bilingual)"""
-    from utils.file_utils import get_novel_text
-    eng_text, chi_text = get_novel_text(theme_id)
-    
-    messages = []
-    
-    if eng_text:
-        # Split into chunks if too long (LINE limit ~5000 chars per message)
-        chunks = [eng_text[i:i+4500] for i in range(0, len(eng_text), 4500)]
-        for i, chunk in enumerate(chunks):
-            prefix = "Novel Full Text (English)\n\n" if i == 0 else ""
-            messages.append(TextMessage(text=f'{prefix}{chunk}'))
-    
-    if chi_text:
-        chunks = [chi_text[i:i+4500] for i in range(0, len(chi_text), 4500)]
-        for i, chunk in enumerate(chunks):
-            prefix = "小說全文 (中文)\n\n" if i == 0 else ""
-            messages.append(TextMessage(text=f'{prefix}{chunk}'))
-    
-    if not messages:
-        messages.append(TextMessage(text='此主題尚無小說全文。\nNovel text not available for this theme.'))
-    
-    return messages
 
 # ========== [END] Game Message Functions ==========
 
@@ -2709,17 +2636,22 @@ async def create_rich_menu():
         rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
         if get_rich_menu_id(menu_name):
             continue
-        builder = build_rich_menu_from_config(menu_name, config_data)
-        rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
-        image_file = config_data.get("file")
-        if image_file:
-            image_path = os.path.join("./templates/richmenu", image_file)
-            await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-        
-        # If current menu is target default, set as default
-        if menu_name == target_default:
-            await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+        try:
+            builder = build_rich_menu_from_config(menu_name, config_data)
+            rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
+            image_file = config_data.get("file")
+            if image_file:
+                image_path = os.path.join("./templates/richmenu", image_file)
+                await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
             
-        set_rich_menu_id(rich_menu_id, menu_name)
-        print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+            # If current menu is target default, set as default
+            if menu_name == target_default:
+                await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+                
+            set_rich_menu_id(rich_menu_id, menu_name)
+            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+        except Exception as e:
+            print(f'[ERROR] Failed to create rich menu {menu_name}: {e}')
+            import traceback
+            traceback.print_exc()
     await save_config()
