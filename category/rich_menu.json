@@ -25,7 +25,7 @@
                 { "type": "switch", "label": "posttest", "alias_id": "posttest" },
                 { "type": "switch", "label": "Other", "alias_id": "menu_other" },
                 { "type": "postback", "label": "progress", "data": "action=progress_select" },
-                { "type": "switch", "label": "admin", "alias_id": "admin" }
+                { "type": "switch", "label": "admin", "alias_id": "game_admin" }
             ]
         },
         "menu_other": {
@@ -348,7 +348,7 @@
                 { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
                 { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "enabled2" },
-                { "type": "postback", "label": "rag_test", "data": "action=enabled&alias=rag_test" },
+                {},
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -387,7 +387,7 @@
                 { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
                 { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "respond2" },
-                { "type": "postback", "label": "rag_test", "data": "action=respond&alias=rag_test" },
+                {},
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -424,6 +424,97 @@
                 { "type": "postback", "label": "accent4", "data": "action=accent&sub=3" },
                 { "type": "postback", "label": "accent5", "data": "action=accent&sub=4" },
                 { "type": "switch", "label": "menu", "alias_id": "audio" }
+            ]
+        },
+        "game_admin": {
+            "file": "game_admin.jpg",
+            "chat_bar_text": "Admin",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "enabled", "alias_id": "game_enabled" },
+                { "type": "switch", "label": "respond", "alias_id": "game_respond" },
+                { "type": "postback", "label": "save", "data": "action=save" },
+                { "type": "postback", "label": "reload", "data": "action=reload" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" }
+            ]
+        },
+        "game_enabled": {
+            "file": "game_toggle.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=enabled&alias=pretest" },
+                { "type": "postback", "label": "game", "data": "action=enabled&alias=rag_test" },
+                { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "game_enabled2" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled2": {
+            "file": "game_toggle2.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex1", "data": "action=enabled&alias=ex1" },
+                { "type": "postback", "label": "ex2", "data": "action=enabled&alias=ex2" },
+                { "type": "postback", "label": "ex3", "data": "action=enabled&alias=ex3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled" },
+                { "type": "switch", "label": "next", "data": "game_enabled3" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled3": {
+            "file": "game_toggle3.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex4", "data": "action=enabled&alias=ex4" },
+                { "type": "postback", "label": "ex5", "data": "action=enabled&alias=ex5" },
+                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled2" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond": {
+            "file": "game_toggle.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=respond&alias=pretest" },
+                { "type": "postback", "label": "game", "data": "action=respond&alias=rag_test" },
+                { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "game_respond2" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond2": {
+            "file": "game_toggle2.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex1", "data": "action=respond&alias=ex1" },
+                { "type": "postback", "label": "ex2", "data": "action=respond&alias=ex2" },
+                { "type": "postback", "label": "ex3", "data": "action=respond&alias=ex3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond" },
+                { "type": "switch", "label": "next", "data": "game_respond3" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond3": {
+            "file": "game_toggle3.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex4", "data": "action=respond&alias=ex4" },
+                { "type": "postback", "label": "ex5", "data": "action=respond&alias=ex5" },
+                { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond2" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
         }
     }

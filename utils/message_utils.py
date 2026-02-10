@@ -1100,6 +1100,28 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                     size='md',
                     color='#5b5b5b',
                 ),
+                FlexText(
+                    text='---',
+                    wrap=True,
+                    size='xxs',
+                    color='#cccccc',
+                    align='center',
+                    margin='lg',
+                ),
+                FlexText(
+                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!',
+                    wrap=True,
+                    size='xs',
+                    color='#888888',
+                    margin='sm',
+                ),
+                FlexText(
+                    text='[提示] 點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索!',
+                    wrap=True,
+                    size='xs',
+                    color='#888888',
+                    margin='xs',
+                ),
             ]
         ),
         footer=FlexBox(
@@ -1108,7 +1130,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
             contents=[
                 FlexButton(
                     action=PostbackAction(
-                        label='Show Questions',
+                        label='Show Questions / 顯示題目',
                         data=f'action=game_questions&theme={theme_id}&level={level_idx}'
                     ),
                     style='primary',
@@ -2430,39 +2452,6 @@ async def progress_select_message() -> FlexMessage:
         )
         bubbles.append(bubble)
     
-    # Add back button bubble
-    back_bubble = FlexBubble(
-        size='kilo',
-        body=FlexBox(
-            layout='vertical',
-            justifyContent='center',
-            alignItems='center',
-            contents=[
-                FlexText(
-                    text='Back\n返回',
-                    wrap=True,
-                    size='lg',
-                    align='center',
-                    color='#888888',
-                ),
-            ]
-        ),
-        footer=FlexBox(
-            layout='vertical',
-            contents=[
-                FlexButton(
-                    action=PostbackAction(
-                        label='Back',
-                        data='action=idle'
-                    ),
-                    style='secondary',
-                    height='sm',
-                ),
-            ]
-        )
-    )
-    bubbles.append(back_bubble)
-    
     return FlexMessage(
         altText='Select Progress Category / 選擇進度類別',
         contents=FlexCarousel(contents=bubbles)
@@ -2470,23 +2459,16 @@ async def progress_select_message() -> FlexMessage:
 
 async def game_progress_message(user_id: str) -> FlexMessage:
     """Show detailed game progress across all themes"""
-    from utils.file_utils import get_game_themes, get_game_progress_detail
+    from utils.file_utils import get_game_themes, get_game_progress_detail, get_min_score_to_pass
     
     themes = get_game_themes()
     bubbles = []
+    min_pass = get_min_score_to_pass()
     
     for theme_id in themes:
         detail = get_game_progress_detail(user_id, theme_id)
         if "error" in detail:
             continue
-        
-        level_texts = []
-        for lv in detail.get("levels", []):
-            passed_count = sum(1 for q in lv["questions"] if q["passed"])
-            total_count = len(lv["questions"])
-            level_texts.append(
-                f'Lv{lv["level_idx"]+1} {lv["title"]}: {passed_count}/{total_count}'
-            )
         
         body_contents = [
             FlexText(
@@ -2505,19 +2487,42 @@ async def game_progress_message(user_id: str) -> FlexMessage:
             ),
         ]
         
-        for lt in level_texts:
+        for lv in detail.get("levels", []):
+            passed_count = sum(1 for q in lv["questions"] if q["passed"])
+            total_count = len(lv["questions"])
+            # Level header
             body_contents.append(
                 FlexText(
-                    text=lt,
+                    text=f'Lv{lv["level_idx"]+1} {lv["title"]}: {passed_count}/{total_count}',
                     wrap=True,
                     size='sm',
-                    color='#5b5b5b',
-                    margin='sm',
+                    weight='bold',
+                    color='#333333',
+                    margin='md',
                 )
             )
+            # Individual question details
+            for q in lv["questions"]:
+                q_idx = q["q_idx"]
+                q_score = q["score"]
+                q_passed = q["passed"]
+                status_icon = "[v]" if q_passed else "[x]"
+                status_color = '#00aa00' if q_passed else '#cc0000'
+                if q_score == 0:
+                    status_icon = "[ ]"
+                    status_color = '#999999'
+                body_contents.append(
+                    FlexText(
+                        text=f'  {status_icon} Q{lv["level_idx"]+1}-{q_idx+1}: {q_score}/{10} {q["text"]}',
+                        wrap=True,
+                        size='xs',
+                        color=status_color,
+                        margin='xs',
+                    )
+                )
         
         bubble = FlexBubble(
-            size='mega',
+            size='giga',
             body=FlexBox(
                 layout='vertical',
                 spacing='sm',

@@ -916,8 +916,8 @@ async def handle_postback(event):
         
     elif action == 'switch':
         alias = vars.get('to')
-        if alias in ['admin'] and not isAdmin(user_id):
-            await send_text_message(event, '無權限！\nNo permission!')
+        if alias in ['admin', 'game_admin'] and not isAdmin(user_id):
+            await send_text_message(event, '無權限!\nNo permission!')
             return
         
         # RAG mode menu switch logic
@@ -942,11 +942,8 @@ async def handle_postback(event):
             await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
         
         # Auto popup menu
-        if question_manager.has_question(user_state.category) and alias not in ['chat', 'admin']:
+        if question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
             await send_message(event, await carousel_message(user_id, user_state.category, 0)) # Start from first page
-        else:
-            if alias not in ['chat', 'admin', 'menu', 'menu_game']:
-                 await send_text_message(event, f"已切換至 {alias}。\nSwitched to {alias}.")
 
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
@@ -972,7 +969,11 @@ async def handle_postback(event):
         else:
             addEnabled(alias)
         await save_config()
-        await send_text_message(event, f'已{"啟用" if isEnabled(alias) else "停用"} {alias.capitalize()}!\n{alias.capitalize()} {"enabled" if isEnabled(alias) else "disabled"}!')
+        display = get_feature_display_name(alias)
+        if isEnabled(alias):
+            await send_text_message(event, f'已開啟{display}!\n{alias.capitalize()} enabled!')
+        else:
+            await send_text_message(event, f'已關閉{display}!\n{alias.capitalize()} disabled!')
         if alias in ['chat']:
             return
         await question_manager.save_category(alias)
@@ -983,7 +984,11 @@ async def handle_postback(event):
         else:
             addResponse(alias)
         await save_config()
-        await send_text_message(event, f'已{"開啟" if isResponse(alias) else "關閉"} {alias.capitalize()} 回饋!\n{alias.capitalize()} feedback {"enabled" if isResponse(alias) else "disabled"}!')
+        display = get_feature_display_name(alias)
+        if isResponse(alias):
+            await send_text_message(event, f'已開啟{display}的回饋!\n{alias.capitalize()} feedback enabled!')
+        else:
+            await send_text_message(event, f'已關閉{display}的回饋!\n{alias.capitalize()} feedback disabled!')
         await question_manager.save_category(alias)
     elif action == 'reload':
         question_manager.load_questions()
@@ -1018,28 +1023,44 @@ async def handle_postback(event):
         if theme_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
         
-        # game_prologue_message now returns a list (may include video)
-        messages = await game_prologue_message(theme_id)
-        await send_message(event, messages)
+        # Collect all messages into a single list (LINE reply token can only be used once)
+        all_messages = []
         
-        # [FIX] Auto-enter the latest unlocked level - use correct function name
+        # game_prologue_message returns a list (may include video)
+        prologue_msgs = await game_prologue_message(theme_id)
+        if prologue_msgs:
+            all_messages.extend(prologue_msgs if isinstance(prologue_msgs, list) else [prologue_msgs])
+        
+        # Auto-enter the latest unlocked level
         current_level = get_user_unlocked_level(user_id, theme_id)
         user_state.game_level = current_level
         user_state.game_question = -1
         user_state.in_npc_chat = False
         
-        # Send level intro (note: need to pass user_id)
+        # Send level intro (returns a list)
         level_intro = await game_level_intro_message(theme_id, current_level, user_id)
         if level_intro:
-            await send_message(event, level_intro)
+            all_messages.extend(level_intro if isinstance(level_intro, list) else [level_intro])
         
         # Send question selection
         questions_carousel = await game_questions_carousel(theme_id, current_level, user_id)
         if questions_carousel:
-            await send_message(event, questions_carousel)
+            all_messages.append(questions_carousel)
         
-        # [NEW] Send NPC hint to guide users
-        await send_text_message(event, "點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索！\nClick on NPC icons in the menu below to chat with NPCs and get clues!")
+        # LINE API allows max 5 messages per reply; send within limit
+        if all_messages:
+            # LINE API: QuickReply only works on the last message
+            # Move any QuickReply from earlier messages to the last one
+            quick_reply_to_move = None
+            for msg in all_messages[:-1]:
+                if hasattr(msg, 'quick_reply') and msg.quick_reply:
+                    quick_reply_to_move = msg.quick_reply
+                    msg.quick_reply = None
+            if quick_reply_to_move and len(all_messages) > 0:
+                last_msg = all_messages[min(4, len(all_messages) - 1)]
+                if not getattr(last_msg, 'quick_reply', None):
+                    last_msg.quick_reply = quick_reply_to_move
+            await send_message(event, all_messages[:5])
     
     elif action == 'game_npcs':
         # Show current theme's NPC selection
@@ -1112,16 +1133,21 @@ async def handle_postback(event):
         user_state.game_question = -1
         user_state.in_npc_chat = False  # Exit NPC chat mode
         
+        # Collect all messages into a single list
+        all_messages = []
+        
         messages = await game_level_intro_message(theme_id, level_idx, user_id)
-        await send_message(event, messages)
+        if messages:
+            all_messages.extend(messages if isinstance(messages, list) else [messages])
         
         # Send question selection
         questions_carousel = await game_questions_carousel(theme_id, level_idx, user_id)
         if questions_carousel:
-            await send_message(event, questions_carousel)
+            all_messages.append(questions_carousel)
         
-        # [NEW] Send NPC hint
-        await send_text_message(event, "點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索！\nClick on NPC icons in the menu below to chat with NPCs and get clues!")
+        # LINE API allows max 5 messages per reply
+        if all_messages:
+            await send_message(event, all_messages[:5])
     
     elif action == 'game_questions':
         # Show current level's question cards

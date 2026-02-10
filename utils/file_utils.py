@@ -161,6 +161,25 @@ def removeResponse(category):
 def isResponse(category):
     return category in config['response']
 
+# ========== Feature Display Names (for admin messages) ==========
+
+FEATURE_DISPLAY_NAMES = {
+    'pretest': '前測',
+    'posttest': '後測',
+    'chat': '聊天功能',
+    'rag_test': '遊戲功能',
+    'ex1': '練習一',
+    'ex2': '練習二',
+    'ex3': '練習三',
+    'ex4': '練習四',
+    'ex5': '練習五',
+    'ex6': '練習六',
+}
+
+def get_feature_display_name(alias: str) -> str:
+    """取得功能的中文顯示名稱"""
+    return FEATURE_DISPLAY_NAMES.get(alias, alias)
+
 # ========== 遊戲主題功能 ==========
 
 def get_game_themes() -> List[str]:
