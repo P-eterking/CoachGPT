@@ -60,7 +60,7 @@
             "id": 1,
             "title": "Westminster Bridge",
             "description": "After successfully restarting Big Ben, you followed the suspect's tracks to a bus stop. There, you found a Ghost Bus, a red double-decker that isn't on any official schedule.The doors are locked, and the electronic sign shows only strange symbols. The driver, who seems to be an AI or a very stubborn old man, refuses to let you in. He says you must prove you are qualified to learn the Ancient Secrets before he opens the door.",
-            "video_file": "Theme_1_Level_1_vedio.mp4",
+            "video_file": "Theme_1_Level_2_vedio.mp4",
             "questions": [
                 {
                     "text": "What is the hidden license plate number of this bus?",
@@ -83,7 +83,7 @@
             "id": 2,
             "title": "The Silent Rosetta",
             "description": "After arriving at the museum, you find the alarms ringing loudly, but the main doors are locked. Following the clues on Dr. Watson’s card (H. Carter), you enter the Egyptian Gallery through a secret passage.The suspect is trying to steal a fragment of the Rosetta Stone, which contains the coordinates to the final treasure. The stone is currently locked inside a high-tech shield. To unlock it and get the coordinates, you must identify anomalies in the exhibit and provide the correct catalog numbers.",
-            "video_file": "Theme_1_Level_1_vedio.mp4",
+            "video_file": "Theme_1_Level_3_vedio.mp4",
             "questions": [
                 {
                     "text": "Which hieroglyph on the Rosetta Stone is glowing (showing it was tampered with)?",
@@ -106,7 +106,7 @@
             "id": 3,
             "title": "The Knowledge Challenge",
             "description": "After solving the mystery of the Rosetta Stone, you learn that the suspect is heading to Westminster Abbey. However, it is now rush hour in London, and the only way to get there fast is by taking a legendary Black Cab. The driver is a veteran who has mastered The Knowledge (a famous, difficult test for London cabbies). He refuses to drive tourists who don't know the local rules. He locks the doors and tells you that you must answer three insider questions about London's streets and fares before he will let you in.",
-            "video_file": "Theme_1_Level_1_vedio.mp4",
+            "video_file": "Theme_1_Level_4_vedio.mp4",
             "questions": [
                 {
                     "text": "What is the driver's license number?",
@@ -129,7 +129,7 @@
             "id": 4,
             "title": "The Secret of the Coronation",
             "description": "You reached Westminster Abbey just before the royal ceremony began. The suspect is after a stolen document hidden under St. Edward's Chair (the Coronation Chair). Since staff are making final preparations, you must remain quiet. To get the document back, you need to find its exact location and answer the guard's questions.",
-            "video_file": "Theme_1_Level_1_vedio.mp4",
+            "video_file": "Theme_1_Level_5_vedio.mp4",
             "questions": [
                 {
                     "text": "Which mythical creature statue at the base of the Coronation Chair is the document hidden behind?",
@@ -149,5 +149,5 @@
             ]
         }
     ],
-    "novel_url": "https://www.youtube.com/results?search_query=rick+roll"
+    "novel_url": "https://hackmd.io/@sXPepRwnTrKIM4LWkcWK3g/Bk7A1coPWg"
 }
