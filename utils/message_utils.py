@@ -1104,14 +1104,14 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                     margin='lg',
                 ),
                 FlexText(
-                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!',
+                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!(Due to the video size issue, please click on the video to load it, and then click on the video again to watch it.)',
                     wrap=True,
                     size='xs',
                     color='#888888',
                     margin='sm',
                 ),
                 FlexText(
-                    text='[提示] 點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索!',
+                    text='[提示] 點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索!(由於影片大小問題，請點擊影片讓他加載後，再重新點開影片以觀賞)',
                     wrap=True,
                     size='xs',
                     color='#888888',
