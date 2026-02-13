@@ -1009,7 +1009,7 @@ async def handle_postback(event):
         await send_message(event, [rules_msg, theme_msg])
     
     elif action == 'game_theme':
-        # Enter theme - Show prologue and auto-enter latest level
+        # Enter theme - Show prologue only (level details shown when user selects a level)
         theme_id = vars.get('theme')
         if not theme_id:
             await send_text_message(event, "未指定主題。\nTheme not specified.")
@@ -1027,31 +1027,13 @@ async def handle_postback(event):
             if theme_menu_id:
                 await rich_menu_manager.link_rich_menu_to_user(user_id, theme_menu_id)
             
-            # Collect all messages (LINE reply token can only be used once)
+            # Only show prologue message (level intro is deferred to game_level action)
             all_messages = []
             
-            # Prologue message (may include video)
             prologue_msgs = await game_prologue_message(theme_id)
             if prologue_msgs:
                 all_messages.extend(prologue_msgs if isinstance(prologue_msgs, list) else [prologue_msgs])
             
-            # Auto-enter the latest unlocked level
-            current_level = get_user_unlocked_level(user_id, theme_id)
-            user_state.game_level = current_level
-            user_state.game_question = -1
-            user_state.in_npc_chat = False
-            
-            # Level intro (returns a list)
-            level_intro = await game_level_intro_message(theme_id, current_level, user_id)
-            if level_intro:
-                all_messages.extend(level_intro if isinstance(level_intro, list) else [level_intro])
-            
-            # Question selection
-            questions_carousel = await game_questions_carousel(theme_id, current_level, user_id)
-            if questions_carousel:
-                all_messages.append(questions_carousel)
-            
-            # LINE API allows max 5 messages per reply
             if all_messages:
                 await send_message(event, all_messages[:5])
         except Exception as e:

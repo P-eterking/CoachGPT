@@ -1057,7 +1057,7 @@ async def game_prologue_message(theme_id: str):
     return messages
 
 async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
-    """Show level intro with optional video"""
+    """Show level intro: (1) description card, (2) optional video"""
     level_info = get_game_level_info(theme_id, level_idx)
     
     if not level_info:
@@ -1073,18 +1073,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
     
     messages = []
     
-    # If there's a video, add it first
-    if level_info.get('video_file'):
-        video_url = f'{URL}/templates/videos/{level_info["video_file"]}'
-        preview_url = f'{URL}/templates/videos/{level_info["video_file"].replace(".mp4", "_preview.jpg")}'
-        messages.append(
-            VideoMessage(
-                originalContentUrl=video_url,
-                previewImageUrl=preview_url
-            )
-        )
-    
-    # Level description card
+    # (1) Level description card FIRST
     theme_config = load_game_theme_config(theme_id)
     theme_name = theme_config.name if theme_config else theme_id
     
@@ -1149,6 +1138,17 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
         altText=f'Level {level_idx + 1}',
         contents=level_bubble
     ))
+    
+    # (2) Video AFTER description
+    if level_info.get('video_file'):
+        video_url = f'{URL}/templates/videos/{level_info["video_file"]}'
+        preview_url = f'{URL}/templates/videos/{level_info["video_file"].replace(".mp4", "_preview.jpg")}'
+        messages.append(
+            VideoMessage(
+                originalContentUrl=video_url,
+                previewImageUrl=preview_url
+            )
+        )
     
     return messages
 
