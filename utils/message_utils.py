@@ -1054,6 +1054,15 @@ async def game_prologue_message(theme_id: str):
     
     messages.append(prologue_msg)
     
+    # Add QuickReply bubble button for novel full text link
+    if getattr(theme_config, 'novel_url', None):
+        prologue_msg.quick_reply = QuickReply(items=[
+            QuickReplyItem(action=URIAction(
+                label='Novel Full Text / 小說全文',
+                uri=theme_config.novel_url
+            )),
+        ])
+    
     return messages
 
 async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
@@ -1200,7 +1209,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             body_contents = [
                 FlexText(
-                    text=f'Question {level_idx + 1}-{q_idx + 1}\n題目 {level_idx + 1}-{q_idx + 1}',
+                    text=f'Question Q{level_idx + 1}-{q_idx + 1}\n題目 Q{level_idx + 1}-{q_idx + 1}',
                     wrap=True,
                     weight='bold',
                     size='lg',
@@ -1286,7 +1295,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         
         body_contents = [
             FlexText(
-                text=f'Question {level_idx + 1}-{current_q_idx + 1}\n題目 {level_idx + 1}-{current_q_idx + 1}',
+                text=f'Question Q{level_idx + 1}-{current_q_idx + 1}\n題目 Q{level_idx + 1}-{current_q_idx + 1}',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1401,7 +1410,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             progress_contents.append(
                 FlexText(
-                    text=f'{level_idx + 1}-{q_i + 1}: {status}',
+                    text=f'Q{level_idx + 1}-{q_i + 1}: {status}',
                     wrap=True,
                     size='sm',
                     color=color,
@@ -1443,7 +1452,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     # Main result card - score always shows
     main_contents = [
         FlexText(
-            text=f'{level_idx + 1}-{question_idx + 1} Result\n結果',
+            text=f'Q{level_idx + 1}-{question_idx + 1} Result\n結果',
             wrap=True,
             weight='bold',
             size='xxl',
@@ -1575,7 +1584,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             bubbles.append(ref_bubble)
     
     msg = FlexMessage(
-        altText=f'{level_idx + 1}-{question_idx + 1} Result',
+        altText=f'Q{level_idx + 1}-{question_idx + 1} Result',
         contents=FlexCarousel(contents=bubbles)
     )
     
@@ -1721,7 +1730,7 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
         ]
 
     msg = FlexMessage(
-        altText=f'{level_idx + 1}-{question_idx + 1} Improvement Hint',
+        altText=f'Q{level_idx + 1}-{question_idx + 1} Improvement Hint',
         contents=FlexCarousel(contents=bubbles)
     )
     

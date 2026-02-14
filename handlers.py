@@ -1167,7 +1167,7 @@ async def handle_postback(event):
         # Get question text
         level_info = get_game_level_info(theme_id, level_idx)
         # [Fix #6] Use level-question numbering format
-        q_label = f"{level_idx + 1}-{question_idx + 1}"
+        q_label = f"Q{level_idx + 1}-{question_idx + 1}"
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
             # [Fix #4] Check if user has talked to NPC before answering
@@ -1227,7 +1227,7 @@ async def handle_postback(event):
             level_title = level_info.get('title', f'Level {level_idx + 1}')
             await send_text_message(event, 
                 f"關卡 Level {level_idx + 1}: {level_title}\n"
-                f"{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
+                f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
                 f"請發送語音訊息作答！\nSend a voice message with your answer!"
             )
         else:
