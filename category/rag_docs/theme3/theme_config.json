@@ -1,0 +1,153 @@
+{
+    "id": "theme3",
+    "name": "British Afternoon Tea",
+    "prologue": "After the Brick Lane Market adventure, the detective team receives an invitation sealed with golden wax to attend a 'British Afternoon Tea Cultural Exchange' at The Ritz London. However, the host has mysteriously disappeared, leaving behind only a messy tea table and a note: 'Only those who understand etiquette can see the truth.' You must navigate through the elegant hotel, mastering tea etiquette and uncovering the secrets of this traditional British custom to find the missing host.",
+    "cover_image": "/templates/themes/theme3_cover.jpg",
+    "npcs": [
+        {
+            "id": "Dr. John Watson",
+            "name": "Dr. John Watson",
+            "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from hotel staff with a helpful, slightly anxious demeanor about the formal setting.",
+            "file": "Theme_3_John_Watson.md",
+            "display_description": "Watson is a loyal British army doctor and Sherlock's trusted companion. He can provide information about physical evidence and gossip from hotel staff.",
+            "background": "Served in Afghanistan as an army doctor. Now assists Sherlock Holmes in solving mysteries around London.",
+            "image": "John_Watson.jpg"
+        },
+        {
+            "id": "Mycroft Holmes",
+            "name": "Mycroft Holmes",
+            "persona": "A condescending British official who is the embodiment of the Government, responsible for providing etiquette rules and royal protocols with an air of weary superiority.",
+            "file": "Theme_3_Mycroft_Holmes.md",
+            "display_description": "Mycroft is Sherlock's older brother and a senior British government official. He has access to royal archives and knows all proper etiquette protocols.",
+            "background": "The most powerful man in British government. His word can open any door in the realm.",
+            "image": "Mycroft_Holmes.jpg"
+        },
+        {
+            "id": "Sherlock Holmes",
+            "name": "Sherlock Holmes",
+            "persona": "An arrogant and hyper-observant British consulting detective who provides answers about precise visual details and food observations while frequently insulting the user's lack of intellect.",
+            "file": "Theme_3_Sherlock_Holmes.md",
+            "display_description": "The world's only consulting detective. He notices every detail on the tea service and can deduce facts that others miss. Ask him about visual clues.",
+            "background": "221B Baker Street's famous detective. His methods of deduction are legendary.",
+            "image": "Sherlock_Holmes.jpg"
+        }
+    ],
+    "levels": [
+        {
+            "id": 0,
+            "title": "The Secret of the Three-Tier Stand",
+            "description": "You arrive at the Ritz Hotel's afternoon tea service to find chaos. The three-tier stand has been tampered with, and the host has vanished. A note reads: 'Only those who understand etiquette can see the truth.' You must restore the proper order and find the first clue.",
+            "video_file": "Theme_3_Level_1_video.mp4",
+            "questions": [
+                {
+                    "text": "What is the correct order of treats on a three-tier stand (from bottom to top)?",
+                    "hint": "",
+                    "reference_answer": "Finger sandwiches, scones, small cakes"
+                },
+                {
+                    "text": "What two items must scones be served with?",
+                    "hint": "",
+                    "reference_answer": "Clotted cream and jam"
+                },
+                {
+                    "text": "Where is the password card hidden?",
+                    "hint": "",
+                    "reference_answer": "Third silver tea caddy from the left"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "title": "The Selection of British Snacks",
+            "description": "Although the tier order is restored, new trouble arises. The organizer discovers the snack names on the menu have been vandalized by the 'ghost'—for example, 'cucumber sandwiches' changed to 'pickle sandwiches.' You must identify the authentic traditional British snacks using a short video playing on the table as reference.",
+            "video_file": "Theme_3_Level_2_video.mp4",
+            "questions": [
+                {
+                    "text": "Which finger sandwiches are the authentic traditional ones?",
+                    "hint": "",
+                    "reference_answer": "Cucumber sandwiches"
+                },
+                {
+                    "text": "Which Queen is the Victoria Sponge Cake named after?",
+                    "hint": "",
+                    "reference_answer": "Queen Victoria"
+                },
+                {
+                    "text": "Which room should you go to find the hiding baker?",
+                    "hint": "",
+                    "reference_answer": "Room 102"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "The Afternoon Tea Etiquette Challenge",
+            "description": "Although the snack types are confirmed, to meet the mysterious 'Tea Party Host,' you must pass the etiquette test conducted by the hotel's tea master. He looks at you sternly and says: 'Afternoon tea is a social art. Those with rude manners will be asked to leave. Only by demonstrating proper etiquette will I give you the key to the rooftop lounge.'",
+            "video_file": "Theme_3_Level_3_video.mp4",
+            "questions": [
+                {
+                    "text": "How should you properly hold a teacup?",
+                    "hint": "",
+                    "reference_answer": "Pinch handle with thumb and index finger"
+                },
+                {
+                    "text": "How should you move the spoon when stirring tea?",
+                    "hint": "",
+                    "reference_answer": "Between 6 and 12 o'clock positions"
+                },
+                {
+                    "text": "Where is the waiter in the purple vest located?",
+                    "hint": "",
+                    "reference_answer": "By the lobby fountain"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "The Origin Story of Afternoon Tea",
+            "description": "After passing the etiquette test, the tea master leads you into the hotel's private library. On the table is a historical document about the origin of British afternoon tea, but several key pages have been torn out by the 'ghost.' The master says: 'If you don't know why this tradition exists, you cannot truly understand its value. Please recover those missing historical fragments.'",
+            "video_file": "Theme_3_Level_4_video.mp4",
+            "questions": [
+                {
+                    "text": "In which century did British afternoon tea originate?",
+                    "hint": "",
+                    "reference_answer": "19th century"
+                },
+                {
+                    "text": "What was the original purpose of afternoon tea?",
+                    "hint": "",
+                    "reference_answer": "To alleviate hunger between lunch and dinner"
+                },
+                {
+                    "text": "Where is the Duchess's wooden box hidden?",
+                    "hint": "",
+                    "reference_answer": "Behind the bookshelf"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "Afternoon Tea Drink Pairing",
+            "description": "The afternoon tea is about to officially begin, but the drink menu is completely mixed up. The tea master says anxiously: 'If the tea is paired incorrectly, this party will be ruined.' You must choose the correct drink pairings for each tier based on the snack characteristics and historical knowledge to lure out the 'Tea Party Host' hiding behind the scenes.",
+            "video_file": "Theme_3_Level_5_video.mp4",
+            "questions": [
+                {
+                    "text": "What are the two main types of drinks for traditional British afternoon tea?",
+                    "hint": "",
+                    "reference_answer": "Black tea and herbal tea"
+                },
+                {
+                    "text": "Which tea is most commonly paired with scones?",
+                    "hint": "",
+                    "reference_answer": "Earl Grey"
+                },
+                {
+                    "text": "Where is the tea party host hiding?",
+                    "hint": "",
+                    "reference_answer": "10th-floor Viewing Gallery"
+                }
+            ]
+        }
+    ],
+    "novel_url": "https://hackmd.io/@sXPepRwnTrKIM4LWkcWK3g/Bk7A1coPWg"
+}

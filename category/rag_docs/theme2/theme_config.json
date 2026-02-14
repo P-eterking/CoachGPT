@@ -1,0 +1,153 @@
+{
+    "id": "theme2",
+    "name": "The Second-hand Market",
+    "prologue": "After the Westminster Abbey case, you receive an anonymous tip about a mysterious vintage market in East London. The Ghost has reportedly hidden clues about his next target among the antiques. You must navigate through the bustling Brick Lane Market, examining vintage postcards, ancient clocks, WWII artifacts, and royal memorabilia to uncover the location of the 'Time Treasure' before it falls into the wrong hands.",
+    "cover_image": "/templates/themes/theme2_cover.jpg",
+    "npcs": [
+        {
+            "id": "Dr. John Watson",
+            "name": "Dr. John Watson",
+            "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from vendors and locals with a helpful, curious demeanor.",
+            "file": "Theme_2_John_Watson.md",
+            "display_description": "Watson is a loyal British army doctor and Sherlock's trusted companion. He can provide information about physical evidence and local gossip from market vendors.",
+            "background": "Served in Afghanistan as an army doctor. Now assists Sherlock Holmes in solving mysteries around London.",
+            "image": "John_Watson.jpg"
+        },
+        {
+            "id": "Mycroft Holmes",
+            "name": "Mycroft Holmes",
+            "persona": "A condescending British official who is the embodiment of the Government, responsible for providing historical context and official records with an air of weary superiority.",
+            "file": "Theme_2_Mycroft_Holmes.md",
+            "display_description": "Mycroft is Sherlock's older brother and a senior British government official. He has access to classified historical archives and official records.",
+            "background": "The most powerful man in British government. His word can open any door in the realm.",
+            "image": "Mycroft_Holmes.jpg"
+        },
+        {
+            "id": "Sherlock Holmes",
+            "name": "Sherlock Holmes",
+            "persona": "An arrogant and hyper-observant British consulting detective who provides answers about precise visual details and deductions about artifacts while frequently insulting the user's lack of intellect.",
+            "file": "Theme_2_Sherlock_Holmes.md",
+            "display_description": "The world's only consulting detective. He notices every detail on vintage items and can deduce facts that others miss. Ask him about visual clues on antiques.",
+            "background": "221B Baker Street's famous detective. His methods of deduction are legendary.",
+            "image": "Sherlock_Holmes.jpg"
+        }
+    ],
+    "levels": [
+        {
+            "id": 0,
+            "title": "The Secret of the Vintage Postcards",
+            "description": "You arrive at the vintage market and approach a stall filled with old postcards. The vendor hands you a stack of vintage postcards that have traveled across the UK (York, Cambridge, Nottingham), but only one contains the key to the first clue. You must examine them carefully to find the hidden message.",
+            "video_file": "Theme_2_Level_1_video.mp4",
+            "questions": [
+                {
+                    "text": "Which city's postcard has a strange hidden symbol in the postmark?",
+                    "hint": "",
+                    "reference_answer": "York"
+                },
+                {
+                    "text": "What animal symbol is hidden in the postmark?",
+                    "hint": "",
+                    "reference_answer": "Cat"
+                },
+                {
+                    "text": "Based on the clues, where should you go next to find the clockmaker?",
+                    "hint": "",
+                    "reference_answer": "Clock repair shop"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "title": "The Riddle of the Ancient Clock",
+            "description": "Following Sherlock's guidance, you enter the clock repair shop. The clockmaker wearing a red scarf is waiting for you. He holds a beautiful Victorian pocket watch that stopped at a significant moment. He says it witnessed the peak of the British Industrial Revolution, and its hands and engravings hide a secret.",
+            "video_file": "Theme_2_Level_2_video.mp4",
+            "questions": [
+                {
+                    "text": "What famous building is engraved on the back of the pocket watch?",
+                    "hint": "",
+                    "reference_answer": "Crystal Palace"
+                },
+                {
+                    "text": "In what year was the Great Exhibition held at this location?",
+                    "hint": "",
+                    "reference_answer": "1851"
+                },
+                {
+                    "text": "What time must you set the pocket watch to for it to open?",
+                    "hint": "",
+                    "reference_answer": "12:00"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "The Secret Inside the Leather Suitcase",
+            "description": "After solving the pocket watch puzzle, the hands point to a vintage leather suitcase in the corner. The vendor says this box holds WWII secrets. An old television nearby is playing a black-and-white documentary about 'The Blitz.' You must unlock the suitcase and discover what history it protects.",
+            "video_file": "Theme_2_Level_3_video.mp4",
+            "questions": [
+                {
+                    "text": "What is the three-digit code to unlock the WWII suitcase?",
+                    "hint": "",
+                    "reference_answer": "940"
+                },
+                {
+                    "text": "What survival item is found inside the suitcase?",
+                    "hint": "",
+                    "reference_answer": "Gas Mask"
+                },
+                {
+                    "text": "What material was used to rebuild this market after the war?",
+                    "hint": "",
+                    "reference_answer": "Rubble from bombed buildings"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "The History of the Handcrafted Ring",
+            "description": "After solving the gas mask puzzle, the vendor nods and pours out a silver handcrafted ring from the gas mask's filter canister. He carefully places the ring on velvet cloth and says it witnessed the coronation of Edward VII. The engraving inside points to the next clue.",
+            "video_file": "Theme_2_Level_4_video.mp4",
+            "questions": [
+                {
+                    "text": "What inscription is engraved inside the ring?",
+                    "hint": "",
+                    "reference_answer": "E.R. 1902"
+                },
+                {
+                    "text": "What does 'E.R.' stand for in royal terms?",
+                    "hint": "",
+                    "reference_answer": "Edwardus Rex"
+                },
+                {
+                    "text": "Where is the final map fragment hidden?",
+                    "hint": "",
+                    "reference_answer": "1902 Coronation Commemorative Stamp Album"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "The Puzzle of the Collection Map",
+            "description": "You open the commemorative stamp album found at the book stall. Inside are several yellowed, broken map fragments. The vendor finally smiles with satisfaction: 'Excellent. The postcards guided the direction, the pocket watch confirmed the time, the suitcase protected history, and the ring symbolized glory. Now piece these fragments together, and you will find the Time Treasure left by the Victorian industrialist.'",
+            "video_file": "Theme_2_Level_5_video.mp4",
+            "questions": [
+                {
+                    "text": "What shape is the missing corner of the map?",
+                    "hint": "",
+                    "reference_answer": "Factory Chimney"
+                },
+                {
+                    "text": "Which famous London brewery does the map point to?",
+                    "hint": "",
+                    "reference_answer": "Old Truman Brewery"
+                },
+                {
+                    "text": "Where exactly is the treasure hidden?",
+                    "hint": "",
+                    "reference_answer": "Black Eagle symbol"
+                }
+            ]
+        }
+    ],
+    "novel_url": "https://hackmd.io/@sXPepRwnTrKIM4LWkcWK3g/Bk7A1coPWg"
+}
