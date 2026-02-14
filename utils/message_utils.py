@@ -1058,7 +1058,7 @@ async def game_prologue_message(theme_id: str):
     if getattr(theme_config, 'novel_url', None):
         prologue_msg.quick_reply = QuickReply(items=[
             QuickReplyItem(action=URIAction(
-                label='Novel Full Text / 小說全文',
+                label='Novel / 小說全文',
                 uri=theme_config.novel_url
             )),
         ])

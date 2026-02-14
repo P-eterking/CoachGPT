@@ -475,7 +475,7 @@
                 { "type": "postback", "label": "ex5", "data": "action=enabled&alias=ex5" },
                 { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "game_enabled2" },
-                {},
+                { "type": "postback", "label": "ex6", "data": "action=enabled&alias=ex6" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
         },
@@ -514,7 +514,7 @@
                 { "type": "postback", "label": "ex5", "data": "action=respond&alias=ex5" },
                 { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "game_respond2" },
-                {},
+                { "type": "postback", "label": "ex6", "data": "action=respond&alias=ex6" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
         }
