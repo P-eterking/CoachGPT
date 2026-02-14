@@ -2381,7 +2381,7 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
                 alignItems='center',
                 contents=[
                     FlexText(
-                        text='Locked',
+                        text='🔒Locked',
                         size='xxl',
                         align='center',
                     ),
