@@ -269,7 +269,8 @@ def get_game_level_info(theme_id: str, level_idx: int) -> Optional[dict]:
                     {
                         "text": q.text, 
                         "hint": q.hint,
-                        "reference_answers": q.get_all_reference_answers() # 支援多個參考答案
+                        "reference_answers": q.get_all_reference_answers(), # 支援多個參考答案
+                        "tiered_reference_answers": q.get_tiered_reference_answers() # 十級評分參考答案 (若有)
                     } for q in level.questions
                 ]
             }

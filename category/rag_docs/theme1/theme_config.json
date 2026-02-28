@@ -42,17 +42,17 @@
                 {
                     "text": "What exact time is displayed on the clock face?",
                     "hint": "",
-                    "reference_answer": "04:18:37"
+                    "reference_answer": "10\tThe exact time displayed on the clock face is 04:18:37.|I can see that the clock face is currently showing 04:18:37.|According to the clock, the exact time is 04:18:37.\n9\tThe time on the clock face is 04:18:37.|It shows exactly 04:18:37 on the clock.|The clock is displaying 04:18.\n8\tThe time is 04:18:37.|It is showing 04:18 on the clock.|The exact time is 04:18.\n7\t04:18:37.|The time is 04:18.|It is four eighteen.\n6\t04:18:37.|04:18.|Four eighteen and thirty-seven seconds.\n5\tThe time is four.|It is eighteen past four.|04:18 something.\n4\tFour eighteen.|Just four something.|Time is four.\n3\tFour clock.|It is time.|Number four.\n2\tClock.|Time.|Numbers.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What is the maintenance code provided?",
                     "hint": "",
-                    "reference_answer": "CROWN-X-1859"
+                    "reference_answer": "10\tThe provided maintenance code for the lock is CROWN-X-1859.|According to the information, the maintenance code is CROWN-X-1859.|I found that the required maintenance code is CROWN-X-1859.\n9\tThe maintenance code is CROWN-X-1859.|It is CROWN-X-1859.|The code provided is CROWN-X-1859.\n8\tThe code is CROWN-X-1859.|I think it is CROWN-X-1859.|The maintenance code is CROWN 1859.\n7\tCROWN-X-1859.|The code is CROWN 1859.|It's CROWN-X.\n6\tCROWN-X-1859.|CROWN 1859.|Code CROWN-X-1859.\n5\tIt is CROWN something.|The code has 1859.|CROWN X.\n4\tCROWN.|1859.|Code is CROWN.\n3\tSome code.|Letters and numbers.|CROWN.\n2\tCode.|Crown.|Numbers.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Based on the clues, what mode of transportation did the suspect use to escape?",
                     "hint": "",
-                    "reference_answer": "Red Double-decker Bus"
+                    "reference_answer": "10\tBased on the clues, the suspect used a red double-decker bus to escape.|The suspect escaped the scene using a red double-decker bus.|According to the evidence, the escape vehicle was a red double-decker bus.\n9\tThe suspect used a red double-decker bus to escape.|They escaped on a red double-decker bus.|The mode of transportation was a red double-decker bus.\n8\tThe suspect escaped using a red bus.|They used a double-decker bus.|It was a red double-decker bus.\n7\tRed double-decker bus.|A red bus.|They took a red bus.\n6\tRed double-decker bus.|Red bus.|Double-decker.\n5\tA bus.|They used a bus.|Red vehicle.\n4\tBus.|Red bus.|A double bus.\n3\tHe run away.|A car.|Take transport.\n2\tBus.|Red.|Escape.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -65,17 +65,17 @@
                 {
                     "text": "What is the hidden license plate number of this bus?",
                     "hint": "",
-                    "reference_answer": "SH-221B"
+                    "reference_answer": "10\tThe hidden license plate number of this ghost bus is SH-221B.|I discovered that the bus's hidden license plate is SH-221B.|The license plate number hidden on the bus is SH-221B.\n9\tThe hidden license plate number is SH-221B.|Its license plate is SH-221B.|The bus has the license plate SH-221B.\n8\tThe license plate is SH-221B.|I think the plate is SH-221B.|It is SH-221B.\n7\tSH-221B.|The plate is 221B.|It's SH-221.\n6\tSH-221B.|221B.|License SH-221B.\n5\tThe plate has 221.|It is SH something.|SH-221.\n4\tSH.|221B.|Plate 221.\n3\tLicense plate.|Numbers on the bus.|SH.\n2\tPlate.|221.|Bus.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What is the emergency requisition command to get on the bus?",
                     "hint": "",
-                    "reference_answer": "OVERRIDE-PROTOCOL-007"
+                    "reference_answer": "10\tThe emergency requisition command to get on the bus is OVERRIDE-PROTOCOL-007.|To board the bus, you must use the command OVERRIDE-PROTOCOL-007.|The required emergency command is OVERRIDE-PROTOCOL-007.\n9\tThe emergency command is OVERRIDE-PROTOCOL-007.|You need to say OVERRIDE-PROTOCOL-007.|The command is OVERRIDE-PROTOCOL-007.\n8\tThe command is OVERRIDE-PROTOCOL-007.|It is OVERRIDE-PROTOCOL-007.|The requisition command is OVERRIDE 007.\n7\tOVERRIDE-PROTOCOL-007.|The command is OVERRIDE 007.|It's PROTOCOL-007.\n6\tOVERRIDE-PROTOCOL-007.|OVERRIDE 007.|PROTOCOL-007.\n5\tThe command has OVERRIDE.|It is PROTOCOL something.|OVERRIDE.\n4\tOVERRIDE.|007.|Protocol.\n3\tSecret command.|Password to get in.|Say words.\n2\tOverride.|Command.|007.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Who is the registered owner of this mysterious Oyster Card?",
                     "hint": "",
-                    "reference_answer": "H. Carter"
+                    "reference_answer": "10\tThe registered owner of this mysterious Oyster Card is H. Carter.|According to the record, the Oyster Card belongs to H. Carter.|H. Carter is the registered owner of the mysterious card.\n9\tThe owner of the Oyster Card is H. Carter.|The card is registered to H. Carter.|The registered owner is H. Carter.\n8\tThe owner is H. Carter.|It belongs to H. Carter.|The name on the card is H. Carter.\n7\tH. Carter.|The owner is Carter.|It's H. Carter.\n6\tH. Carter.|Carter.|Mr. Carter.\n5\tHis name is Carter.|The owner starts with H.|Someone named Carter.\n4\tCarter.|H.|The card guy.\n3\tA person.|Oyster owner.|Some guy.\n2\tOwner.|Card.|Man.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -88,17 +88,17 @@
                 {
                     "text": "Which hieroglyph on the Rosetta Stone is glowing (showing it was tampered with)?",
                     "hint": "",
-                    "reference_answer": "Cobra"
+                    "reference_answer": "10\tThe hieroglyph on the Rosetta Stone that is glowing is the Cobra.|I can see that the Cobra hieroglyph is glowing on the stone.|The Cobra is the glowing hieroglyph, showing it was tampered with.\n9\tThe glowing hieroglyph on the stone is the Cobra.|The Cobra hieroglyph is glowing.|The hieroglyph that glows is the Cobra.\n8\tThe glowing one is the Cobra.|The Cobra is glowing.|It is the Cobra hieroglyph.\n7\tThe Cobra.|It's the Cobra.|Cobra hieroglyph.\n6\tCobra.|The snake.|Glowing Cobra.\n5\tA snake is glowing.|The animal is a Cobra.|It is a snake.\n4\tCobra.|Snake.|The animal.\n3\tGlowing thing.|A picture.|Hieroglyph.\n2\tStone.|Glow.|Animal.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What is the secret catalog number of this stone fragment?",
                     "hint": "",
-                    "reference_answer": "BM-EA24"
+                    "reference_answer": "10\tThe secret catalog number of this stone fragment is BM-EA24.|According to the database, the secret catalog number is BM-EA24.|The fragment's secret catalog number is listed as BM-EA24.\n9\tThe secret catalog number is BM-EA24.|Its catalog number is BM-EA24.|The number for this fragment is BM-EA24.\n8\tThe catalog number is BM-EA24.|It is BM-EA24.|The secret number is BM-EA24.\n7\tBM-EA24.|The number is EA24.|It's BM-EA24.\n6\tBM-EA24.|EA24.|Catalog BM-EA24.\n5\tThe number has EA24.|It starts with BM.|BM something.\n4\tBM.|EA24.|Number 24.\n3\tCatalog code.|A secret number.|Some code.\n2\tNumber.|BM.|Code.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "A shopping receipt was dropped on the floor. What did the suspect buy?",
                     "hint": "",
-                    "reference_answer": "A Guide to London's Taxi Routes"
+                    "reference_answer": "10\tAccording to the dropped receipt, the suspect bought A Guide to London's Taxi Routes.|The suspect purchased A Guide to London's Taxi Routes, based on the receipt.|The receipt shows that the suspect bought A Guide to London's Taxi Routes.\n9\tThe receipt shows the suspect bought A Guide to London's Taxi Routes.|The suspect bought A Guide to London's Taxi Routes.|They purchased A Guide to London's Taxi Routes.\n8\tThe suspect bought a guide to London's taxi routes.|They bought a taxi route guide.|The receipt is for a London taxi guide.\n7\tA Guide to London's Taxi Routes.|A taxi route guide.|They bought a guide book.\n6\tA Guide to London's Taxi Routes.|London taxi guide.|Taxi guide.\n5\tA guide for taxis.|They bought a book about routes.|A London map.\n4\tTaxi guide.|A book.|London routes.\n3\tA receipt for something.|Shopping items.|A paper.\n2\tGuide.|Taxi.|Book.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -111,17 +111,17 @@
                 {
                     "text": "What is the driver's license number?",
                     "hint": "",
-                    "reference_answer": "TFL-58390"
+                    "reference_answer": "10\tThe cab driver's license number is TFL-58390.|According to the displayed information, the driver's license number is TFL-58390.|The license number for the driver is TFL-58390.\n9\tThe driver's license number is TFL-58390.|His license number is TFL-58390.|The number is TFL-58390.\n8\tThe license number is TFL-58390.|It is TFL-58390.|The driver's number is TFL-58390.\n7\tTFL-58390.|The number is 58390.|It's TFL-58390.\n6\tTFL-58390.|58390.|Driver TFL-58390.\n5\tThe number has 58390.|It starts with TFL.|TFL something.\n4\tTFL.|58390.|License 58390.\n3\tA license number.|Driver ID.|Some numbers.\n2\tNumber.|TFL.|License.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What is the exact fare (in pounds) to Westminster Abbey?",
                     "hint": "",
-                    "reference_answer": "12.40"
+                    "reference_answer": "10\tThe exact fare to Westminster Abbey is 12.40 pounds.|To get to Westminster Abbey, the exact fare is 12.40 pounds.|The cab driver stated the exact fare is 12.40 pounds.\n9\tThe exact fare is 12.40 pounds.|It costs 12.40 pounds to go there.|The fare to the Abbey is 12.40.\n8\tThe fare is 12.40 pounds.|It will be 12.40.|The cost is 12.40 pounds.\n7\t12.40 pounds.|12.40.|The fare is 12.40.\n6\t12.40.|Twelve pounds and forty pence.|12.40 pounds.\n5\tIt costs 12 pounds.|About twelve forty.|Twelve pounds something.\n4\t12.40.|Twelve forty.|12 pounds.\n3\tSome money.|Pounds.|A fare.\n2\tMoney.|12.|Fare.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
-                    "text": "Victoria Street, Which street under construction must you avoid on the way to the Abbey?",
+                    "text": "Which street under construction must you avoid on the way to the Abbey?",
                     "hint": "",
-                    "reference_answer": "Victoria Street"
+                    "reference_answer": "10\tYou must avoid Victoria Street because it is currently under construction.|On the way to the Abbey, the street under construction to avoid is Victoria Street.|Victoria Street is under construction and must be avoided.\n9\tYou need to avoid Victoria Street.|The street to avoid is Victoria Street.|Victoria Street is under construction.\n8\tWe must avoid Victoria Street.|Avoid Victoria Street.|The construction is on Victoria Street.\n7\tVictoria Street.|Avoid Victoria.|It's Victoria Street.\n6\tVictoria Street.|Victoria.|Street Victoria.\n5\tYou must avoid Victoria.|A street named Victoria.|Construction on Victoria.\n4\tVictoria Street.|Victoria.|Avoid Victoria.\n3\tSome street.|A construction road.|Street.\n2\tVictoria.|Street.|Road.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -134,17 +134,17 @@
                 {
                     "text": "Which mythical creature statue at the base of the Coronation Chair is the document hidden behind?",
                     "hint": "",
-                    "reference_answer": "Lion"
+                    "reference_answer": "10\tThe document is hidden behind the mythical Lion statue at the base of the Coronation Chair.|At the base of the Coronation Chair, the document is hidden behind the Lion statue.|You can find the document hidden behind the Lion statue.\n9\tIt is hidden behind the Lion statue.|The document is behind the Lion.|The statue is a Lion.\n8\tThe document is hidden behind the lion.|It's behind the lion statue.|Look behind the lion.\n7\tThe Lion statue.|The Lion.|It is the Lion.\n6\tLion.|A lion statue.|Behind the lion.\n5\tIt is a lion.|An animal statue like a lion.|Behind an animal.\n4\tLion.|Statue.|The lion.\n3\tA creature.|Animal statue.|Some mythical thing.\n2\tLion.|Animal.|Statue.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What is the official name of this stolen document?",
                     "hint": "",
-                    "reference_answer": "The Treaty of Succession"
+                    "reference_answer": "10\tThe official name of the stolen document is The Treaty of Succession.|The stolen document is officially known as The Treaty of Succession.|According to the briefing, the document is called The Treaty of Succession.\n9\tThe official name is The Treaty of Succession.|The document is called The Treaty of Succession.|It is The Treaty of Succession.\n8\tThe document is The Treaty of Succession.|It's called the Treaty of Succession.|The stolen file is the Treaty of Succession.\n7\tThe Treaty of Succession.|Treaty of Succession.|It's the Treaty of Succession.\n6\tThe Treaty of Succession.|Treaty of Succession.|Succession Treaty.\n5\tIt is a treaty of something.|The succession document.|A treaty.\n4\tTreaty of Succession.|The Treaty.|Succession.\n3\tSecret paper.|A stolen file.|The document.\n2\tTreaty.|Paper.|Succession.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "A key is needed to open the document. Next to which famous poet's tomb is it hidden?",
                     "hint": "",
-                    "reference_answer": "Geoffrey Chaucer"
+                    "reference_answer": "10\tThe key to open the document is hidden next to Geoffrey Chaucer's tomb.|You can find the key hidden next to the tomb of the famous poet Geoffrey Chaucer.|The key is located right next to Geoffrey Chaucer's tomb.\n9\tThe key is hidden next to Geoffrey Chaucer's tomb.|It is hidden by Geoffrey Chaucer's tomb.|The famous poet is Geoffrey Chaucer.\n8\tThe key is next to Geoffrey Chaucer.|It is hidden near Geoffrey Chaucer.|Geoffrey Chaucer's tomb.\n7\tGeoffrey Chaucer.|Next to Geoffrey Chaucer.|It's Geoffrey Chaucer.\n6\tGeoffrey Chaucer.|Chaucer.|Chaucer's tomb.\n5\tA poet named Chaucer.|Geoffrey something.|Next to a famous poet.\n4\tGeoffrey Chaucer.|Chaucer.|Geoffrey.\n3\tA poet.|Someone's tomb.|A grave.\n2\tPoet.|Tomb.|Chaucer.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         }

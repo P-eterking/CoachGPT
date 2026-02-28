@@ -42,17 +42,17 @@
                 {
                     "text": "Which city's postcard has a strange hidden symbol in the postmark?",
                     "hint": "",
-                    "reference_answer": "York"
+                    "reference_answer": "10\tThe postcard from York has a strange hidden symbol in its postmark.|According to the clues, the York postcard contains the hidden symbol.|I can see that the strange hidden symbol is on the postcard from York.\n9\tThe postcard from York has a hidden symbol.|York's postcard has a strange symbol on it.|The city with the hidden symbol is York.\n8\tI think the city is York.|The York postcard has the symbol.|It is the York postcard.\n7\tYork.|It is York.|The York one.\n6\tYork.|City of York.|Just York.\n5\tIt is a city like York.|Maybe York.|Some city.\n4\tYork.|City.|A postcard.\n3\tA place.|A symbol.|Postmark.\n2\tCity.|Card.|Look.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What animal symbol is hidden in the postmark?",
                     "hint": "",
-                    "reference_answer": "Cat"
+                    "reference_answer": "10\tThe animal symbol hidden in the postmark is a cat.|I can clearly see that a cat symbol is hidden in the postmark.|A cat is the animal symbol hidden within the postmark.\n9\tThe hidden animal symbol is a cat.|A cat symbol is hidden in the postmark.|The animal is a cat.\n8\tThe symbol is a cat.|It's a cat.|I think it is a cat.\n7\tA cat.|It is a cat.|The cat.\n6\tCat.|A cat.|Feline.\n5\tIt is an animal like a cat.|Maybe a cat.|Some animal.\n4\tCat.|Animal.|A pet.\n3\tAn animal.|A shape.|A symbol.\n2\tAnimal.|Cat.|Look.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Based on the clues, where should you go next to find the clockmaker?",
                     "hint": "",
-                    "reference_answer": "Clock repair shop"
+                    "reference_answer": "10\tBased on the clues, we should go to the clock repair shop next to find the clockmaker.|We must head to the clock repair shop next to locate the clockmaker.|The next destination to find the clockmaker is the clock repair shop.\n9\tWe should go to the clock repair shop next.|The clues point to the clock repair shop.|We need to visit the clock repair shop.\n8\tWe should go to the clock shop.|Let's go to the clock repair shop.|The clock shop is next.\n7\tClock repair shop.|The clock shop.|To the clock shop.\n6\tClock repair shop.|Clock shop.|Repair shop.\n5\tA shop for clocks.|Maybe a repair place.|Some clock place.\n4\tClock shop.|Repair.|A store.\n3\tA place.|Go somewhere.|To a shop.\n2\tShop.|Clock.|Go.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -65,17 +65,17 @@
                 {
                     "text": "What famous building is engraved on the back of the pocket watch?",
                     "hint": "",
-                    "reference_answer": "Crystal Palace"
+                    "reference_answer": "10\tThe famous building engraved on the back of the pocket watch is the Crystal Palace.|I can see that the Crystal Palace is engraved on the back of the watch.|The engraving on the pocket watch shows the Crystal Palace.\n9\tThe building engraved on the pocket watch is the Crystal Palace.|The Crystal Palace is on the back of the watch.|It is the Crystal Palace.\n8\tThe engraving shows the Crystal Palace.|It's the Crystal Palace.|I think it is the Crystal Palace.\n7\tThe Crystal Palace.|Crystal Palace.|It is Crystal Palace.\n6\tCrystal Palace.|The Palace.|A glass palace.\n5\tIt is a palace.|The Crystal building.|Some palace.\n4\tCrystal Palace.|Palace.|Building.\n3\tA building.|A big house.|Engraving.\n2\tPalace.|Crystal.|Watch.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "In what year was the Great Exhibition held at this location?",
                     "hint": "",
-                    "reference_answer": "1851"
+                    "reference_answer": "10\tThe Great Exhibition was held at the Crystal Palace in the year 1851.|According to history, the Great Exhibition took place there in 1851.|The year the Great Exhibition was held at this location was 1851.\n9\tThe Great Exhibition was held in 1851.|It was held in the year 1851.|The year was 1851.\n8\tThe exhibition was in 1851.|It happened in 1851.|The year is 1851.\n7\t1851.|In 1851.|The year 1851.\n6\t1851.|Eighteen fifty-one.|Year 1851.\n5\tIt was in the 1850s.|Maybe 1851.|Some year like 1850.\n4\t1851.|Year.|A long time ago.\n3\tA date.|Some time.|History.\n2\t1851.|Time.|Year.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What time must you set the pocket watch to for it to open?",
                     "hint": "",
-                    "reference_answer": "12:00"
+                    "reference_answer": "10\tYou must set the pocket watch to exactly 12:00 for it to open.|To open the pocket watch, you need to set the time to 12:00.|The correct time to set on the pocket watch to open it is 12:00.\n9\tYou need to set the watch to 12:00.|The time must be set to 12:00.|Set the pocket watch to 12:00.\n8\tSet the watch to 12:00.|You should set it to 12:00.|The time is 12:00.\n7\t12:00.|Twelve o'clock.|To 12:00.\n6\t12:00.|Twelve.|Midnight or noon.\n5\tSet it to twelve.|At twelve o'clock.|Maybe twelve.\n4\t12:00.|Twelve.|Time is twelve.\n3\tA time.|Clock numbers.|Numbers.\n2\tTwelve.|Time.|Watch.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -88,17 +88,17 @@
                 {
                     "text": "What is the three-digit code to unlock the WWII suitcase?",
                     "hint": "",
-                    "reference_answer": "940"
+                    "reference_answer": "10\tThe three-digit code required to unlock the WWII suitcase is 940.|You need the three-digit code 940 to unlock the WWII suitcase.|The code to unlock the suitcase is 940.\n9\tThe three-digit code is 940.|The code to open the suitcase is 940.|You must use the code 940.\n8\tThe code is 940.|It is 940.|I think the code is 940.\n7\t940.|The number 940.|It is 940.\n6\t940.|Nine four zero.|Number 940.\n5\tThe code is nine something.|It has a 9, 4, and 0.|Maybe 940.\n4\t940.|Numbers.|Code 940.\n3\tA code.|Three numbers.|Password.\n2\t940.|Code.|Lock.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What survival item is found inside the suitcase?",
                     "hint": "",
-                    "reference_answer": "Gas Mask"
+                    "reference_answer": "10\tThe survival item found inside the suitcase is a gas mask.|When you open the suitcase, you find a gas mask inside.|A gas mask is the survival item hidden in the suitcase.\n9\tThe item inside the suitcase is a gas mask.|You can find a gas mask inside.|There is a gas mask inside.\n8\tIt is a gas mask.|The item is a gas mask.|I see a gas mask.\n7\tA gas mask.|Gas mask.|It's a gas mask.\n6\tGas mask.|A mask.|The gas mask.\n5\tIt is some kind of mask.|A mask for gas.|Maybe a mask.\n4\tGas mask.|Mask.|For breathing.\n3\tAn item.|Survival gear.|Equipment.\n2\tMask.|Gas.|Item.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What material was used to rebuild this market after the war?",
                     "hint": "",
-                    "reference_answer": "Rubble from bombed buildings"
+                    "reference_answer": "10\tThe market was rebuilt using rubble from bombed buildings after the war.|After the war, rubble from bombed buildings was used as the material to rebuild this market.|They used rubble from bombed buildings to rebuild the market.\n9\tThe market was rebuilt using rubble from bombed buildings.|They used rubble from bombed buildings to rebuild it.|The material was rubble from bombed buildings.\n8\tIt was rebuilt using rubble from bombed buildings.|They used bombed building rubble.|Rubble from bombed buildings.\n7\tRubble from bombed buildings.|Bombed buildings rubble.|Building rubble.\n6\tRubble.|Bombed buildings.|From ruined buildings.\n5\tThey used old bricks and rubble.|Rubble from the war.|Stones from bombs.\n4\tRubble.|Bombed buildings.|Bricks.\n3\tOld stuff.|Materials.|Things from war.\n2\tRubble.|Bombs.|Buildings.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -111,17 +111,17 @@
                 {
                     "text": "What inscription is engraved inside the ring?",
                     "hint": "",
-                    "reference_answer": "E.R. 1902"
+                    "reference_answer": "10\tThe inscription engraved inside the handcrafted ring is E.R. 1902.|If you look inside the ring, the engraving reads E.R. 1902.|The secret inscription inside the ring is E.R. 1902.\n9\tThe inscription inside the ring is E.R. 1902.|The ring is engraved with E.R. 1902.|It says E.R. 1902 inside.\n8\tThe engraving is E.R. 1902.|It is E.R. 1902.|I think it says E.R. 1902.\n7\tE.R. 1902.|It says E.R. 1902.|The letters E.R. 1902.\n6\tE.R. 1902.|E.R.|1902.\n5\tIt has some letters like E.R.|A year like 1902.|Maybe E.R. 1902.\n4\tE.R.|1902.|Letters and numbers.\n3\tAn inscription.|Some words.|A date.\n2\tE.R.|Ring.|Words.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What does 'E.R.' stand for in royal terms?",
                     "hint": "",
-                    "reference_answer": "Edwardus Rex"
+                    "reference_answer": "10\tIn royal terms, the initials 'E.R.' stand for Edwardus Rex.|The letters 'E.R.' stand for Edwardus Rex in royal terms.|'E.R.' is the royal abbreviation for Edwardus Rex.\n9\t'E.R.' stands for Edwardus Rex.|It stands for Edwardus Rex.|The initials mean Edwardus Rex.\n8\tIt means Edwardus Rex.|The letters stand for Edwardus Rex.|Edwardus Rex.\n7\tEdwardus Rex.|It is Edwardus Rex.|King Edwardus Rex.\n6\tEdwardus Rex.|Edward Rex.|Edwardus.\n5\tIt stands for a king named Edwardus.|Edwardus something.|King Edward.\n4\tEdwardus Rex.|Edwardus.|Rex.\n3\tA king's name.|Royal words.|Some name.\n2\tEdward.|King.|Rex.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where is the final map fragment hidden?",
                     "hint": "",
-                    "reference_answer": "1902 Coronation Commemorative Stamp Album"
+                    "reference_answer": "10\tThe final map fragment is hidden inside the 1902 Coronation Commemorative Stamp Album.|You can find the final map fragment hidden in the 1902 Coronation Commemorative Stamp Album.|It is hidden within the 1902 Coronation Commemorative Stamp Album.\n9\tThe fragment is hidden in the 1902 Coronation Commemorative Stamp Album.|It's in the 1902 Coronation Commemorative Stamp Album.|The final fragment is in the stamp album.\n8\tIt is in the 1902 Stamp Album.|You can find it in the Coronation Stamp Album.|The stamp album holds the map.\n7\t1902 Coronation Commemorative Stamp Album.|The 1902 Stamp Album.|In the Stamp Album.\n6\t1902 Stamp Album.|Coronation Stamp Album.|Stamp Album.\n5\tIt is hidden in a stamp album.|An old 1902 album.|The commemorative album.\n4\tStamp album.|In an album.|1902 album.\n3\tA book.|Some album.|Hidden place.\n2\tAlbum.|Stamp.|Book.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -134,17 +134,17 @@
                 {
                     "text": "What shape is the missing corner of the map?",
                     "hint": "",
-                    "reference_answer": "Factory Chimney"
+                    "reference_answer": "10\tThe missing corner of the map is shaped like a factory chimney.|When you look at the map, the missing corner has the shape of a factory chimney.|The shape of the missing corner on the map is a factory chimney.\n9\tThe missing corner is shaped like a factory chimney.|It has the shape of a factory chimney.|The shape is a factory chimney.\n8\tIt is shaped like a factory chimney.|The shape is a factory chimney.|A factory chimney.\n7\tFactory chimney.|It's a factory chimney.|A chimney shape.\n6\tFactory chimney.|Chimney.|A factory.\n5\tIt looks like a chimney.|A factory part.|Chimney shape.\n4\tFactory chimney.|Chimney.|Shape.\n3\tA piece.|A weird shape.|Building part.\n2\tChimney.|Factory.|Shape.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Which famous London brewery does the map point to?",
                     "hint": "",
-                    "reference_answer": "Old Truman Brewery"
+                    "reference_answer": "10\tThe map points to the famous London brewery known as the Old Truman Brewery.|According to the map, it points directly to the Old Truman Brewery.|The famous London brewery shown on the map is the Old Truman Brewery.\n9\tThe map points to the Old Truman Brewery.|The brewery is the Old Truman Brewery.|It points to the Old Truman Brewery.\n8\tIt points to the Old Truman Brewery.|The famous place is the Old Truman Brewery.|Old Truman Brewery.\n7\tOld Truman Brewery.|The Truman Brewery.|It is Old Truman Brewery.\n6\tOld Truman Brewery.|Truman Brewery.|The brewery.\n5\tIt points to a brewery called Truman.|The Old Truman place.|Some brewery.\n4\tOld Truman Brewery.|Truman.|Brewery.\n3\tA beer place.|Some factory.|A brewery.\n2\tBrewery.|Truman.|Old.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where exactly is the treasure hidden?",
                     "hint": "",
-                    "reference_answer": "Black Eagle symbol"
+                    "reference_answer": "10\tThe treasure is hidden exactly at the location of the Black Eagle symbol.|You will find the treasure hidden right by the Black Eagle symbol.|The exact location of the hidden treasure is marked by the Black Eagle symbol.\n9\tThe treasure is hidden at the Black Eagle symbol.|It is hidden by the Black Eagle symbol.|You can find it at the Black Eagle symbol.\n8\tIt is hidden at the Black Eagle symbol.|Look for the Black Eagle symbol.|The Black Eagle symbol.\n7\tBlack Eagle symbol.|The Black Eagle.|At the Black Eagle symbol.\n6\tBlack Eagle symbol.|Black Eagle.|Eagle symbol.\n5\tIt is near a black bird symbol.|The eagle symbol.|An eagle.\n4\tBlack Eagle.|Eagle symbol.|Eagle.\n3\tA symbol.|A bird.|A mark.\n2\tEagle.|Black.|Symbol.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         }

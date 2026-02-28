@@ -24,6 +24,41 @@ IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 CHAT_CATEGORY = ["Travel", "Sports", "Interview", "English Skills"]
 CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
+def build_reference_answers_section(
+    tiered_reference_answers: dict = None,
+    reference_answers: list = None
+) -> str:
+    """
+    根據參考答案格式，生成適合放入 prompt 的評分指引段落。
+
+    若有十級評分參考答案 (tiered_reference_answers)，產生 few-shot 示例段落；
+    否則退而使用舊版答案列表。
+
+    Build a prompt section from reference answers.
+    If tiered_reference_answers (dict of score->examples) is provided,
+    generate a few-shot example block; otherwise fall back to plain answer list.
+    """
+    if tiered_reference_answers:
+        lines = [
+            "The following are score-level example answers (few-shot reference).",
+            "Use them to calibrate your scoring. Each score level shows what a student answer at that quality looks like.",
+            ""
+        ]
+        for score_level in sorted(tiered_reference_answers.keys(), reverse=True):
+            examples = tiered_reference_answers[score_level]
+            lines.append(f"Score {score_level} examples:")
+            for ex in examples:
+                lines.append(f'  - "{ex}"')
+            lines.append("")
+        return "\n".join(lines)
+    elif reference_answers:
+        lines = ["Reference Answers (CORRECT ANSWERS):"]
+        for ans in reference_answers:
+            lines.append(f"- {ans}")
+        return "\n".join(lines)
+    else:
+        return "No reference answers provided."
+
 SYSTEM_INSTRUCTION = f"""
         You are a professional English speaking assessment assistant, skilled at providing improvement suggestions and improved text based on Taiwanese non-native speaker college students' responses.
         
@@ -175,8 +210,8 @@ You are an evaluator assessing a student's English answer to a factual question 
 
 Question: {question}
 
-Reference Answers (CORRECT ANSWERS):
-{reference_answers}
+=== SCORING REFERENCE (FEW-SHOT EXAMPLES) ===
+{reference_answers_section}
 
 Student's Answer: {user_answer}
 
@@ -184,74 +219,58 @@ Student's Answer: {user_answer}
 
 **CRITICAL RULE: This is an ENGLISH learning game. If the student's answer contains Chinese characters or is not in English, give a score of 0 and set is_correct to false, regardless of whether the content is correct.**
 
-**CRITICAL: Content accuracy is the PRIMARY factor. A wrong answer CANNOT get a high score regardless of grammar.**
+**SCORING STANDARD (10-point scale):**
+- 6 points are reserved for CONTENT ACCURACY (whether the key answer/keyword is stated correctly).
+- 4 points are reserved for SENTENCE COMPLETENESS AND GRAMMAR (whether a complete English sentence is used).
 
-1. LANGUAGE CHECK (FIRST - MANDATORY):
-   - If the answer contains ANY Chinese characters -> Score: 0, is_correct: false
-   - If the answer is not primarily in English -> Score: 0, is_correct: false
-   - ONLY if the answer is in English, proceed to content evaluation
+**Score level guidelines:**
+- 10: Perfect complete sentence, correct answer, context included, no grammar errors. (4 pts for sentence + 6 pts for correct answer)
+- 8-9: Complete sentence but answer has minor deviation (e.g. reference is 04:18:37, student says 04:18:27 or only 04:18), simple wording, or very minor grammar flaw.
+- 6-7: Correct key answer but sentence is incomplete (e.g. only a noun or phrase), OR sentence/grammar is good but answer has noticeable deviation from reference.
+- 4-5: Incomplete sentence AND answer is only partially correct or semantically vague.
+- 2-3: Random guess, off-topic, or extremely fragmented words.
+- 1: Student says they don't know, or no response/silence.
+- 0: Answer is in Chinese or not in English.
 
-2. CONTENT ACCURACY (0-7 points) - MOST IMPORTANT (only if answer is in English):
-   For FACTUAL questions (times, codes, numbers, names, specific terms):
-   - 7: EXACT MATCH or semantically equivalent to reference answer
-   - 5-6: Very close with minor acceptable variations
-   - 3-4: Partially correct - contains some correct elements but missing key parts
-   - 1-2: Wrong answer but shows understanding of the question topic
-   - 0: Completely wrong, irrelevant, or unrelated answer
+**Use the few-shot examples above to calibrate your score.**
 
-   **FLEXIBLE MATCHING RULES FOR CODES AND SPECIAL FORMATS (English answers only):**
-   
-   IMPORTANT: When users SPEAK codes aloud, speech recognition may produce various formats. Be VERY lenient:
-   
-   - For CODE answers (like "CROWN-X-1859", "OVERRIDE-PROTOCOL-007", "SH-221B"):
-     * Accept with or without hyphens: "CROWN-X-1859" = "CROWN X 1859" = "CROWNX1859"
-     * Accept phonetic/word pronunciations: 
-       - "Crown X eighteen fifty nine" = "CROWN-X-1859"
-       - "Crown dash X dash eighteen fifty nine" = "CROWN-X-1859"
-       - "Crown ex eighteen fifty nine" = "CROWN-X-1859"
-       - "Override protocol zero zero seven" = "OVERRIDE-PROTOCOL-007"
-       - "Override protocol double oh seven" = "OVERRIDE-PROTOCOL-007"
-       - "S H two two one B" = "SH-221B"
-       - "S H dash two two one B" = "SH-221B"
-     * Accept letter-by-letter spelling: "C R O W N X 1 8 5 9" = "CROWN-X-1859"
-     * Be case-insensitive: "crown-x-1859" = "CROWN-X-1859"
-     * Accept common speech recognition variations:
-       - "X" may be transcribed as "ex", "X", "x"
-       - Numbers may be spoken as words: "eighteen" = "18"
-       - "007" may be "double oh seven", "zero zero seven", "oh oh seven"
-     * Accept minor phonetic variations and typos
+**CRITICAL RULE: Content accuracy is the PRIMARY factor. A wrong answer CANNOT get a high score regardless of grammar.**
 
-   - For TIME answers:
-     * Accept with or without leading zeros: "4:18:37" = "04:18:37"
-     * Accept spoken format: "four eighteen thirty-seven" = "4:18:37"
-     * Accept partial formats if close: "four eighteen" for "4:18:XX" (partial credit)
+**FLEXIBLE MATCHING RULES FOR CODES AND SPECIAL FORMATS (English answers only):**
 
-   - For NAME answers:
-     * Accept common spelling variations
-     * Be lenient with minor spelling differences
-     * "H Carter" = "H. Carter" = "H Carter"
+IMPORTANT: When users SPEAK codes aloud, speech recognition may produce various formats. Be VERY lenient:
 
-   - For SPECIFIC TERMS:
-     * Accept synonyms and descriptions
-     * "Red Double-decker Bus" = "red double decker" = "double decker bus" = "red bus double decker"
+- For CODE answers (like "CROWN-X-1859", "OVERRIDE-PROTOCOL-007", "SH-221B"):
+  * Accept with or without hyphens: "CROWN-X-1859" = "CROWN X 1859" = "CROWNX1859"
+  * Accept phonetic/word pronunciations: 
+    - "Crown X eighteen fifty nine" = "CROWN-X-1859"
+    - "Crown dash X dash eighteen fifty nine" = "CROWN-X-1859"
+    - "Crown ex eighteen fifty nine" = "CROWN-X-1859"
+    - "Override protocol zero zero seven" = "OVERRIDE-PROTOCOL-007"
+    - "Override protocol double oh seven" = "OVERRIDE-PROTOCOL-007"
+    - "S H two two one B" = "SH-221B"
+    - "S H dash two two one B" = "SH-221B"
+  * Accept letter-by-letter spelling: "C R O W N X 1 8 5 9" = "CROWN-X-1859"
+  * Be case-insensitive: "crown-x-1859" = "CROWN-X-1859"
+  * Accept common speech recognition variations:
+    - "X" may be transcribed as "ex", "X", "x"
+    - Numbers may be spoken as words: "eighteen" = "18"
+    - "007" may be "double oh seven", "zero zero seven", "oh oh seven"
+  * Accept minor phonetic variations and typos
 
-3. LANGUAGE QUALITY (0-3 points) - SECONDARY (only if answer is in English):
-   - 3: Perfect or near-perfect grammar and vocabulary
-   - 2: Minor errors that don't affect understanding
-   - 1: Noticeable errors but still understandable
-   - 0: Severe errors or incomprehensible
+- For TIME answers:
+  * Accept with or without leading zeros: "4:18:37" = "04:18:37"
+  * Accept spoken format: "four eighteen thirty-seven" = "4:18:37"
+  * Accept partial formats if close: "four eighteen" for "4:18:XX" (partial credit)
 
-TOTAL SCORE = Content Accuracy + Language Quality (0-10)
-**Exception: Non-English answers always get 0**
+- For NAME answers:
+  * Accept common spelling variations
+  * Be lenient with minor spelling differences
+  * "H Carter" = "H. Carter" = "H Carter"
 
-**SCORING EXAMPLES:**
-- Student answers in Chinese -> Score: 0, is_correct: false (NOT ENGLISH)
-- Student says "CROWN-X-1859" (exact) -> Content: 7, is_correct: true, Total: 10
-- Student says "Crown X eighteen fifty nine" -> Content: 7, is_correct: true, Total: 10
-- Student says "Crown ex one eight five nine" -> Content: 7, is_correct: true, Total: 9-10
-- Student says "The code is crown x 1859" -> Content: 7, is_correct: true, Total: 10
-- Student says "four eighteen thirty seven" for time -> Content: 7, is_correct: true
-- Student says "Red double decker bus" -> Content: 7, is_correct: true
+- For SPECIFIC TERMS:
+  * Accept synonyms and descriptions
+  * "Red Double-decker Bus" = "red double decker" = "double decker bus" = "red bus double decker"
 
 FEEDBACK RULES (IMPORTANT):
 1. If the answer is not in English, feedback should explain that English is required.
@@ -616,7 +635,7 @@ async def question_message(user_id, category, sub):
             spacing='md',
             contents=[
                 FlexText(
-                    text='請發送語音訊息作答！\nSend a voice message to answer!',
+                    text='請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!',
                     wrap=True,
                     size='lg',
                     align='center',
@@ -1932,7 +1951,9 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
     )
 
 async def game_rules_instruction_message() -> FlexMessage:
-    """Show game rules instruction card (bilingual) - displayed before theme selection"""
+    """Show game rules instruction card (bilingual) - displayed before theme selection.
+    Contains a green button that triggers theme selection when pressed.
+    """
     rules_eng = (
         "Welcome to the Mystery Game! "
         "In this scenario-based puzzle game, you will play the role of a detective assistant, "
@@ -1987,6 +2008,19 @@ async def game_rules_instruction_message() -> FlexMessage:
                     size='md',
                     color='#5b5b5b',
                     margin='sm',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            contents=[
+                FlexButton(
+                    action=PostbackAction(
+                        label='Enter the game',
+                        data='action=game_show_themes'
+                    ),
+                    style='primary',
+                    color='#00aa00',
                 ),
             ]
         )
@@ -2529,7 +2563,7 @@ async def game_progress_message(user_id: str) -> FlexMessage:
     )
 
 async def other_progress_message(user_id: str) -> FlexMessage:
-    """Show progress for exercises (ex1-ex5)"""
+    """Show progress for exercises (ex1-ex6)"""
     body_contents = [
         FlexText(
             text='Other Progress\n其他進度',
@@ -2540,18 +2574,29 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         ),
     ]
     
-    # Show exercises ex1-ex5 regardless of enabled status
-    for i in range(1, 6):
+    # Question counts per exercise: ex1=5, ex2=5, ex3=6, ex4=10, ex5=6, ex6=3
+    EXERCISE_QUESTION_COUNTS = {
+        1: 5,
+        2: 5,
+        3: 6,
+        4: 10,
+        5: 6,
+        6: 3,
+    }
+    
+    # Show exercises ex1-ex6 regardless of enabled status
+    for i in range(1, 7):
         cat = f'ex{i}'
+        total_q = EXERCISE_QUESTION_COUNTS.get(i, 5)
         answered = 0
-        for q_idx in range(5):
+        for q_idx in range(total_q):
             history = getHistory(user_id, f'{cat}-{q_idx}')
             if history and len(history) > 0:
                 answered += 1
-        color = '#00aa00' if answered == 5 else '#5b5b5b'
+        color = '#00aa00' if answered == total_q else '#5b5b5b'
         body_contents.append(
             FlexText(
-                text=f'Exercise {i}: {answered}/5',
+                text=f'Exercise {i}: {answered}/{total_q}',
                 wrap=True,
                 size='md',
                 color=color,

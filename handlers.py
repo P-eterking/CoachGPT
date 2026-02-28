@@ -18,7 +18,9 @@ from utils.message_utils import (
     IMPROVEMENT_HINT_SYSTEM_INSTRUCTION, game_improvement_hint_message,
     # New messages for service4 enhancements
     game_rules_instruction_message, progress_select_message,
-    game_progress_message, other_progress_message
+    game_progress_message, other_progress_message,
+    # Helper for building tiered reference answer prompt section
+    build_reference_answers_section
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -537,18 +539,23 @@ async def handle_game_answer(event, user_id, user_state):
         level_info = get_game_level_info(theme_id, level_idx)
         question_text = ""
         reference_answers = []
+        tiered_reference_answers = None
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_data = level_info['questions'][question_idx]
             question_text = q_data['text']
             reference_answers = q_data.get('reference_answers', [])
+            tiered_reference_answers = q_data.get('tiered_reference_answers', None)
         
-        # Format reference answers
-        reference_answers_str = "\n".join(f"- {ans}" for ans in reference_answers) if reference_answers else "No reference answers provided."
+        # Build reference answers section for prompt (supports tiered few-shot format)
+        reference_answers_section = build_reference_answers_section(
+            tiered_reference_answers=tiered_reference_answers,
+            reference_answers=reference_answers
+        )
         
         # Use question answer system instruction
         formatted_prompt = QUESTION_ANSWER_SYSTEM_INSTRUCTION.format(
             question=question_text,
-            reference_answers=reference_answers_str,
+            reference_answers_section=reference_answers_section,
             user_answer=text
         )
 
@@ -630,6 +637,7 @@ async def handle_game_answer(event, user_id, user_state):
             'question_idx': question_idx,
             'question_text': question_text,
             'reference_answers': reference_answers,
+            'tiered_reference_answers': tiered_reference_answers,
             'user_answer': text,
             'score': answer_res.score,
             'is_correct': answer_res.is_correct
@@ -700,6 +708,15 @@ async def handle_game_improvement_hint(event, user_id, user_state):
         
         # Format reference answers
         reference_answers_str = "\n".join(f"- {ans}" for ans in reference_answers) if reference_answers else "No reference answers provided."
+        
+        # If there is tiered reference answers info saved, use it for better hints
+        tiered_reference_answers = last_info.get('tiered_reference_answers', None)
+        if tiered_reference_answers:
+            from utils.message_utils import build_reference_answers_section
+            reference_answers_str = build_reference_answers_section(
+                tiered_reference_answers=tiered_reference_answers,
+                reference_answers=reference_answers
+            )
         
         # Use improvement hint system instruction
         formatted_prompt = IMPROVEMENT_HINT_SYSTEM_INSTRUCTION.format(
@@ -929,7 +946,7 @@ async def handle_postback(event):
             if not is_rag:
                 alias = 'menu'
         
-        if alias not in ['rag_test', 'menu_other'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias):
+        if alias not in ['rag_test', 'menu_other'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias) and not isAdmin(user_id):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         
@@ -1003,10 +1020,15 @@ async def handle_postback(event):
     
     # ========== Game Actions ==========
     elif action == 'game_themes':
-        # [Fix #4] Show game rules instruction first, then theme selection
+        # Show only the game rules instruction card with an "Enter the game" button.
+        # The button triggers action=game_show_themes to display the theme selection.
         rules_msg = await game_rules_instruction_message()
+        await send_message(event, rules_msg)
+    
+    elif action == 'game_show_themes':
+        # Triggered when user presses the "Enter the game" button on the rules card.
         theme_msg = await game_theme_select_message()
-        await send_message(event, [rules_msg, theme_msg])
+        await send_message(event, theme_msg)
     
     elif action == 'game_theme':
         # Enter theme - Show prologue only (level details shown when user selects a level)
@@ -1177,9 +1199,9 @@ async def handle_postback(event):
                     "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
                     "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
                 )
-            await send_text_message(event, f"{q_label}: {q_text}\n\n請發送語音訊息作答！\nSend a voice message with your answer!{npc_hint}")
+            await send_text_message(event, f"{q_label}: {q_text}\n\n請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}")
         else:
-            await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")
+            await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")
     
     elif action == 'game_improvement_hint':
         # Handle improvement hint request
@@ -1228,7 +1250,7 @@ async def handle_postback(event):
             await send_text_message(event, 
                 f"關卡 Level {level_idx + 1}: {level_title}\n"
                 f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
-                f"請發送語音訊息作答！\nSend a voice message with your answer!"
+                f"請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!"
             )
         else:
-            await send_text_message(event, "請發送語音訊息作答！\nSend a voice message with your answer!")
+            await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")

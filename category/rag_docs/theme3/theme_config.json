@@ -42,17 +42,17 @@
                 {
                     "text": "What is the correct order of treats on a three-tier stand (from bottom to top)?",
                     "hint": "",
-                    "reference_answer": "Finger sandwiches, scones, small cakes"
+                    "reference_answer": "10\tThe correct order of treats on a three-tier stand from bottom to top is finger sandwiches, scones, and small cakes.|From bottom to top, the correct order is finger sandwiches, scones, and small cakes.|According to proper etiquette, the order from bottom to top is finger sandwiches, scones, and small cakes.\n9\tThe correct order from bottom to top is finger sandwiches, scones, and small cakes.|It goes finger sandwiches, scones, and small cakes.|The order is finger sandwiches, scones, and small cakes.\n8\tThe order is sandwiches, scones, and cakes.|You should put sandwiches at the bottom, then scones, then cakes.|Sandwiches first, then scones, and finally small cakes.\n7\tFinger sandwiches, scones, small cakes.|Sandwiches, scones, and cakes.|It's finger sandwiches, scones, small cakes.\n6\tSandwiches, scones, cakes.|First sandwiches, then scones, then cakes.|Finger sandwiches, scones, cakes.\n5\tSandwiches and cakes.|Scones in the middle.|Sandwiches at the bottom.\n4\tSandwiches, cakes.|Scones.|Cakes on top.\n3\tSome food.|Different treats.|Tea snacks.\n2\tTreats.|Eat.|Food.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What two items must scones be served with?",
                     "hint": "",
-                    "reference_answer": "Clotted cream and jam"
+                    "reference_answer": "10\tScones must be served with clotted cream and jam.|You must serve scones with clotted cream and jam.|According to tradition, scones must be accompanied by clotted cream and jam.\n9\tScones are served with clotted cream and jam.|They must be served with clotted cream and jam.|The two items are clotted cream and jam.\n8\tYou serve them with cream and jam.|They are served with cream and jam.|Cream and jam are served with scones.\n7\tClotted cream and jam.|Cream and jam.|It's clotted cream and jam.\n6\tJust cream and jam.|With clotted cream and jam.|Clotted cream, jam.\n5\tWith cream.|Some jam.|You need cream.\n4\tCream.|Jam.|Butter and jam.\n3\tButter.|Something sweet.|Sauce.\n2\tFood.|Sweet.|Eat.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where is the password card hidden?",
                     "hint": "",
-                    "reference_answer": "Third silver tea caddy from the left"
+                    "reference_answer": "10\tThe password card is hidden in the third silver tea caddy from the left.|You can find the password card hidden in the third silver tea caddy from the left.|The card is safely hidden in the third silver tea caddy from the left.\n9\tThe card is hidden in the third silver tea caddy from the left.|It is in the third silver tea caddy from the left.|It's hidden in the third silver tea caddy from the left.\n8\tIt is hidden in the third tea caddy.|The card is in the third silver caddy.|Look in the third tea caddy from the left.\n7\tThird silver tea caddy from the left.|The third tea caddy.|It's in the third tea caddy.\n6\tThird tea caddy.|In the third caddy from the left.|Third silver caddy.\n5\tIn a tea caddy.|The third one.|A silver container.\n4\tThird caddy.|Tea caddy.|Silver caddy.\n3\tA box.|Somewhere hidden.|On the table.\n2\tSilver.|Box.|Third.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -65,17 +65,17 @@
                 {
                     "text": "Which finger sandwiches are the authentic traditional ones?",
                     "hint": "",
-                    "reference_answer": "Cucumber sandwiches"
+                    "reference_answer": "10\tThe authentic traditional finger sandwiches are cucumber sandwiches.|Cucumber sandwiches are the authentic traditional ones.|According to the tradition, cucumber sandwiches are the authentic ones.\n9\tThe traditional ones are cucumber sandwiches.|The authentic sandwiches are cucumber sandwiches.|They are cucumber sandwiches.\n8\tThe authentic ones are cucumber sandwiches.|They are cucumber sandwiches.|I think they are cucumber sandwiches.\n7\tCucumber sandwiches.|The cucumber ones.|It's cucumber sandwiches.\n6\tCucumber.|It's cucumber sandwiches.|Traditional cucumber sandwiches.\n5\tThey are made of cucumber.|Cucumber bread.|Some vegetable sandwich.\n4\tCucumber.|Sandwiches.|Green sandwich.\n3\tVegetable.|Some sandwich.|A snack.\n2\tGreen.|Food.|Bread.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Which Queen is the Victoria Sponge Cake named after?",
                     "hint": "",
-                    "reference_answer": "Queen Victoria"
+                    "reference_answer": "10\tThe Victoria Sponge Cake is named after Queen Victoria.|It is named after Queen Victoria.|The famous cake is named in honor of Queen Victoria.\n9\tThe cake is named after Queen Victoria.|It's named for Queen Victoria.|It is Queen Victoria.\n8\tIt was named after Queen Victoria.|Queen Victoria is the answer.|Named after Queen Victoria.\n7\tQueen Victoria.|Named after Queen Victoria.|It's Queen Victoria.\n6\tVictoria.|Queen Victoria.|For Queen Victoria.\n5\tA queen named Victoria.|The Queen.|Victoria someone.\n4\tVictoria.|Queen.|Royal name.\n3\tA famous queen.|Some royal.|A lady.\n2\tRoyal.|Cake.|Queen.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Which room should you go to find the hiding baker?",
                     "hint": "",
-                    "reference_answer": "Room 102"
+                    "reference_answer": "10\tYou should go to Room 102 to find the hiding baker.|To find the hiding baker, you should go to Room 102.|The hiding baker can be found if you go to Room 102.\n9\tWe should go to Room 102 to find the baker.|The baker is hiding in Room 102.|You must head to Room 102.\n8\tYou should go to Room 102.|The room is 102.|Let's go to Room 102.\n7\tRoom 102.|To Room 102.|It is Room 102.\n6\t102.|Go to 102.|Room 102.\n5\tRoom 100 something.|A room number 102.|Some room.\n4\tRoom 102.|Number 102.|Room.\n3\tA hotel room.|Somewhere hiding.|In a room.\n2\tRoom.|102.|Go.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -88,17 +88,17 @@
                 {
                     "text": "How should you properly hold a teacup?",
                     "hint": "",
-                    "reference_answer": "Pinch handle with thumb and index finger"
+                    "reference_answer": "10\tYou should properly hold a teacup by pinching the handle with your thumb and index finger.|To properly hold a teacup, pinch the handle with your thumb and index finger.|The proper way is to pinch the handle with your thumb and index finger.\n9\tYou should pinch the handle with your thumb and index finger.|Hold the teacup by pinching the handle with your thumb and index finger.|Pinch the handle using your thumb and index finger.\n8\tYou pinch the handle with your thumb and index finger.|Use your thumb and index finger to pinch the handle.|Pinch the handle with two fingers.\n7\tPinch handle with thumb and index finger.|With your thumb and index finger.|Pinch the handle.\n6\tPinch the handle.|Thumb and index finger.|Hold it with thumb and index finger.\n5\tHold it with two fingers.|Pinch it.|Use your thumb.\n4\tThumb and finger.|Pinch.|Fingers.\n3\tHold the cup.|Use hands.|Carefully.\n2\tCup.|Fingers.|Hold.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "How should you move the spoon when stirring tea?",
                     "hint": "",
-                    "reference_answer": "Between 6 and 12 o'clock positions"
+                    "reference_answer": "10\tWhen stirring tea, you should move the spoon between the 6 and 12 o'clock positions.|You must move the spoon between the 6 and 12 o'clock positions to stir properly.|The correct way is to move the spoon between the 6 and 12 o'clock positions.\n9\tYou should move the spoon between 6 and 12 o'clock.|Stir the tea between the 6 and 12 o'clock positions.|Move it between the 6 and 12 o'clock positions.\n8\tMove it back and forth between 6 and 12.|Between 6 and 12 o'clock.|You stir between 6 and 12.\n7\tBetween 6 and 12 o'clock positions.|From 6 to 12.|6 and 12 o'clock.\n6\t6 and 12 o'clock.|6 to 12.|Between 6 and 12.\n5\tUp and down like a clock.|Between 6 and 12.|Move it back and forth.\n4\t6 and 12.|Clockwise.|Stir it.\n3\tStir it.|In circles.|Move spoon.\n2\tSpoon.|Stir.|Clock.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where is the waiter in the purple vest located?",
                     "hint": "",
-                    "reference_answer": "By the lobby fountain"
+                    "reference_answer": "10\tThe waiter in the purple vest is located by the lobby fountain.|You can find the waiter in the purple vest by the lobby fountain.|He is currently located by the lobby fountain.\n9\tThe waiter is located by the lobby fountain.|He is located by the lobby fountain.|The waiter in purple is by the fountain.\n8\tHe is standing by the lobby fountain.|By the lobby fountain.|Look by the lobby fountain.\n7\tBy the lobby fountain.|At the lobby fountain.|It's by the fountain.\n6\tLobby fountain.|By the fountain.|The fountain.\n5\tIn the lobby.|Near a fountain.|Somewhere by the water.\n4\tFountain.|Lobby.|Near water.\n3\tSomewhere in the hotel.|A waiter.|Standing there.\n2\tFountain.|Purple.|Lobby.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -111,17 +111,17 @@
                 {
                     "text": "In which century did British afternoon tea originate?",
                     "hint": "",
-                    "reference_answer": "19th century"
+                    "reference_answer": "10\tBritish afternoon tea originated in the 19th century.|The tradition of British afternoon tea originated in the 19th century.|According to history, it originated in the 19th century.\n9\tAfternoon tea originated in the 19th century.|It started in the 19th century.|It originated in the 19th century.\n8\tIt was originated in the 19th century.|The 19th century.|I believe it was the 19th century.\n7\t19th century.|In the 19th century.|It's the 19th century.\n6\tThe 19th century.|19th.|Century 19.\n5\tIn the 1800s.|The 19th.|Some century.\n4\t19th century.|Century 19.|19th.\n3\tA long time ago.|Past.|History.\n2\t19.|Time.|Tea.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "What was the original purpose of afternoon tea?",
                     "hint": "",
-                    "reference_answer": "To alleviate hunger between lunch and dinner"
+                    "reference_answer": "10\tThe original purpose of afternoon tea was to alleviate hunger between lunch and dinner.|It was originally created to alleviate hunger between lunch and dinner.|Its original purpose was to alleviate hunger between lunch and dinner.\n9\tThe original purpose was to stop hunger between lunch and dinner.|It was to alleviate hunger between lunch and dinner.|To help alleviate hunger between lunch and dinner.\n8\tIt was to stop people from getting hungry between meals.|To alleviate hunger between lunch and dinner.|It was to satisfy hunger before dinner.\n7\tTo alleviate hunger between lunch and dinner.|To stop hunger between lunch and dinner.|To alleviate hunger.\n6\tTo stop hunger.|For hunger between lunch and dinner.|To ease hunger.\n5\tTo eat between lunch and dinner.|Because they were hungry.|To have a snack.\n4\tAlleviate hunger.|Between lunch and dinner.|Hunger.\n3\tFor eating.|To drink tea.|Because of time.\n2\tHunger.|Food.|Eat.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where is the Duchess's wooden box hidden?",
                     "hint": "",
-                    "reference_answer": "Behind the bookshelf"
+                    "reference_answer": "10\tThe Duchess's wooden box is hidden behind the bookshelf.|You can find the Duchess's wooden box hidden behind the bookshelf.|The wooden box is securely hidden behind the bookshelf.\n9\tThe wooden box is hidden behind the bookshelf.|It is hidden behind the bookshelf.|It's hidden behind the bookshelf.\n8\tIt is hidden behind the bookshelf.|The box is behind the bookshelf.|Look behind the bookshelf.\n7\tBehind the bookshelf.|It's behind the bookshelf.|The bookshelf.\n6\tBehind the bookshelf.|The bookshelf.|Behind books.\n5\tBehind some books.|Near a bookshelf.|In the library.\n4\tBookshelf.|Behind it.|Books.\n3\tIn the room.|Somewhere hidden.|A box.\n2\tBox.|Book.|Shelf.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         },
@@ -134,17 +134,17 @@
                 {
                     "text": "What are the two main types of drinks for traditional British afternoon tea?",
                     "hint": "",
-                    "reference_answer": "Black tea and herbal tea"
+                    "reference_answer": "10\tThe two main types of drinks for traditional British afternoon tea are black tea and herbal tea.|For traditional British afternoon tea, the two main drinks are black tea and herbal tea.|Black tea and herbal tea are the two main types of drinks served.\n9\tThe main drinks are black tea and herbal tea.|They are black tea and herbal tea.|The two types are black tea and herbal tea.\n8\tThe drinks are black tea and herbal tea.|Black tea and herbal tea.|You serve black tea and herbal tea.\n7\tBlack tea and herbal tea.|Black and herbal tea.|It's black tea and herbal tea.\n6\tBlack tea and herbal tea.|Just black and herbal tea.|Black and herbal.\n5\tBlack tea and some other tea.|Herbal tea and black tea.|Different teas.\n4\tBlack tea.|Herbal tea.|Tea.\n3\tTea.|Some drinks.|Water.\n2\tTea.|Drinks.|Black.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Which tea is most commonly paired with scones?",
                     "hint": "",
-                    "reference_answer": "Earl Grey"
+                    "reference_answer": "10\tThe tea most commonly paired with scones is Earl Grey.|Earl Grey is the tea most commonly paired with scones.|Traditionally, Earl Grey is the tea most commonly paired with scones.\n9\tEarl Grey is most commonly paired with scones.|The most common tea for scones is Earl Grey.|It is Earl Grey tea.\n8\tIt is usually Earl Grey.|Earl Grey is commonly paired with them.|Earl Grey tea is paired with scones.\n7\tEarl Grey.|It is Earl Grey.|The Earl Grey tea.\n6\tEarl Grey.|Earl Grey tea.|Grey tea.\n5\tA tea called Earl Grey.|Some kind of Earl tea.|Maybe Earl Grey.\n4\tEarl Grey.|Grey tea.|Black tea.\n3\tBlack tea.|Some tea.|Tea.\n2\tEarl.|Tea.|Grey.\n1\tI don't know.|(No response / Silence)"
                 },
                 {
                     "text": "Where is the tea party host hiding?",
                     "hint": "",
-                    "reference_answer": "10th-floor Viewing Gallery"
+                    "reference_answer": "10\tThe tea party host is hiding in the 10th-floor Viewing Gallery.|You can find the hiding tea party host at the 10th-floor Viewing Gallery.|The host is currently hiding in the 10th-floor Viewing Gallery.\n9\tThe host is hiding in the 10th-floor Viewing Gallery.|He is in the 10th-floor Viewing Gallery.|The hiding place is the 10th-floor Viewing Gallery.\n8\tThe host is at the 10th-floor Viewing Gallery.|In the 10th-floor Viewing Gallery.|He is at the Viewing Gallery on the 10th floor.\n7\t10th-floor Viewing Gallery.|At the 10th-floor Viewing Gallery.|It's the 10th-floor Viewing Gallery.\n6\t10th-floor Viewing Gallery.|Viewing Gallery.|10th floor gallery.\n5\tOn the 10th floor.|In a gallery.|Somewhere high up.\n4\t10th floor.|Gallery.|Viewing Gallery.\n3\tA high floor.|Somewhere hiding.|In the hotel.\n2\tFloor.|Gallery.|Hide.\n1\tI don't know.|(No response / Silence)"
                 }
             ]
         }

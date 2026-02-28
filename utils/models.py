@@ -379,6 +379,46 @@ class GameLevelQuestion(BaseModel):
         """取得所有參考答案"""
         return self.reference_answers if self.reference_answers else []
 
+    def parse_tiered_reference_answers(self) -> Optional[Dict[int, List[str]]]:
+        """
+        解析十級評分參考答案格式。
+        格式：每行以「分數\\t例句1|例句2|...」構成，行之間以\\n分隔。
+        若 reference_answers 不符合此格式，回傳 None。
+
+        Parse tiered (10-level) reference answer format.
+        Format: each line is 'score\\texample1|example2|...', lines separated by \\n.
+        Returns None if reference_answers does not match this format.
+        """
+        if not self.reference_answers:
+            return None
+
+        # 合併成單一字串進行解析
+        raw = "\n".join(self.reference_answers)
+
+        tiered: Dict[int, List[str]] = {}
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            # 期待格式：「10\t例句1|例句2」
+            if '\t' not in line:
+                return None  # 非十級格式，放棄解析
+            parts = line.split('\t', 1)
+            try:
+                score_level = int(parts[0].strip())
+            except ValueError:
+                return None
+            examples = [ex.strip() for ex in parts[1].split('|') if ex.strip()]
+            tiered[score_level] = examples
+
+        if not tiered:
+            return None
+        return tiered
+
+    def get_tiered_reference_answers(self) -> Optional[Dict[int, List[str]]]:
+        """取得十級評分參考答案（若格式不符則回傳 None）"""
+        return self.parse_tiered_reference_answers()
+
 class GameLevel(BaseModel):
     """遊戲主題中的單一關卡"""
     id: int = Field(description="關卡索引 (從0開始)")  # 關卡索引
