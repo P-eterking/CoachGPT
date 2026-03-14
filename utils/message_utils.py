@@ -16,7 +16,8 @@ from utils.file_utils import (
     clear_rich_menu_id, config, load_game_theme_config, get_game_level_info,
     get_user_game_score, get_max_theme_score, get_user_game_progress,
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
-    get_user_level_score, get_display_feedback, get_levels_per_theme
+    get_user_level_score, get_display_feedback, get_levels_per_theme,
+    get_game_info_config, get_theme_display_number
 )
 
 URL = f'https://{DOMAIN}'
@@ -150,17 +151,23 @@ SYSTEM_INSTRUCTION = f"""
 NPC_CHAT_QUICK_RESPONSE = """
 You are {persona} in an immersive mystery game.
 
-Context: {context}
+Context (information you KNOW and can share): {context}
 Recent conversation: {history}
 
 Rules:
 1. Stay in character, respond naturally (1-3 sentences)
 2. Only answer what was asked, no spoilers
 3. If user speaks non-English, politely ask them to use English and set is_english=false
+4. CRITICAL - UNCERTAINTY DISCLOSURE: If the user's question asks for a specific clue, answer, or piece of evidence that is NOT clearly stated in your Context above, you MUST:
+   a. Give a brief related or general response (do not invent specific details)
+   b. Honestly admit you are not certain of that specific detail
+   c. Suggest the user try asking one of the other characters who may know more
+   Example: "I'm not entirely sure about that specific detail. You might want to ask [other character name] -- they may have more precise information on that."
+5. Only provide specific factual answers (names, codes, times, locations) when they appear EXPLICITLY in your Context.
 
 Output JSON:
 {{
-  "npc_reply": "Your in-character response",
+  "npc_reply": "Your in-character response (English, 1-3 sentences, including uncertainty disclosure if needed)",
   "is_english": true/false
 }}
 """
@@ -1061,11 +1068,35 @@ async def game_prologue_message(theme_id: str):
             layout='vertical',
             contents=[
                 FlexButton(
+                    action=PostbackAction(
+                        label='Select Level / 選擇關卡',
+                        data=f'action=game_levels&theme={theme_id}'
+                    ),
+                    style='primary',
+                    color='#00aa00',
+                    height='sm',
+                ),
+                FlexButton(
                     action=URIAction(
                         label='Novel Full Text',
                         uri=theme_config.novel_url
                     ),
                     style='secondary',
+                    height='sm',
+                ),
+            ]
+        )
+    else:
+        prologue_bubble.footer = FlexBox(
+            layout='vertical',
+            contents=[
+                FlexButton(
+                    action=PostbackAction(
+                        label='Select Level / 選擇關卡',
+                        data=f'action=game_levels&theme={theme_id}'
+                    ),
+                    style='primary',
+                    color='#00aa00',
                     height='sm',
                 ),
             ]
@@ -1112,7 +1143,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
             spacing='lg',
             contents=[
                 FlexText(
-                    text=f'Level {level_idx + 1}: {level_info["title"]}',
+                    text=f'Topic {get_theme_display_number(theme_id)} Level {level_idx + 1}: {level_info["title"]}',
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -1144,19 +1175,6 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                     size='xs',
                     color='#888888',
                     margin='xs',
-                ),
-            ]
-        ),
-        footer=FlexBox(
-            layout='vertical',
-            spacing='sm',
-            contents=[
-                FlexButton(
-                    action=PostbackAction(
-                        label='Show Questions / 顯示題目',
-                        data=f'action=game_questions&theme={theme_id}&level={level_idx}'
-                    ),
-                    style='primary',
                 ),
             ]
         )
@@ -1196,6 +1214,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     
     level_info = get_game_level_info(theme_id, level_idx)
     questions_per_level = get_questions_per_level()
+    topic_num = get_theme_display_number(theme_id)
     
     if not level_info:
         return FlexMessage(
@@ -1228,7 +1247,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             body_contents = [
                 FlexText(
-                    text=f'Question Q{level_idx + 1}-{q_idx + 1}\n題目 Q{level_idx + 1}-{q_idx + 1}',
+                    text=f'Topic {topic_num} Question {level_idx + 1}-{q_idx + 1}\n主題 {topic_num} 題目 {level_idx + 1}-{q_idx + 1}',
                     wrap=True,
                     weight='bold',
                     size='lg',
@@ -1314,7 +1333,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         
         body_contents = [
             FlexText(
-                text=f'Question Q{level_idx + 1}-{current_q_idx + 1}\n題目 Q{level_idx + 1}-{current_q_idx + 1}',
+                text=f'Topic {topic_num} Question {level_idx + 1}-{current_q_idx + 1}\n主題 {topic_num} 題目 {level_idx + 1}-{current_q_idx + 1}',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1403,7 +1422,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         # Add progress indicator card
         progress_contents = [
             FlexText(
-                text='Level Progress\n關卡進度',
+                text=f'Topic {topic_num} Level Progress\n主題 {topic_num} 關卡進度',
                 wrap=True,
                 weight='bold',
                 size='lg',
@@ -1429,7 +1448,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             
             progress_contents.append(
                 FlexText(
-                    text=f'Q{level_idx + 1}-{q_i + 1}: {status}',
+                    text=f'T{topic_num} Q{level_idx + 1}-{q_i + 1}: {status}',
                     wrap=True,
                     size='sm',
                     color=color,
@@ -1448,7 +1467,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         bubbles.append(progress_bubble)
     
     return FlexMessage(
-        altText=f'Level {level_idx + 1} Questions',
+        altText=f'Topic {topic_num} Level {level_idx + 1} Questions',
         contents=FlexCarousel(contents=bubbles)
     )
 
@@ -1465,13 +1484,14 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     display_feedback = get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
     max_score = get_max_theme_score()
+    topic_num = get_theme_display_number(theme_id)
     
     bubbles = []
     
     # Main result card - score always shows
     main_contents = [
         FlexText(
-            text=f'Q{level_idx + 1}-{question_idx + 1} Result\n結果',
+            text=f'Topic {topic_num} Q{level_idx + 1}-{question_idx + 1} Result\n主題 {topic_num} 結果',
             wrap=True,
             weight='bold',
             size='xxl',
@@ -1603,7 +1623,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             bubbles.append(ref_bubble)
     
     msg = FlexMessage(
-        altText=f'Q{level_idx + 1}-{question_idx + 1} Result',
+        altText=f'Topic {topic_num} Q{level_idx + 1}-{question_idx + 1} Result',
         contents=FlexCarousel(contents=bubbles)
     )
     
@@ -1951,8 +1971,8 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
     )
 
 async def game_rules_instruction_message() -> FlexMessage:
-    """Show game rules instruction card (bilingual) - displayed before theme selection.
-    Contains a green button that triggers theme selection when pressed.
+    """Show game rules instruction card (bilingual).
+    Used when user presses the Game Rules button in the game lobby menu.
     """
     rules_eng = (
         "Welcome to the Mystery Game! "
@@ -2010,29 +2030,246 @@ async def game_rules_instruction_message() -> FlexMessage:
                     margin='sm',
                 ),
             ]
-        ),
-        footer=FlexBox(
+        )
+    )
+    
+    msg = FlexMessage(
+        altText='Game Rules / 遊戲規則',
+        contents=bubble
+    )
+    
+    # Quick reply: guide user to next item (story)
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Story / 故事背景',
+            data='action=game_info&section=story'
+        )),
+    ])
+    
+    return msg
+
+
+async def game_story_message() -> FlexMessage:
+    """Show game story / backstory card (bilingual).
+    Used when user presses the Story button in the game lobby menu.
+    """
+    game_info = get_game_info_config()
+    story_eng = game_info.get('story_eng', '')
+    story_chi = game_info.get('story_chi', '')
+    
+    if not story_eng and not story_chi:
+        story_eng = (
+            "In a world where mystery lurks in every corner of London, "
+            "three brilliant minds stand ready to help you solve the case."
+        )
+        story_chi = (
+            "在倫敦每個角落都潛藏謎團的世界中，"
+            "三位傑出的人物隨時準備好協助你破解案件。"
+        )
+    
+    bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
             layout='vertical',
+            spacing='lg',
             contents=[
-                FlexButton(
-                    action=PostbackAction(
-                        label='Enter the game',
-                        data='action=game_show_themes'
-                    ),
-                    style='primary',
-                    color='#00aa00',
+                FlexText(
+                    text='Story setting / 故事背景',
+                    wrap=True,
+                    weight='bold',
+                    size='xxl',
+                    align='center',
+                    color='#1a1a2e',
+                ),
+                FlexText(
+                    text=story_eng,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                    margin='lg',
+                ),
+                FlexText(
+                    text='---',
+                    wrap=True,
+                    size='xxs',
+                    color='#cccccc',
+                    align='center',
+                    margin='lg',
+                ),
+                FlexText(
+                    text=story_chi,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                    margin='sm',
                 ),
             ]
         )
     )
     
-    return FlexMessage(
-        altText='Game Rules / 遊戲規則',
+    msg = FlexMessage(
+        altText='Story / 故事背景',
         contents=bubble
     )
+    
+    # Quick reply: guide user to next item (characters)
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Game Rules / 遊戲規則',
+            data='action=game_info&section=rules'
+        )),
+        QuickReplyItem(action=PostbackAction(
+            label='Characters / 人物介紹',
+            data='action=game_info&section=characters'
+        )),
+    ])
+    
+    return msg
+
+
+async def game_characters_message() -> list:
+    """Show game characters intro video.
+    Used when user presses the Characters button in the game lobby menu.
+    Returns a list of messages (video + optional text fallback).
+    """
+    game_info = get_game_info_config()
+    video_file = game_info.get('characters_video', '')
+    
+    messages = []
+    
+    if video_file:
+        video_url = f'{URL}/templates/videos/{video_file}'
+        preview_url = f'{URL}/templates/videos/{video_file.replace(".mp4", "_preview.jpg")}'
+        messages.append(
+            VideoMessage(
+                originalContentUrl=video_url,
+                previewImageUrl=preview_url
+            )
+        )
+    else:
+        # Fallback text card if no video configured
+        fallback_bubble = FlexBubble(
+            size='giga',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text='Characters / 人物介紹',
+                        wrap=True,
+                        weight='bold',
+                        size='xxl',
+                        align='center',
+                        color='#1a1a2e',
+                    ),
+                    FlexText(
+                        text='Character introduction video is not yet available.\n人物介紹影片尚未設定。',
+                        wrap=True,
+                        size='md',
+                        color='#888888',
+                        margin='lg',
+                        align='center',
+                    ),
+                ]
+            )
+        )
+        fallback_msg = FlexMessage(
+            altText='Characters / 人物介紹',
+            contents=fallback_bubble
+        )
+        # Quick reply: guide user
+        fallback_msg.quick_reply = QuickReply(items=[
+            QuickReplyItem(action=PostbackAction(
+                label='Game Rules / 遊戲規則',
+                data='action=game_info&section=rules'
+            )),
+            QuickReplyItem(action=PostbackAction(
+                label='Structure / 題目架構',
+                data='action=game_info&section=structure'
+            )),
+        ])
+        messages.append(fallback_msg)
+    
+    return messages
+
+
+async def game_structure_message() -> FlexMessage:
+    """Show game structure image.
+    Used when user presses the Structure button in the game lobby menu.
+    """
+    game_info = get_game_info_config()
+    structure_image = game_info.get('structure_image', '')
+    
+    if structure_image:
+        bubble = FlexBubble(
+            size='giga',
+            hero=FlexImage(
+                url=f'{URL}{structure_image}',
+                size='full',
+                aspect_ratio='20:13',
+                aspect_mode='cover',
+            ),
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Question Structure / 題目架構',
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                        align='center',
+                    ),
+                ]
+            )
+        )
+    else:
+        # Fallback if no image configured
+        bubble = FlexBubble(
+            size='giga',
+            body=FlexBox(
+                layout='vertical',
+                spacing='lg',
+                contents=[
+                    FlexText(
+                        text='Question Structure / 題目架構',
+                        wrap=True,
+                        weight='bold',
+                        size='xxl',
+                        align='center',
+                        color='#1a1a2e',
+                    ),
+                    FlexText(
+                        text='Question structure image is not yet available.\n題目架構圖片尚未設定。',
+                        wrap=True,
+                        size='md',
+                        color='#888888',
+                        margin='lg',
+                        align='center',
+                    ),
+                ]
+            )
+        )
+    
+    msg = FlexMessage(
+        altText='Question Structure / 題目架構',
+        contents=bubble
+    )
+    
+    # Quick reply: guide user to select theme
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Select Topic / 選擇主題',
+            data='action=game_show_themes'
+        )),
+    ])
+    
+    return msg
 
 async def game_theme_select_message() -> FlexMessage:
-    """Show theme selection cards"""
+    """Show theme selection cards.
+    Called when user presses 'Select Theme' from the game lobby or game_theme_select menu.
+    """
     from utils.file_utils import get_game_themes
     
     themes = get_game_themes()
@@ -2045,7 +2282,7 @@ async def game_theme_select_message() -> FlexMessage:
             theme_name = theme_config.name
             cover_image = theme_config.cover_image
         else:
-            theme_name = f'Theme {idx + 1}'
+            theme_name = f'Topic {idx + 1}'
             cover_image = None
         
         body = FlexBox(
@@ -2054,6 +2291,14 @@ async def game_theme_select_message() -> FlexMessage:
             justifyContent='center',
             alignItems='center',
             contents=[
+                FlexText(
+                    text=f'Topic {idx + 1}',
+                    wrap=True,
+                    weight='bold',
+                    size='sm',
+                    color='#888888',
+                    align='center',
+                ),
                 FlexText(
                     text=theme_name,
                     wrap=True,
@@ -2094,10 +2339,20 @@ async def game_theme_select_message() -> FlexMessage:
         
         bubbles.append(bubble)
     
-    return FlexMessage(
+    msg = FlexMessage(
         altText='Select Theme',
         contents=FlexCarousel(contents=bubbles)
     )
+    
+    # Quick reply to guide back to game structure info
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Structure / 題目架構',
+            data='action=game_info&section=structure'
+        )),
+    ])
+    
+    return msg
 
 async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
     """Show NPC selection interface - with images and descriptions"""

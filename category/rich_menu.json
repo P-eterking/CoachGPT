@@ -21,11 +21,39 @@
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "switch", "label": "pretest", "alias_id": "pretest" },
-                { "type": "postback", "label": "Game Mode", "data": "action=game_themes" },
+                { "type": "switch", "label": "Game Mode", "alias_id": "game_lobby" },
                 { "type": "switch", "label": "posttest", "alias_id": "posttest" },
                 { "type": "switch", "label": "Other", "alias_id": "menu_other" },
                 { "type": "postback", "label": "progress", "data": "action=progress_select" },
                 { "type": "switch", "label": "admin", "alias_id": "game_admin" }
+            ]
+        },
+        "game_lobby": {
+            "file": "game_lobby.jpg",
+            "chat_bar_text": "Game Lobby",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Game Rules", "data": "action=game_info&section=rules" },
+                { "type": "postback", "label": "Story", "data": "action=game_info&section=story" },
+                { "type": "postback", "label": "Characters", "data": "action=game_info&section=characters" },
+                { "type": "postback", "label": "Structure", "data": "action=game_info&section=structure" },
+                { "type": "postback", "label": "Select Theme", "data": "action=game_show_themes" },
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "game_theme_select": {
+            "file": "game_theme_select.jpg",
+            "chat_bar_text": "Select Theme",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Theme 1", "data": "action=game_theme&theme=theme1" },
+                { "type": "postback", "label": "Theme 2", "data": "action=game_theme&theme=theme2" },
+                { "type": "postback", "label": "Theme 3", "data": "action=game_theme&theme=theme3" },
+                {},
+                {},
+                { "type": "switch", "label": "Back", "alias_id": "game_lobby" }
             ]
         },
         "menu_other": {

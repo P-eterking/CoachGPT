@@ -33,7 +33,31 @@ DEFAULT_CONFIG = {
     'levels_per_theme': 5,
     'questions_per_level': 3,
     'max_score_per_question': 10,
-    'min_score_to_pass': 6
+    'min_score_to_pass': 6,
+    # 遊戲大廳介紹媒體設定 (Game lobby intro media config)
+    # 管理員可修改這些欄位來更新遊戲大廳頁面的內容
+    # Admins may edit these fields to update game lobby intro content
+    'game_story_eng': (
+        "In a world where mystery lurks in every corner of London, "
+        "three brilliant minds stand ready to help: Dr. John Watson, who gathers physical evidence; "
+        "Mycroft Holmes, who provides government clearance and coded access; "
+        "and Sherlock Holmes, who observes details invisible to ordinary eyes. "
+        "Together, you must piece together clues from each character to solve the case "
+        "before it is too late."
+    ),
+    'game_story_chi': (
+        "在倫敦每個角落都潛藏謎團的世界中，"
+        "三位傑出的人物隨時準備好協助你：收集實物證據的華生醫生、"
+        "提供政府授權和密碼存取的麥考夫·霍姆斯，"
+        "以及能觀察到常人看不見細節的夏洛克·霍姆斯。"
+        "你必須從每個角色身上拼湊線索，在一切為時已晚之前破解案件。"
+    ),
+    # 人物介紹影片檔名 (放於 /templates/videos/ 目錄)
+    # Characters intro video filename (placed in /templates/videos/)
+    'game_characters_video': '/templates/videos/Theme_3_Level_5_video.mp4',
+    # 遊戲架構圖片路徑 (相對於網站根目錄，例如 /templates/game_info/structure.jpg)
+    # Game structure image path (relative to site root, e.g. /templates/game_info/structure.jpg)
+    'game_structure_image': '/templates/structure.jpg'
 }
 
 # 設定檔案
@@ -239,6 +263,23 @@ def clear_game_theme_cache():
     """清除遊戲主題配置快取"""
     global _game_theme_cache
     _game_theme_cache = {}
+
+def get_game_info_config() -> dict:
+    """取得遊戲大廳介紹所需的媒體設定
+    Get game lobby intro media configuration."""
+    return {
+        'story_eng': config.get('game_story_eng', ''),
+        'story_chi': config.get('game_story_chi', ''),
+        'characters_video': config.get('game_characters_video', ''),
+        'structure_image': config.get('game_structure_image', '')
+    }
+
+def get_theme_display_number(theme_id: str) -> str:
+    """從主題 ID 取得顯示用的主題編號，例如 'theme1' -> '1'
+    Get display number from theme ID, e.g. 'theme1' -> '1'."""
+    if theme_id and theme_id.startswith('theme'):
+        return theme_id.replace('theme', '')
+    return theme_id if theme_id else '?'
 
 def get_game_prologue(theme_id: str) -> str:
     """取得遊戲主題的前情提要"""

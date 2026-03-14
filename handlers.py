@@ -19,6 +19,8 @@ from utils.message_utils import (
     # New messages for service4 enhancements
     game_rules_instruction_message, progress_select_message,
     game_progress_message, other_progress_message,
+    # Game lobby info messages
+    game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
     build_reference_answers_section
 )
@@ -1020,13 +1022,37 @@ async def handle_postback(event):
     
     # ========== Game Actions ==========
     elif action == 'game_themes':
-        # Show only the game rules instruction card with an "Enter the game" button.
-        # The button triggers action=game_show_themes to display the theme selection.
-        rules_msg = await game_rules_instruction_message()
-        await send_message(event, rules_msg)
+        # Switch to game lobby menu
+        lobby_menu_id = get_rich_menu_id('game_lobby')
+        if lobby_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, lobby_menu_id)
+        else:
+            await send_text_message(event, "遊戲大廳選單尚未設定，請聯絡管理員。\nGame lobby menu not configured, please contact admin.")
+    
+    elif action == 'game_info':
+        # Handle game lobby info section buttons
+        section = vars.get('section', 'rules')
+        if section == 'rules':
+            rules_msg = await game_rules_instruction_message()
+            await send_message(event, rules_msg)
+        elif section == 'story':
+            story_msg = await game_story_message()
+            await send_message(event, story_msg)
+        elif section == 'characters':
+            chars_msgs = await game_characters_message()
+            await send_message(event, chars_msgs)
+        elif section == 'structure':
+            structure_msg = await game_structure_message()
+            await send_message(event, structure_msg)
+        else:
+            await send_text_message(event, "未知的遊戲資訊類別。\nUnknown game info section.")
     
     elif action == 'game_show_themes':
-        # Triggered when user presses the "Enter the game" button on the rules card.
+        # Triggered when user presses "Select Theme" from the lobby menu or quick reply.
+        # Switch to theme selection menu and show theme cards.
+        theme_select_menu_id = get_rich_menu_id('game_theme_select')
+        if theme_select_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, theme_select_menu_id)
         theme_msg = await game_theme_select_message()
         await send_message(event, theme_msg)
     
@@ -1188,18 +1214,21 @@ async def handle_postback(event):
         
         # Get question text
         level_info = get_game_level_info(theme_id, level_idx)
-        # [Fix #6] Use level-question numbering format
-        q_label = f"Q{level_idx + 1}-{question_idx + 1}"
+        # [Fix #5] Use topic-level-question numbering format
+        from utils.file_utils import get_theme_display_number
+        topic_num = get_theme_display_number(theme_id)
+        q_label = f"Topic {topic_num} Q{level_idx + 1}-{question_idx + 1}"
+        q_label_chi = f"主題 {topic_num} 題目 {level_idx + 1}-{question_idx + 1}"
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
-            # [Fix #4] Check if user has talked to NPC before answering
+            # Check if user has talked to NPC before answering (applies to ALL entry paths)
             npc_hint = ""
             if not getattr(user_state, 'has_talked_to_npc', False):
                 npc_hint = (
                     "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
                     "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
                 )
-            await send_text_message(event, f"{q_label}: {q_text}\n\n請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}")
+            await send_text_message(event, f"{q_label} / {q_label_chi}: {q_text}\n\n請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}")
         else:
             await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")
     
@@ -1244,13 +1273,23 @@ async def handle_postback(event):
         
         # Get question text
         level_info = get_game_level_info(theme_id, level_idx)
+        from utils.file_utils import get_theme_display_number
+        topic_num = get_theme_display_number(theme_id)
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
             level_title = level_info.get('title', f'Level {level_idx + 1}')
+            # Check NPC chat regardless of entry path
+            npc_hint = ""
+            if not getattr(user_state, 'has_talked_to_npc', False):
+                npc_hint = (
+                    "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
+                    "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
+                )
             await send_text_message(event, 
-                f"關卡 Level {level_idx + 1}: {level_title}\n"
+                f"Topic {topic_num} Level {level_idx + 1}: {level_title}\n"
+                f"主題 {topic_num} 關卡 {level_idx + 1}\n"
                 f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
-                f"請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!"
+                f"請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}"
             )
         else:
             await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")
