@@ -1031,6 +1031,11 @@ async def handle_postback(event):
     
     elif action == 'game_info':
         # Handle game lobby info section buttons
+        # Fix #3: always switch menu back to game_lobby regardless of which section is shown
+        lobby_menu_id = get_rich_menu_id('game_lobby')
+        if lobby_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, lobby_menu_id)
+        
         section = vars.get('section', 'rules')
         if section == 'rules':
             rules_msg = await game_rules_instruction_message()
@@ -1060,7 +1065,7 @@ async def handle_postback(event):
         # Enter theme - Show prologue only (level details shown when user selects a level)
         theme_id = vars.get('theme')
         if not theme_id:
-            await send_text_message(event, "未指定主題。\nTheme not specified.")
+            await send_text_message(event, "未指定主題。\nTopic not specified.")
             return
         
         try:
@@ -1088,13 +1093,13 @@ async def handle_postback(event):
             print(f"Error in game_theme action: {e}")
             import traceback
             traceback.print_exc()
-            await send_text_message(event, "載入主題時發生錯誤，請稍後再試。\nError loading theme, please try again later.")
+            await send_text_message(event, "載入主題時發生錯誤，請稍後再試。\nError loading topic, please try again later.")
     
     elif action == 'game_npcs':
         # Show current theme's NPC selection
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         try:
             npc_select = await game_npc_select_message(theme_id, user_id)
@@ -1117,7 +1122,7 @@ async def handle_postback(event):
             npc_idx = 0
         
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
         user_state.game_theme = theme_id
@@ -1143,7 +1148,7 @@ async def handle_postback(event):
         # Show level selection
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         await send_message(event, await game_level_select_message(theme_id, user_id))
     
@@ -1153,7 +1158,7 @@ async def handle_postback(event):
         level_idx = int(vars.get('level', 0))
         
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
         user_state.game_theme = theme_id
@@ -1192,7 +1197,7 @@ async def handle_postback(event):
         # Show current theme's current level questions (for menu button)
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
         await send_message(event, await game_current_questions_message(theme_id, user_id))
@@ -1240,12 +1245,12 @@ async def handle_postback(event):
         # Show current theme score
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
         progress = get_user_game_progress(user_id, theme_id)
         await send_text_message(event, 
-            f"主題分數 Theme Score: {progress['total_score']}/{progress['max_score']}\n"
+            f"主題分數 Topic Score: {progress['total_score']}/{progress['max_score']}\n"
             f"已回答題數 Questions Answered: {progress['questions_answered']}\n"
             f"已完成關卡 Levels Completed: {progress['levels_completed']}"
         )
@@ -1254,7 +1259,7 @@ async def handle_postback(event):
         # Jump to the next unanswered question across all levels
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
-            await send_text_message(event, "請先選擇主題。\nPlease select a theme first.")
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
         # Find the next unanswered question globally
@@ -1287,7 +1292,6 @@ async def handle_postback(event):
                 )
             await send_text_message(event, 
                 f"Topic {topic_num} Level {level_idx + 1}: {level_title}\n"
-                f"主題 {topic_num} 關卡 {level_idx + 1}\n"
                 f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
                 f"請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}"
             )

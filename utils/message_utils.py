@@ -974,11 +974,11 @@ async def game_prologue_message(theme_id: str):
     
     if not theme_config:
         return [FlexMessage(
-            altText='Theme not found',
+            altText='Topic not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='Theme configuration not found.', wrap=True)]
+                    contents=[FlexText(text='Topic configuration not found.', wrap=True)]
                 )
             )
         )]
@@ -996,7 +996,21 @@ async def game_prologue_message(theme_id: str):
             )
         )
     
-    # Prologue card
+    # Build prologue bubble footer BEFORE creating FlexMessage to ensure it always renders
+    # Fix #1: footer is fully constructed first, then passed into the bubble constructor
+    prologue_footer_contents = [
+        FlexButton(
+            action=PostbackAction(
+                label='Select Level / 進入關卡',
+                data=f'action=game_levels&theme={theme_id}'
+            ),
+            style='primary',
+            color='#00aa00',
+            height='sm',
+        ),
+    ]
+    
+    # Prologue card — footer built above is passed directly into the constructor
     prologue_bubble = FlexBubble(
         size='giga',
         body=FlexBox(
@@ -1032,20 +1046,24 @@ async def game_prologue_message(theme_id: str):
                     margin='lg',
                 ),
                 FlexText(
-                    text='[Tip] Click "Answer the questions" in the menu to answer questions, or click "Show Levels" to select a level. Chat with NPCs to get clues!',
+                    text='[Tip] Click "Select Level" below to choose a level, or chat with NPCs in the menu to get clues!',
                     wrap=True,
                     size='xs',
                     color='#888888',
                     margin='sm',
                 ),
                 FlexText(
-                    text='[提示] 點選選單中的「作答」以回答題目，點擊「顯示關卡」則可以選擇關卡。與 NPC 聊天以獲得解謎線索！',
+                    text='[提示] 點擊下方「進入關卡」選擇關卡，或點選選單中的角色與 NPC 聊天以獲得解謎線索！',
                     wrap=True,
                     size='xs',
                     color='#888888',
                     margin='xs',
                 ),
             ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            contents=prologue_footer_contents
         )
     )
     
@@ -1062,49 +1080,7 @@ async def game_prologue_message(theme_id: str):
         contents=prologue_bubble
     )
     
-    # Add "Novel Full Text" button to prologue bubble footer if novel_url is defined
-    if getattr(theme_config, 'novel_url', None):
-        prologue_bubble.footer = FlexBox(
-            layout='vertical',
-            contents=[
-                FlexButton(
-                    action=PostbackAction(
-                        label='Select Level / 選擇關卡',
-                        data=f'action=game_levels&theme={theme_id}'
-                    ),
-                    style='primary',
-                    color='#00aa00',
-                    height='sm',
-                ),
-                FlexButton(
-                    action=URIAction(
-                        label='Novel Full Text',
-                        uri=theme_config.novel_url
-                    ),
-                    style='secondary',
-                    height='sm',
-                ),
-            ]
-        )
-    else:
-        prologue_bubble.footer = FlexBox(
-            layout='vertical',
-            contents=[
-                FlexButton(
-                    action=PostbackAction(
-                        label='Select Level / 選擇關卡',
-                        data=f'action=game_levels&theme={theme_id}'
-                    ),
-                    style='primary',
-                    color='#00aa00',
-                    height='sm',
-                ),
-            ]
-        )
-    
-    messages.append(prologue_msg)
-    
-    # Add QuickReply bubble button for novel full text link
+    # QuickReply for novel link (if available)
     if getattr(theme_config, 'novel_url', None):
         prologue_msg.quick_reply = QuickReply(items=[
             QuickReplyItem(action=URIAction(
@@ -1112,6 +1088,8 @@ async def game_prologue_message(theme_id: str):
                 uri=theme_config.novel_url
             )),
         ])
+    
+    messages.append(prologue_msg)
     
     return messages
 
@@ -1521,7 +1499,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     main_contents.append(
         FlexText(
-            text=f'Theme Total: {theme_total}/{max_score}\n主題總分',
+            text=f'Topic Total: {theme_total}/{max_score}\n主題總分',
             wrap=True,
             size='md',
             align='center',
@@ -2131,15 +2109,31 @@ async def game_characters_message() -> list:
     """Show game characters intro video.
     Used when user presses the Characters button in the game lobby menu.
     Returns a list of messages (video + optional text fallback).
+    
+    Path handling for game_characters_video config:
+    - If the value starts with '/' it is treated as a URL path relative to the site root,
+      e.g. '/templates/videos/characters_intro.mp4'  ->  {URL}/templates/videos/characters_intro.mp4
+    - If the value does NOT start with '/' it is treated as a bare filename inside
+      /templates/videos/, e.g. 'characters_intro.mp4'  ->  {URL}/templates/videos/characters_intro.mp4
+    Either format works; just be consistent.  Example values:
+      'game_characters_video': 'characters_intro.mp4'
+      'game_characters_video': '/templates/videos/characters_intro.mp4'
     """
     game_info = get_game_info_config()
-    video_file = game_info.get('characters_video', '')
+    video_value = game_info.get('characters_video', '')
     
     messages = []
     
-    if video_file:
-        video_url = f'{URL}/templates/videos/{video_file}'
-        preview_url = f'{URL}/templates/videos/{video_file.replace(".mp4", "_preview.jpg")}'
+    if video_value:
+        # Normalise path: if it already starts with '/' use it directly,
+        # otherwise treat it as a bare filename inside /templates/videos/
+        if video_value.startswith('/'):
+            video_url = f'{URL}{video_value}'
+            preview_url = f'{URL}{video_value.replace(".mp4", "_preview.jpg")}'
+        else:
+            video_url = f'{URL}/templates/videos/{video_value}'
+            preview_url = f'{URL}/templates/videos/{video_value.replace(".mp4", "_preview.jpg")}'
+        
         messages.append(
             VideoMessage(
                 originalContentUrl=video_url,
@@ -2196,18 +2190,26 @@ async def game_characters_message() -> list:
 async def game_structure_message() -> FlexMessage:
     """Show game structure image.
     Used when user presses the Structure button in the game lobby menu.
+    Uses aspect_mode='fit' so the full image is always visible without cropping.
     """
     game_info = get_game_info_config()
     structure_image = game_info.get('structure_image', '')
     
     if structure_image:
+        # Normalise: if already a full path (starts with '/') use directly,
+        # otherwise treat as bare filename inside /templates/
+        if structure_image.startswith('/'):
+            img_url = f'{URL}{structure_image}'
+        else:
+            img_url = f'{URL}/templates/{structure_image}'
+        
         bubble = FlexBubble(
             size='giga',
             hero=FlexImage(
-                url=f'{URL}{structure_image}',
+                url=img_url,
                 size='full',
-                aspect_ratio='20:13',
-                aspect_mode='cover',
+                aspect_ratio='1:1',
+                aspect_mode='fit',
             ),
             body=FlexBox(
                 layout='vertical',
@@ -2256,7 +2258,7 @@ async def game_structure_message() -> FlexMessage:
         contents=bubble
     )
     
-    # Quick reply: guide user to select theme
+    # Quick reply: guide user to select topic
     msg.quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(
             label='Select Topic / 選擇主題',
@@ -2316,7 +2318,7 @@ async def game_theme_select_message() -> FlexMessage:
                 ),
                 FlexButton(
                     action=PostbackAction(
-                        label=f'Enter Theme {idx + 1}',
+                        label=f'Enter Topic {idx + 1}',
                         data=f'action=game_theme&theme={theme_id}'
                     ),
                     style='primary',
@@ -2340,7 +2342,7 @@ async def game_theme_select_message() -> FlexMessage:
         bubbles.append(bubble)
     
     msg = FlexMessage(
-        altText='Select Theme',
+        altText='Select Topic',
         contents=FlexCarousel(contents=bubbles)
     )
     
@@ -2363,14 +2365,14 @@ async def game_npc_select_message(theme_id: str, user_id: str) -> FlexMessage:
     if not theme_config:
         print(f"[WARNING] Theme config not found in game_npc_select_message for theme_id={theme_id}")
         return FlexMessage(
-            altText='Theme not found',
+            altText='Topic not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
                     contents=[
-                        FlexText(text='Theme config not found.', wrap=True),
+                        FlexText(text='Topic config not found.', wrap=True),
                         FlexText(
-                            text=f'Theme ID: {theme_id}',
+                            text=f'Topic ID: {theme_id}',
                             wrap=True,
                             size='sm',
                             color='#888888',
@@ -2577,11 +2579,11 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
     
     if not theme_config:
         return FlexMessage(
-            altText='Theme not found',
+            altText='Topic not found',
             contents=FlexBubble(
                 body=FlexBox(
                     layout='vertical',
-                    contents=[FlexText(text='Theme configuration not found.', wrap=True)]
+                    contents=[FlexText(text='Topic configuration not found.', wrap=True)]
                 )
             )
         )

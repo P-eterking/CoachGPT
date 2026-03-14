@@ -52,11 +52,26 @@ DEFAULT_CONFIG = {
         "以及能觀察到常人看不見細節的夏洛克·霍姆斯。"
         "你必須從每個角色身上拼湊線索，在一切為時已晚之前破解案件。"
     ),
-    # 人物介紹影片檔名 (放於 /templates/videos/ 目錄)
-    # Characters intro video filename (placed in /templates/videos/)
-    'game_characters_video': '/templates/videos/Theme_3_Level_5_video.mp4',
-    # 遊戲架構圖片路徑 (相對於網站根目錄，例如 /templates/game_info/structure.jpg)
-    # Game structure image path (relative to site root, e.g. /templates/game_info/structure.jpg)
+    # 人物介紹影片路徑設定
+    # Characters intro video path configuration
+    #
+    # 支援兩種格式 (either format works):
+    #   1. 只填檔名 (bare filename, placed in /templates/videos/ on the server):
+    #      'game_characters_video': 'characters_intro.mp4'
+    #   2. 完整路徑 (full URL path from site root):
+    #      'game_characters_video': '/templates/videos/characters_intro.mp4'
+    #
+    # 留空字串代表停用，顯示佔位文字卡片。
+    # Empty string disables the feature and shows a placeholder card.
+    'game_characters_video': 'Theme_3_Level_5_video.mp4',
+    # 遊戲架構圖片路徑 (相對於網站根目錄)
+    # Question structure image path (relative to site root)
+    #
+    # 支援兩種格式 (either format works):
+    #   1. 只填檔名 (bare filename, placed in /templates/ on the server):
+    #      'game_structure_image': 'structure.jpg'
+    #   2. 完整路徑 (full URL path from site root):
+    #      'game_structure_image': '/templates/structure.jpg'
     'game_structure_image': '/templates/structure.jpg'
 }
 

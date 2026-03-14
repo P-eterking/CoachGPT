@@ -38,19 +38,19 @@
                 { "type": "postback", "label": "Story", "data": "action=game_info&section=story" },
                 { "type": "postback", "label": "Characters", "data": "action=game_info&section=characters" },
                 { "type": "postback", "label": "Structure", "data": "action=game_info&section=structure" },
-                { "type": "postback", "label": "Select Theme", "data": "action=game_show_themes" },
+                { "type": "postback", "label": "Select Topic", "data": "action=game_show_themes" },
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
             ]
         },
         "game_theme_select": {
             "file": "game_theme_select.jpg",
-            "chat_bar_text": "Select Theme",
+            "chat_bar_text": "Select Topic",
             "selected": false,
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "Theme 1", "data": "action=game_theme&theme=theme1" },
-                { "type": "postback", "label": "Theme 2", "data": "action=game_theme&theme=theme2" },
-                { "type": "postback", "label": "Theme 3", "data": "action=game_theme&theme=theme3" },
+                { "type": "postback", "label": "Topic 1", "data": "action=game_theme&theme=theme1" },
+                { "type": "postback", "label": "Topic 2", "data": "action=game_theme&theme=theme2" },
+                { "type": "postback", "label": "Topic 3", "data": "action=game_theme&theme=theme3" },
                 {},
                 {},
                 { "type": "switch", "label": "Back", "alias_id": "game_lobby" }
@@ -84,7 +84,7 @@
         },
         "game_theme1": {
             "file": "game_theme1.jpg",
-            "chat_bar_text": "Theme 1",
+            "chat_bar_text": "Topic 1",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme1&npc=0" },
@@ -97,7 +97,7 @@
         },
         "game_theme2": {
             "file": "game_theme2.jpg",
-            "chat_bar_text": "Theme 2",
+            "chat_bar_text": "Topic 2",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme2&npc=0" },
@@ -110,7 +110,7 @@
         },
         "game_theme3": {
             "file": "game_theme3.jpg",
-            "chat_bar_text": "Theme 3",
+            "chat_bar_text": "Topic 3",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme3&npc=0" },
