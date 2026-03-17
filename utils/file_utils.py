@@ -63,7 +63,7 @@ DEFAULT_CONFIG = {
     #
     # 留空字串代表停用，顯示佔位文字卡片。
     # Empty string disables the feature and shows a placeholder card.
-    'game_characters_video': 'Theme_3_Level_5_video.mp4',
+    'game_characters_video': 'NPCintroduce.mp4',
     # 遊戲架構圖片路徑 (相對於網站根目錄)
     # Question structure image path (relative to site root)
     #

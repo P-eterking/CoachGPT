@@ -1153,7 +1153,8 @@ async def handle_postback(event):
         await send_message(event, await game_level_select_message(theme_id, user_id))
     
     elif action == 'game_level':
-        # Enter level - Show video intro
+        # Enter level - Show description card and video only.
+        # Questions are revealed only after the user presses "Show Questions" in the intro card.
         theme_id = vars.get('theme', user_state.game_theme)
         level_idx = int(vars.get('level', 0))
         
@@ -1166,21 +1167,11 @@ async def handle_postback(event):
         user_state.game_question = -1
         user_state.in_npc_chat = False  # Exit NPC chat mode
         
-        # Collect all messages into a single list
-        all_messages = []
-        
+        # Send only the level intro (description card + video).
+        # The "Show Questions / 顯示題目" button in the card triggers game_questions action.
         messages = await game_level_intro_message(theme_id, level_idx, user_id)
         if messages:
-            all_messages.extend(messages if isinstance(messages, list) else [messages])
-        
-        # Send question selection
-        questions_carousel = await game_questions_carousel(theme_id, level_idx, user_id)
-        if questions_carousel:
-            all_messages.append(questions_carousel)
-        
-        # LINE API allows max 5 messages per reply
-        if all_messages:
-            await send_message(event, all_messages[:5])
+            await send_message(event, messages[:5])
     
     elif action == 'game_questions':
         # Show current level's question cards
@@ -1233,9 +1224,9 @@ async def handle_postback(event):
                     "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
                     "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
                 )
-            await send_text_message(event, f"{q_label} / {q_label_chi}: {q_text}\n\n請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}")
+            await send_text_message(event, f"{q_label} / {q_label_chi}: {q_text}\n\n請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!{npc_hint}")
         else:
-            await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")
+            await send_text_message(event, "請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!")
     
     elif action == 'game_improvement_hint':
         # Handle improvement hint request
@@ -1293,7 +1284,7 @@ async def handle_postback(event):
             await send_text_message(event, 
                 f"Topic {topic_num} Level {level_idx + 1}: {level_title}\n"
                 f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
-                f"請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!{npc_hint}"
+                f"請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!{npc_hint}"
             )
         else:
-            await send_text_message(event, "請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!")
+            await send_text_message(event, "請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!")

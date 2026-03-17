@@ -642,7 +642,7 @@ async def question_message(user_id, category, sub):
             spacing='md',
             contents=[
                 FlexText(
-                    text='請發送語音訊息作答，並盡量用完整句子作答以獲得高分！\nPlease answer by sending a voice message, and try to use complete sentences to get a high score!',
+                    text='請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!',
                     wrap=True,
                     size='lg',
                     align='center',
@@ -1024,7 +1024,7 @@ async def game_prologue_message(theme_id: str):
                     size='xxl',
                 ),
                 FlexText(
-                    text='Prologue',
+                    text='Story summary',
                     wrap=True,
                     weight='bold',
                     size='lg',
@@ -1076,7 +1076,7 @@ async def game_prologue_message(theme_id: str):
         )
     
     prologue_msg = FlexMessage(
-        altText=f'{theme_config.name} - Prologue',
+        altText=f'{theme_config.name} - Story summary',
         contents=prologue_bubble
     )
     
@@ -1141,18 +1141,30 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                     margin='lg',
                 ),
                 FlexText(
-                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!(Due to the video size issue, please click on the video to load it, and then click on the video again to watch it.)',
+                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!(Videos may take a moment to load. If you encounter a black screen, please reload the video and wait patiently. Thank you!)',
                     wrap=True,
                     size='xs',
                     color='#888888',
                     margin='sm',
                 ),
                 FlexText(
-                    text='[提示] 點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索!(由於影片大小問題，請點擊影片讓他加載後，再重新點開影片以觀賞)',
+                    text='[提示] 點擊下方選單中的角色圖示，與 NPC 聊天以獲得解謎線索!(由於影片加載需要時間，因此若影片出現黑屏請重開影片並耐心等候，感謝)',
                     wrap=True,
                     size='xs',
                     color='#888888',
                     margin='xs',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            contents=[
+                FlexButton(
+                    action=PostbackAction(
+                        label='Show Questions / 顯示題目',
+                        data=f'action=game_questions&theme={theme_id}&level={level_idx}'
+                    ),
+                    style='primary',
                 ),
             ]
         )
