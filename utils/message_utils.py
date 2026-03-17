@@ -1461,6 +1461,99 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         contents=FlexCarousel(contents=bubbles)
     )
 
+async def game_answer_card_message(
+    theme_id: str, level_idx: int, question_idx: int,
+    q_text: str, has_talked_to_npc: bool = True
+) -> FlexMessage:
+    """Show a question card with image and hint texts when the user selects a question to answer.
+
+    The hero image is resolved from the ragQuestion template folder using the naming convention:
+    topic{X}_Q{Y}-{Z}.jpg  (X = display topic number, Y = level number, Z = question number)
+
+    Two bilingual hint texts are rendered in small gray font inside the card body:
+      1. Microphone instruction hint
+      2. NPC hint (shown only when has_talked_to_npc is False)
+    """
+    topic_num = get_theme_display_number(theme_id)
+    q_label = f'Topic {topic_num} Q{level_idx + 1}-{question_idx + 1}'
+    q_label_chi = f'主題 {topic_num} 題目 {level_idx + 1}-{question_idx + 1}'
+
+    # Image filename follows the convention seen in templates/ragQuestion/
+    image_filename = f'topic{topic_num}_Q{level_idx + 1}-{question_idx + 1}.jpg'
+    image_url = f'{URL}/templates/ragQuestion/{image_filename}'
+
+    body_contents = [
+        FlexText(
+            text=f'{q_label} / {q_label_chi}',
+            wrap=True,
+            weight='bold',
+            size='lg',
+        ),
+    ]
+
+    if q_text:
+        body_contents.append(
+            FlexText(
+                text=q_text,
+                wrap=True,
+                size='md',
+                color='#333333',
+                margin='md',
+            )
+        )
+
+    # Hint 1: microphone recording instruction (bilingual, small gray)
+    body_contents.append(
+        FlexText(
+            text=(
+                '請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。'
+                '為了獲得高分請盡量用完整句子作答！\n'
+                'To answer, tap the microphone icon near the text keyboard to record '
+                'and send a voice message. For a higher score, please answer in complete sentences!'
+            ),
+            wrap=True,
+            size='xs',
+            color='#888888',
+            margin='lg',
+        )
+    )
+
+    # Hint 2: NPC suggestion hint (bilingual, small gray) — only when NPC not yet visited
+    if not has_talked_to_npc:
+        body_contents.append(
+            FlexText(
+                text=(
+                    '是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n'
+                    'Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!'
+                ),
+                wrap=True,
+                size='xs',
+                color='#888888',
+                margin='sm',
+            )
+        )
+
+    bubble = FlexBubble(
+        size='giga',
+        hero=FlexImage(
+            url=image_url,
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+        ),
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=body_contents
+        )
+    )
+
+    alt_text_q = q_text[:40] + '...' if len(q_text) > 40 else q_text
+    return FlexMessage(
+        altText=f'{q_label}: {alt_text_q}' if q_text else q_label,
+        contents=bubble
+    )
+
 async def game_score_message(user_id: str, theme_id: str, level_idx: int, question_idx: int, 
                              score: int, is_new_high: bool, feedback_eng: str = "", feedback_chi: str = "",
                              reference_comparison: str = "") -> FlexMessage:

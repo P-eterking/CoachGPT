@@ -22,7 +22,9 @@ from utils.message_utils import (
     # Game lobby info messages
     game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
-    build_reference_answers_section
+    build_reference_answers_section,
+    # Question card with image for service4 game_answer action
+    game_answer_card_message
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -1217,16 +1219,15 @@ async def handle_postback(event):
         q_label_chi = f"主題 {topic_num} 題目 {level_idx + 1}-{question_idx + 1}"
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
-            # Check if user has talked to NPC before answering (applies to ALL entry paths)
-            npc_hint = ""
-            if not getattr(user_state, 'has_talked_to_npc', False):
-                npc_hint = (
-                    "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
-                    "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
-                )
-            await send_text_message(event, f"{q_label} / {q_label_chi}: {q_text}\n\n請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!{npc_hint}")
+            has_talked_to_npc = getattr(user_state, 'has_talked_to_npc', False)
+            await send_message(event, await game_answer_card_message(
+                theme_id, level_idx, question_idx, q_text, has_talked_to_npc
+            ))
         else:
-            await send_text_message(event, "請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!")
+            # Fallback: no question data found, show card without question text
+            await send_message(event, await game_answer_card_message(
+                theme_id, level_idx, question_idx, '', True
+            ))
     
     elif action == 'game_improvement_hint':
         # Handle improvement hint request
@@ -1273,18 +1274,12 @@ async def handle_postback(event):
         topic_num = get_theme_display_number(theme_id)
         if level_info and question_idx < len(level_info.get('questions', [])):
             q_text = level_info['questions'][question_idx]['text']
-            level_title = level_info.get('title', f'Level {level_idx + 1}')
-            # Check NPC chat regardless of entry path
-            npc_hint = ""
-            if not getattr(user_state, 'has_talked_to_npc', False):
-                npc_hint = (
-                    "\n\n是不是還不知道答案啊？可以先去選單中點擊角色圖像，向 NPC 詢問案件細節喔！\n"
-                    "Not sure about the answer? Try clicking on NPC icons in the menu to ask for clues!"
-                )
-            await send_text_message(event, 
-                f"Topic {topic_num} Level {level_idx + 1}: {level_title}\n"
-                f"Q{level_idx + 1}-{question_idx + 1}: {q_text}\n\n"
-                f"請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!{npc_hint}"
-            )
+            has_talked_to_npc = getattr(user_state, 'has_talked_to_npc', False)
+            await send_message(event, await game_answer_card_message(
+                theme_id, level_idx, question_idx, q_text, has_talked_to_npc
+            ))
         else:
-            await send_text_message(event, "請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!")
+            # Fallback: no question data found, show card without question text
+            await send_message(event, await game_answer_card_message(
+                theme_id, level_idx, question_idx, '', True
+            ))
