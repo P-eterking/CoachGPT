@@ -83,3 +83,22 @@ services:
       - ./data/user_data4.json:/app/user_data.json
       - ./category:/app/category
       - ./templates:/app/templates
+  
+  service5:
+    build: .
+    container_name: linebot-service5
+    restart: unless-stopped
+    ports:
+      - "8006:8006"  # 映射 FastAPI 服務的端口
+    env_file:
+      - .env
+    environment:
+      - DOMAIN=${DOMAIN5}
+      - PORT=8006
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET5}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN5}
+    volumes:
+      - ./data/config5.json:/app/config.json
+      - ./data/user_data5.json:/app/user_data.json
+      - ./category:/app/category
+      - ./templates:/app/templates
