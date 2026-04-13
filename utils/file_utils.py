@@ -424,7 +424,9 @@ def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
                 "description": npc.description,  # 使用者可見的描述
                 "file": npc.file,
                 "image": npc.image,
-                "background": npc.background # 新增 background 欄位支援
+                "background": npc.background,  # 新增 background 欄位支援
+                "tts_voice": npc.tts_voice,          # TTS 語音名稱 (可為 None)
+                "tts_instructions": npc.tts_instructions,  # TTS 風格指示 (可為 None)
             }
     return None
 

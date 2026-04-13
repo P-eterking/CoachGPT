@@ -346,6 +346,19 @@ class GameNPC(BaseModel):
     file: str = Field(description="此NPC的RAG文件檔案")  # RAG文件檔案
     image: Optional[str] = Field(description="NPC頭像圖片檔名", default=None)  # 頭像圖片
     background: Optional[str] = Field(description="NPC背景故事", default=None)
+    # TTS 語音設定 (gpt-4o-mini-tts)
+    # 可選聲音: alloy, ash, ballad, coral, echo, fable, onyx, nova, sage, shimmer, verse, marin, cedar
+    # 預設 None → 由程式碼根據 NPC 索引自動分配 (0→onyx, 1→echo, 2→fable)
+    tts_voice: Optional[str] = Field(
+        description="TTS 語音名稱 (留空則由程式自動依索引分配)",
+        default=None
+    )
+    # TTS 語音風格指示，用於控制口音、語氣、節奏等
+    # e.g. "Speak with a calm British Received Pronunciation accent. Measured, authoritative tone."
+    tts_instructions: Optional[str] = Field(
+        description="TTS 語音風格指示 (留空則使用預設英式口音指示)",
+        default=None
+    )
 
 class GameLevelQuestion(BaseModel):
     """遊戲關卡中的單一題目"""
