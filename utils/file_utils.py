@@ -84,6 +84,13 @@ _rag_lock = asyncio.Lock()
 # 遊戲主題配置快取
 _game_theme_cache: Dict[str, GameThemeConfig] = {}
 
+# new_test 題目快取 (pretest1 / posttest1 使用)
+_new_test_questions: list = []
+_new_test_loaded: bool = False
+
+# 記錄每位使用者最近一次 NPC 回覆，用於「顯示文字 / Show Text」功能
+_last_npc_replies: Dict[str, Dict] = {}
+
 # ========== 檔案路徑處理 (修復 Docker 持久化問題) ==========
 
 def get_user_data_file() -> str:
@@ -278,6 +285,78 @@ def clear_game_theme_cache():
     """清除遊戲主題配置快取"""
     global _game_theme_cache
     _game_theme_cache = {}
+
+# ========== new_test 題目管理 (pretest1 / posttest1) ==========
+
+def load_new_test_questions() -> list:
+    """
+    載入 category/new_test.json 中的題目，供前測1 / 後測1使用。
+    Load new_test.json questions for pretest1 / posttest1.
+    回傳 Question 物件清單。
+    """
+    global _new_test_questions, _new_test_loaded
+    if _new_test_loaded:
+        return _new_test_questions
+
+    try:
+        with open('category/new_test.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        from utils.models import Question
+        _new_test_questions = [
+            Question(
+                text=item.get('prompt', ''),
+                assessment_standard=item.get('reference_answer'),
+                image_url=item.get('image_url'),
+            )
+            for item in data
+        ]
+        _new_test_loaded = True
+        print(f"new_test.json loaded: {len(_new_test_questions)} questions.")
+    except Exception as e:
+        print(f"[ERROR] load_new_test_questions: {e}")
+        _new_test_questions = []
+    return _new_test_questions
+
+
+def get_new_test_question(idx: int):
+    """取得 new_test 第 idx 道題目 (0-based)。
+    Get the new_test question at the given index (0-based)."""
+    questions = load_new_test_questions()
+    if 0 <= idx < len(questions):
+        return questions[idx]
+    return None
+
+
+def get_new_test_questions_count() -> int:
+    """取得 new_test 題目總數。
+    Get the total number of new_test questions."""
+    return len(load_new_test_questions())
+
+
+def get_new_test_questions_all() -> list:
+    """取得全部 new_test 題目。
+    Get all new_test questions."""
+    return load_new_test_questions()
+
+
+# ========== NPC 最後回覆快取 (Show Text / 顯示文字 功能) ==========
+
+def set_last_npc_reply(user_id: str, npc_name: str, npc_reply: str, npc_image):
+    """記錄使用者最近一次收到的 NPC 回覆，供「顯示文字」功能使用。
+    Store the most recent NPC reply for the 'Show Text' quick reply feature.
+    """
+    _last_npc_replies[user_id] = {
+        'npc_name': npc_name,
+        'npc_reply': npc_reply,
+        'npc_image': npc_image,
+    }
+
+
+def get_last_npc_reply(user_id: str) -> dict:
+    """取得使用者最近一次收到的 NPC 回覆資訊。
+    Get the most recent NPC reply info for the user.
+    """
+    return _last_npc_replies.get(user_id)
 
 def get_game_info_config() -> dict:
     """取得遊戲大廳介紹所需的媒體設定

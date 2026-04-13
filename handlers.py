@@ -24,7 +24,12 @@ from utils.message_utils import (
     # Helper for building tiered reference answer prompt section
     build_reference_answers_section,
     # Question card with image for service4 game_answer action
-    game_answer_card_message
+    game_answer_card_message,
+    # Pretest / Posttest section selector and new_test carousel (item 1)
+    pretest_section_select_message, posttest_section_select_message,
+    new_test_carousel_message, new_test_question_message,
+    # NPC voice response messages (item 4)
+    game_npc_voice_response_messages, game_npc_text_card_message,
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -33,6 +38,10 @@ from utils.models import (
     ImprovementHintResponse
 )
 from utils.file_utils import *
+from utils.file_utils import (
+    get_new_test_question,
+    set_last_npc_reply, get_last_npc_reply,
+)
 import tempfile
 import time
 import base64
@@ -54,6 +63,34 @@ def convert_m4a_to_mp3_base64(message_content: bytes) -> str:
     audio.export(mp3_io, format="mp3")
     mp3_bytes = mp3_io.getvalue()
     return base64.b64encode(mp3_bytes).decode('utf-8')
+
+
+async def generate_npc_tts(npc_reply: str, voice: str = "onyx") -> tuple:
+    """產生 NPC 語音 TTS，回傳 (相對於 templates/ 的路徑, 毫秒長度)。
+    Generate NPC TTS audio and return (path relative to templates/, duration_ms).
+
+    Args:
+        npc_reply: NPC 回覆文字
+        voice: TTS 聲音 (預設 onyx，具角色感)
+    """
+    import uuid
+    import aiofiles
+
+    tts_response = await client.audio.speech.create(
+        model="gpt-4o-mini-tts",
+        voice=voice,
+        input=npc_reply,
+    )
+
+    filename = f"audio/{uuid.uuid4()}.mp3"
+    os.makedirs("templates/audio", exist_ok=True)
+    async with aiofiles.open(f"templates/{filename}", 'wb') as f:
+        await f.write(tts_response.content)
+
+    audio_seg = AudioSegment.from_file(f"templates/{filename}", format="mp3")
+    duration = len(audio_seg)
+
+    return filename, duration
 
 async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
     """
@@ -190,6 +227,69 @@ async def handle_audio_message(event):
             await handle_chat(event)
             return
         
+        # ===== pretest1 / posttest1：使用 new_test.json 題目與十級評分 =====
+        if category in ['pretest1', 'posttest1']:
+            sub = user_state.sub
+            if sub < 0:
+                await send_text_message(event, "請先選擇題目。\nPlease select a question first.")
+                return
+
+            question = get_new_test_question(sub)
+            if not question:
+                await send_text_message(event, "找不到題目。\nQuestion not found.")
+                return
+
+            try:
+                message_content = await get_audio_content(event)
+                if not message_content:
+                    await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
+                    return
+                text = await transcribe_audio(message_content, language="en")
+            except Exception as e:
+                await send_text_message(event, "文字轉錄發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
+                print(e)
+                return
+
+            if not text or len(text) < 1:
+                await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
+                print('No text found in audio (pretest1/posttest1)')
+                return
+
+            completion = await client.beta.chat.completions.parse(
+                model="gpt-4o",
+                response_format=SpeechAssessment,
+                max_completion_tokens=2048,
+                temperature=1,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": SYSTEM_INSTRUCTION,
+                    },
+                    {
+                        "role": "user",
+                        "content": f"<question>{question.text}</question>"
+                                   f"{'<standard>' + question.assessment_standard.replace(chr(10), '').strip() + '</standard>' if question.assessment_standard else ''}"
+                                   f"<userAnswer>{text}</userAnswer>",
+                    }
+                ],
+            )
+
+            assessment = completion.choices[0].message.parsed
+            assessment.transcript = text
+            assessment.timestamp = time.time()
+
+            history_key = f'{category}-{sub}'
+            updateHistory(user_id, history_key, assessment)
+
+            if get_display_feedback():
+                await send_message(event, await result_message(assessment, category, sub))
+            else:
+                await send_text_message(event, "已收到您的回答！\nReceived your answer!")
+
+            await save_user_data()
+            return
+        # ===== end pretest1 / posttest1 =====
+
         if not category or not question_manager.has_question(category):
             return 
         
@@ -405,12 +505,49 @@ async def handle_npc_chat(event, user_id, user_state):
 
         # Send NPC response immediately with image
         npc_image = npc_info.get('image') if npc_info else None
-        await send_message(event, await game_npc_chat_response_message(
-            npc_info['name'],
-            quick_res.npc_reply,
-            quick_res.is_english,
-            npc_image=npc_image
-        ))
+
+        # ===== NPC 語音輸出模式 (由 config 中的 npc_voice_output 控制) =====
+        npc_voice_output = config.get('npc_voice_output', False)
+
+        if npc_voice_output:
+            # 儲存最近一次 NPC 回覆，供「顯示文字 / Show Text」功能使用
+            set_last_npc_reply(user_id, npc_info['name'], quick_res.npc_reply, npc_image)
+
+            # 嘗試生成 TTS 語音；若失敗則退回純文字卡片
+            npc_audio_file = None
+            npc_audio_duration = 0
+            try:
+                npc_audio_file, npc_audio_duration = await generate_npc_tts(quick_res.npc_reply)
+            except Exception as tts_err:
+                print(f"NPC TTS error (falling back to text card): {tts_err}")
+
+            if npc_audio_file:
+                voice_msgs = await game_npc_voice_response_messages(
+                    npc_info['name'],
+                    quick_res.npc_reply,
+                    quick_res.is_english,
+                    npc_image,
+                    npc_audio_file,
+                    npc_audio_duration
+                )
+                await send_message(event, voice_msgs)
+            else:
+                # TTS 失敗時退回文字卡片
+                await send_message(event, await game_npc_chat_response_message(
+                    npc_info['name'],
+                    quick_res.npc_reply,
+                    quick_res.is_english,
+                    npc_image=npc_image
+                ))
+        else:
+            # 預設行為：純文字卡片
+            await send_message(event, await game_npc_chat_response_message(
+                npc_info['name'],
+                quick_res.npc_reply,
+                quick_res.is_english,
+                npc_image=npc_image
+            ))
+        # ===== end NPC 語音輸出模式 =====
         
         # ===== Phase 2: Background async evaluation (non-blocking) =====
         asyncio.create_task(
@@ -966,11 +1103,101 @@ async def handle_postback(event):
             return
         
         # Auto popup menu
-        if question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
-            await send_message(event, await carousel_message(user_id, user_state.category, 0)) # Start from first page
+        if alias in ['pretest', 'posttest']:
+            # 前測 / 後測：先顯示區塊選擇選單，讓使用者選前測1或前測2
+            if alias == 'pretest':
+                await send_message(event, await pretest_section_select_message())
+            else:
+                await send_message(event, await posttest_section_select_message())
+        elif question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
+            await send_message(event, await carousel_message(user_id, user_state.category, 0))
 
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
+
+    # ===== 前測 / 後測區塊選擇與 new_test carousel (item 1) =====
+
+    elif action == 'pretest_section':
+        show_selector = vars.get('show_selector', 'false').lower() == 'true'
+        section = vars.get('section', '0')
+
+        if show_selector:
+            await send_message(event, await pretest_section_select_message())
+            return
+
+        if section == '1':
+            # 前測1：new_test.json 十題
+            user_state.category = 'pretest1'
+            user_state.sub = -1
+            await send_message(event, await new_test_carousel_message(user_id, 'pretest', 0))
+        elif section == '2':
+            # 前測2：原本前測五題
+            user_state.category = 'pretest'
+            user_state.sub = -1
+            await send_message(event, await carousel_message(user_id, 'pretest', 0))
+        else:
+            await send_message(event, await pretest_section_select_message())
+
+    elif action == 'posttest_section':
+        show_selector = vars.get('show_selector', 'false').lower() == 'true'
+        section = vars.get('section', '0')
+
+        if show_selector:
+            await send_message(event, await posttest_section_select_message())
+            return
+
+        if section == '1':
+            # 後測1：new_test.json 十題
+            user_state.category = 'posttest1'
+            user_state.sub = -1
+            await send_message(event, await new_test_carousel_message(user_id, 'posttest', 0))
+        elif section == '2':
+            # 後測2：原本後測五題
+            user_state.category = 'posttest'
+            user_state.sub = -1
+            await send_message(event, await carousel_message(user_id, 'posttest', 0))
+        else:
+            await send_message(event, await posttest_section_select_message())
+
+    elif action == 'new_test_carousel':
+        # 切換 new_test 題目 carousel 頁面
+        base = vars.get('base', 'pretest')
+        page = int(vars.get('page', 0))
+        user_state.category = f'{base}1'
+        await send_message(event, await new_test_carousel_message(user_id, base, page))
+
+    elif action == 'new_test_record':
+        # 選擇 new_test 單題作答
+        sub = int(vars.get('sub', 0))
+        base = vars.get('base', 'pretest')
+        user_state.category = f'{base}1'
+        user_state.sub = sub
+        await send_message(event, await new_test_question_message(user_id, sub, base))
+
+    elif action == 'new_test_last':
+        # 查看 new_test 某題的上次回饋
+        sub = int(vars.get('sub', 0))
+        base = vars.get('base', 'pretest')
+        section_category = f'{base}1'
+        result = getHistory(user_id, f'{section_category}-{sub}')
+        if not result:
+            await send_text_message(event, f'Q{sub + 1} 查無紀錄！\nNo history found in Q{sub + 1}!')
+            return
+        await send_message(event, await result_message(result[-1], section_category, sub))
+
+    # ===== NPC 顯示文字 (語音模式) (item 4) =====
+
+    elif action == 'game_show_npc_text':
+        last_info = get_last_npc_reply(user_id)
+        if not last_info:
+            await send_text_message(event, "找不到最近的 NPC 回覆。\nNo recent NPC reply found.")
+            return
+        await send_message(event, await game_npc_text_card_message(
+            last_info.get('npc_name', 'NPC'),
+            last_info.get('npc_reply', ''),
+            last_info.get('npc_image')
+        ))
+
     elif action == 'progress_select':
         # [Fix #1] Show progress category selection for service4
         await send_message(event, await progress_select_message())

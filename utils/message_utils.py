@@ -17,7 +17,8 @@ from utils.file_utils import (
     get_user_game_score, get_max_theme_score, get_user_game_progress,
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
     get_user_level_score, get_display_feedback, get_levels_per_theme,
-    get_game_info_config, get_theme_display_number
+    get_game_info_config, get_theme_display_number,
+    get_new_test_question, get_new_test_questions_count, get_new_test_questions_all
 )
 
 URL = f'https://{DOMAIN}'
@@ -3034,6 +3035,646 @@ async def handle_rich_menu(user_id):
         user_state.category = default_menu
     except Exception as e:
         print(e)
+
+# ========== [START] 前測1/後測1 區塊選擇與 new_test 題目訊息 ==========
+
+async def pretest_section_select_message() -> FlexMessage:
+    """顯示前測選擇選單：前測1 / 前測2。
+    Show pretest section selector: Pre-test 1 / Pre-test 2.
+
+    版面配置 (2 x 2 grid):
+    [前測1]  [前測2]
+    [ 空格 ] [ 返回 ]
+    """
+    bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text='Pre-test\n前測',
+                    wrap=True,
+                    weight='bold',
+                    size='xxl',
+                    align='center',
+                    color='#1a1a2e',
+                ),
+                FlexText(
+                    text='Please select a pre-test section.\n請選擇前測區塊。',
+                    wrap=True,
+                    size='sm',
+                    color='#888888',
+                    align='center',
+                    margin='md',
+                ),
+                FlexBox(
+                    layout='horizontal',
+                    spacing='md',
+                    margin='lg',
+                    contents=[
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Pre-test 1 / 前測1',
+                                data='action=pretest_section&section=1'
+                            ),
+                            style='primary',
+                            flex=1,
+                        ),
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Pre-test 2 / 前測2',
+                                data='action=pretest_section&section=2'
+                            ),
+                            style='secondary',
+                            flex=1,
+                        ),
+                    ]
+                ),
+                FlexBox(
+                    layout='horizontal',
+                    spacing='md',
+                    margin='sm',
+                    contents=[
+                        FlexBox(layout='vertical', flex=1, contents=[]),
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Back / 返回',
+                                data='action=switch&to=menu'
+                            ),
+                            style='secondary',
+                            flex=1,
+                        ),
+                    ]
+                ),
+            ]
+        )
+    )
+    return FlexMessage(altText='Pre-test Section / 前測選擇', contents=bubble)
+
+
+async def posttest_section_select_message() -> FlexMessage:
+    """顯示後測選擇選單：後測1 / 後測2。
+    Show posttest section selector: Post-test 1 / Post-test 2.
+
+    版面配置 (2 x 2 grid):
+    [後測1]  [後測2]
+    [ 空格 ] [ 返回 ]
+    """
+    bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text='Post-test\n後測',
+                    wrap=True,
+                    weight='bold',
+                    size='xxl',
+                    align='center',
+                    color='#1a1a2e',
+                ),
+                FlexText(
+                    text='Please select a post-test section.\n請選擇後測區塊。',
+                    wrap=True,
+                    size='sm',
+                    color='#888888',
+                    align='center',
+                    margin='md',
+                ),
+                FlexBox(
+                    layout='horizontal',
+                    spacing='md',
+                    margin='lg',
+                    contents=[
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Post-test 1 / 後測1',
+                                data='action=posttest_section&section=1'
+                            ),
+                            style='primary',
+                            flex=1,
+                        ),
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Post-test 2 / 後測2',
+                                data='action=posttest_section&section=2'
+                            ),
+                            style='secondary',
+                            flex=1,
+                        ),
+                    ]
+                ),
+                FlexBox(
+                    layout='horizontal',
+                    spacing='md',
+                    margin='sm',
+                    contents=[
+                        FlexBox(layout='vertical', flex=1, contents=[]),
+                        FlexButton(
+                            action=PostbackAction(
+                                label='Back / 返回',
+                                data='action=switch&to=menu'
+                            ),
+                            style='secondary',
+                            flex=1,
+                        ),
+                    ]
+                ),
+            ]
+        )
+    )
+    return FlexMessage(altText='Post-test Section / 後測選擇', contents=bubble)
+
+
+# 每頁題目數 (new_test carousel)
+_NEW_TEST_PAGE_SIZE = 3
+
+
+async def new_test_carousel_message(user_id: str, base_category: str, page: int) -> FlexMessage:
+    """顯示 new_test 題目選擇 carousel，每頁 3 題，含上一頁 / 下一頁 / 返回按鈕。
+    Show new_test (pretest1/posttest1) question carousel, 3 questions per page,
+    with Previous / Next / Back navigation buttons.
+
+    Args:
+        user_id: 使用者 ID
+        base_category: 'pretest' 或 'posttest'
+        page: 目前頁碼 (0-based)
+    """
+    questions = get_new_test_questions_all()
+    total_q = len(questions)
+    total_pages = max(1, (total_q + _NEW_TEST_PAGE_SIZE - 1) // _NEW_TEST_PAGE_SIZE)
+
+    section_category = f'{base_category}1'
+
+    # 返回選擇選單的 postback data
+    if base_category == 'pretest':
+        back_data = 'action=pretest_section&show_selector=true'
+        section_label = 'Pre-test 1 / 前測1'
+    else:
+        back_data = 'action=posttest_section&show_selector=true'
+        section_label = 'Post-test 1 / 後測1'
+
+    start_idx = page * _NEW_TEST_PAGE_SIZE
+    end_idx = min(start_idx + _NEW_TEST_PAGE_SIZE, total_q)
+    page_questions = questions[start_idx:end_idx]
+
+    bubbles = []
+
+    for i, question in enumerate(page_questions):
+        q_idx = start_idx + i
+        history = getHistory(user_id, f'{section_category}-{q_idx}')
+        has_answered = history and len(history) > 0
+        last_score = history[-1].score if has_answered else 0
+
+        body_contents = [
+            FlexText(
+                text=f'Q{q_idx + 1}',
+                wrap=True,
+                weight='bold',
+                size='lg',
+            ),
+            FlexText(
+                text=(question.text[:100] + '...') if len(question.text) > 100 else question.text,
+                wrap=True,
+                size='sm',
+                color='#5b5b5b',
+            ),
+        ]
+
+        if has_answered:
+            body_contents.append(
+                FlexText(
+                    text=f'Last Score: {last_score}/10',
+                    wrap=True,
+                    size='sm',
+                    color='#00aa00' if last_score >= 7 else '#ff8800' if last_score >= 4 else '#ff0000',
+                    margin='md',
+                )
+            )
+
+        bubble = FlexBubble(
+            size='kilo',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=body_contents
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='Start' if not has_answered else 'Try Again',
+                            data=f'action=new_test_record&sub={q_idx}&base={base_category}'
+                        ),
+                        style='primary',
+                        height='sm',
+                    ),
+                ]
+            )
+        )
+
+        if question.image_url:
+            bubble.hero = FlexImage(
+                url=f'{URL}{question.image_url}',
+                size='full',
+                aspect_ratio='20:13',
+                aspect_mode='cover',
+            )
+
+        bubbles.append(bubble)
+
+    # 導覽泡泡 (含上一頁 / 下一頁 / 返回)
+    nav_text_contents = [
+        FlexText(
+            text=f'{section_label}\nPage {page + 1} / {total_pages}',
+            wrap=True,
+            size='sm',
+            align='center',
+        ),
+    ]
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(
+            FlexButton(
+                action=PostbackAction(
+                    label='Previous / 上一頁',
+                    data=f'action=new_test_carousel&base={base_category}&page={page - 1}'
+                ),
+                style='secondary',
+                height='sm',
+            )
+        )
+    if page < total_pages - 1:
+        nav_buttons.append(
+            FlexButton(
+                action=PostbackAction(
+                    label='Next / 下一頁',
+                    data=f'action=new_test_carousel&base={base_category}&page={page + 1}'
+                ),
+                style='secondary',
+                height='sm',
+            )
+        )
+    nav_buttons.append(
+        FlexButton(
+            action=PostbackAction(
+                label='Back / 返回',
+                data=back_data
+            ),
+            style='secondary',
+            height='sm',
+        )
+    )
+
+    nav_bubble = FlexBubble(
+        size='kilo',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            justifyContent='center',
+            contents=nav_text_contents
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=nav_buttons
+        )
+    )
+    bubbles.append(nav_bubble)
+
+    alt = 'Pre-test 1' if base_category == 'pretest' else 'Post-test 1'
+    return FlexMessage(
+        altText=f'{alt} Questions / 題目',
+        contents=FlexCarousel(contents=bubbles)
+    )
+
+
+async def new_test_question_message(user_id: str, sub: int, base_category: str) -> FlexMessage:
+    """顯示 new_test 單道題目卡片 (含作答紀錄)。
+    Show a single new_test question card with history if available.
+
+    Args:
+        user_id: 使用者 ID
+        sub: 題目索引 (0-based)
+        base_category: 'pretest' 或 'posttest'
+    """
+    question = get_new_test_question(sub)
+    if not question:
+        return FlexMessage(
+            altText='Question not found',
+            contents=FlexBubble(
+                body=FlexBox(
+                    layout='vertical',
+                    contents=[FlexText(text='Question not found.\n找不到題目。', wrap=True)]
+                )
+            )
+        )
+
+    section_category = f'{base_category}1'
+    history = getHistory(user_id, f'{section_category}-{sub}')
+
+    contents = []
+
+    # 題目卡
+    q_bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='lg',
+            contents=[
+                FlexText(
+                    text=f'Q{sub + 1}',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                ),
+                FlexText(
+                    text=question.text,
+                    wrap=True,
+                    size='md',
+                    color='#5b5b5b',
+                ),
+            ]
+        )
+    )
+    if question.image_url:
+        q_bubble.hero = FlexImage(
+            url=f'{URL}{question.image_url}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+        )
+    contents.append(q_bubble)
+
+    # 歷史紀錄卡 (若有)
+    if history and len(history) > 0:
+        last = history[-1]
+        contents.append(FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Last Answer\n上次回答',
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                    ),
+                    FlexText(
+                        text=f'Score: {last.score}',
+                        wrap=True,
+                        size='md',
+                        color='#00aa00' if last.score >= 7 else '#ff8800' if last.score >= 4 else '#ff0000',
+                    ),
+                    FlexText(
+                        text=f'"{last.transcript}"',
+                        wrap=True,
+                        size='sm',
+                        color='#5b5b5b',
+                        style='italic',
+                    ),
+                ]
+            ),
+            footer=FlexBox(
+                layout='vertical',
+                contents=[
+                    FlexButton(
+                        action=PostbackAction(
+                            label='View Feedback',
+                            data=f'action=new_test_last&base={base_category}&sub={sub}'
+                        ),
+                        style='secondary',
+                    ),
+                ]
+            )
+        ))
+
+    # 作答提示卡
+    contents.append(FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            justifyContent='center',
+            alignItems='center',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text=(
+                        '請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。'
+                        '為了獲得高分請盡量用完整句子作答！\n'
+                        'To answer, tap the microphone icon near the text keyboard to record '
+                        'and send a voice message. For a higher score, please answer in complete sentences!'
+                    ),
+                    wrap=True,
+                    size='lg',
+                    align='center',
+                ),
+            ]
+        )
+    ))
+
+    return FlexMessage(
+        altText=f'Q{sub + 1}',
+        contents=FlexCarousel(contents=contents)
+    )
+
+# ========== [END] 前測1/後測1 區塊選擇與 new_test 題目訊息 ==========
+
+
+# ========== [START] NPC 語音輸出相關訊息 (service4/service5) ==========
+
+async def game_npc_voice_response_messages(
+    npc_name: str,
+    npc_reply: str,
+    is_english: bool,
+    npc_image,
+    audio_filename: str,
+    audio_duration: int
+) -> list:
+    """NPC 語音回覆模式：回傳訊息列表 [語言警告卡(若有), 圖片卡, 語音訊息]。
+    NPC voice response mode: returns message list [warning card (if any), image card, audio message].
+
+    圖片卡只顯示 NPC 人物圖片，不顯示文字回覆。
+    語音訊息附帶「顯示文字 / Show Text」及「前往作答 / Go to Answer」快速回覆按鈕。
+    The image card shows only the NPC character image without the reply text.
+    The audio message includes 'Show Text' and 'Go to Answer' quick reply buttons.
+
+    Args:
+        npc_name: NPC 名稱
+        npc_reply: NPC 回覆文字 (僅用於 altText，不顯示在卡片上)
+        is_english: 使用者是否使用英文
+        npc_image: NPC 圖片檔名 (e.g. John_Watson.jpg)
+        audio_filename: 語音檔案路徑 (相對於 templates/)
+        audio_duration: 語音長度 (毫秒)
+    """
+    import random
+
+    messages = []
+
+    # 語言警告卡片 (使用者未使用英文時)
+    if not is_english:
+        warning_bubble = FlexBubble(
+            size='giga',
+            body=FlexBox(
+                layout='vertical',
+                spacing='md',
+                justifyContent='center',
+                alignItems='center',
+                contents=[
+                    FlexText(
+                        text='Please speak in English\n請使用英文對話',
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                        align='center',
+                        color='#ff6600',
+                    ),
+                ]
+            )
+        )
+        messages.append(FlexMessage(
+            altText='Please speak in English / 請使用英文',
+            contents=warning_bubble
+        ))
+
+    # NPC 圖片卡 (只顯示人物圖片，不含文字回覆)
+    if npc_image:
+        base_name = npc_image.rsplit('.', 1)[0] if '.' in npc_image else npc_image
+        ext = npc_image.rsplit('.', 1)[1] if '.' in npc_image else 'jpg'
+        variant = random.choice([1, 2, 3])
+        random_image = f'{base_name}_{variant}.{ext}'
+
+        image_bubble = FlexBubble(
+            size='giga',
+            hero=FlexImage(
+                url=f'{URL}/templates/people_pic/{random_image}',
+                size='full',
+                aspect_ratio='3:4',
+                aspect_mode='cover',
+            ),
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text=npc_name,
+                        wrap=True,
+                        weight='bold',
+                        size='lg',
+                        align='center',
+                        color='#1a1a2e',
+                    ),
+                    FlexText(
+                        text='Listen to the audio message below.\n請聆聽下方語音訊息。',
+                        wrap=True,
+                        size='sm',
+                        color='#888888',
+                        align='center',
+                    ),
+                ]
+            )
+        )
+        messages.append(FlexMessage(
+            altText=f'{npc_name} is speaking...',
+            contents=image_bubble
+        ))
+
+    # 語音訊息 (附快速回覆按鈕)
+    quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Show Text / 顯示文字',
+            data='action=game_show_npc_text'
+        )),
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer / 前往作答',
+            data='action=game_current_questions'
+        )),
+    ])
+
+    audio_msg = AudioMessage(
+        originalContentUrl=f'{URL}/templates/{audio_filename}',
+        duration=audio_duration,
+        quickReply=quick_reply
+    )
+    messages.append(audio_msg)
+
+    return messages
+
+
+async def game_npc_text_card_message(
+    npc_name: str,
+    npc_reply: str,
+    npc_image=None
+) -> FlexMessage:
+    """顯示 NPC 文字回覆卡片，由「顯示文字 / Show Text」按鈕觸發。
+    Show NPC text reply card, triggered by the 'Show Text' quick reply button.
+
+    此為語音模式下使用者主動查看文字時的卡片，外觀與原本 game_npc_chat_response_message 相同。
+    This is the text variant for voice mode; it mirrors game_npc_chat_response_message in appearance.
+    """
+    import random
+
+    bubbles = []
+
+    reply_contents = [
+        FlexText(
+            text=f'{npc_name} says:',
+            wrap=True,
+            weight='bold',
+            size='lg',
+            color='#1a1a2e',
+        ),
+        FlexText(
+            text=npc_reply if npc_reply else '...',
+            wrap=True,
+            size='md',
+            color='#5b5b5b',
+            margin='md',
+        ),
+    ]
+
+    reply_bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=reply_contents
+        )
+    )
+
+    if npc_image:
+        base_name = npc_image.rsplit('.', 1)[0] if '.' in npc_image else npc_image
+        ext = npc_image.rsplit('.', 1)[1] if '.' in npc_image else 'jpg'
+        variant = random.choice([1, 2, 3])
+        random_image = f'{base_name}_{variant}.{ext}'
+        reply_bubble.hero = FlexImage(
+            url=f'{URL}/templates/people_pic/{random_image}',
+            size='full',
+            aspect_ratio='3:4',
+            aspect_mode='cover',
+        )
+
+    bubbles.append(reply_bubble)
+
+    msg = FlexMessage(
+        altText=f'{npc_name} Response',
+        contents=FlexCarousel(contents=bubbles)
+    )
+
+    msg.quick_reply = QuickReply(items=[
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer / 前往作答',
+            data='action=game_current_questions'
+        )),
+    ])
+
+    return msg
+
+# ========== [END] NPC 語音輸出相關訊息 ==========
 
 async def create_rich_menu():
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
