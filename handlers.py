@@ -25,9 +25,8 @@ from utils.message_utils import (
     build_reference_answers_section,
     # Question card with image for service4 game_answer action
     game_answer_card_message,
-    # Pretest / Posttest section selector and new_test carousel (item 1)
-    pretest_section_select_message, posttest_section_select_message,
-    new_test_carousel_message, new_test_question_message,
+    # new_test single question card (pretest1 / posttest1)
+    new_test_question_message,
     # NPC voice response messages (item 4)
     game_npc_voice_response_messages, game_npc_text_card_message,
 )
@@ -1050,6 +1049,12 @@ async def handle_postback(event):
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'record':
         sub = int(vars.get('sub'))
+        # pretest1/posttest1 should use new_test_record, not record; guard against stale state
+        if user_state.category in ['pretest1', 'posttest1']:
+            base = 'pretest' if user_state.category == 'pretest1' else 'posttest'
+            user_state.sub = sub
+            await send_message(event, await new_test_question_message(user_id, sub, base))
+            return
         user_state.sub = sub
         await send_message(event, await question_message(user_id, user_state.category, sub))
     elif action == 'carousel':
@@ -1091,7 +1096,12 @@ async def handle_postback(event):
             await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
             return
         
-        user_state.category = alias.split('-')[0]
+        # pretest2/posttest2 are rich-menu aliases for the original pretest/posttest questions;
+        # map the internal category back so question_manager can find the questions.
+        # Pretest1/posttest1 sub-pages (e.g. pretest1-2) extract category with split('-')[0].
+        _MENU_CATEGORY_MAP = {'pretest2': 'pretest', 'posttest2': 'posttest'}
+        raw_cat = alias.split('-')[0]
+        user_state.category = _MENU_CATEGORY_MAP.get(raw_cat, raw_cat)
         # Reset NPC chat state on menu switch
         user_state.in_npc_chat = False
         
@@ -1103,71 +1113,21 @@ async def handle_postback(event):
             return
         
         # Auto popup menu
-        if alias in ['pretest', 'posttest']:
-            # 前測 / 後測：先顯示區塊選擇選單，讓使用者選前測1或前測2
-            if alias == 'pretest':
-                await send_message(event, await pretest_section_select_message())
-            else:
-                await send_message(event, await posttest_section_select_message())
+        # pretest/posttest family: the rich menu itself IS the navigation UI, no auto-popup needed.
+        _NO_POPUP_PREFIXES = ('pretest', 'posttest')
+        if any(alias.startswith(p) for p in _NO_POPUP_PREFIXES):
+            pass
         elif question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
             await send_message(event, await carousel_message(user_id, user_state.category, 0))
 
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
 
-    # ===== 前測 / 後測區塊選擇與 new_test carousel (item 1) =====
-
-    elif action == 'pretest_section':
-        show_selector = vars.get('show_selector', 'false').lower() == 'true'
-        section = vars.get('section', '0')
-
-        if show_selector:
-            await send_message(event, await pretest_section_select_message())
-            return
-
-        if section == '1':
-            # 前測1：new_test.json 十題
-            user_state.category = 'pretest1'
-            user_state.sub = -1
-            await send_message(event, await new_test_carousel_message(user_id, 'pretest', 0))
-        elif section == '2':
-            # 前測2：原本前測五題
-            user_state.category = 'pretest'
-            user_state.sub = -1
-            await send_message(event, await carousel_message(user_id, 'pretest', 0))
-        else:
-            await send_message(event, await pretest_section_select_message())
-
-    elif action == 'posttest_section':
-        show_selector = vars.get('show_selector', 'false').lower() == 'true'
-        section = vars.get('section', '0')
-
-        if show_selector:
-            await send_message(event, await posttest_section_select_message())
-            return
-
-        if section == '1':
-            # 後測1：new_test.json 十題
-            user_state.category = 'posttest1'
-            user_state.sub = -1
-            await send_message(event, await new_test_carousel_message(user_id, 'posttest', 0))
-        elif section == '2':
-            # 後測2：原本後測五題
-            user_state.category = 'posttest'
-            user_state.sub = -1
-            await send_message(event, await carousel_message(user_id, 'posttest', 0))
-        else:
-            await send_message(event, await posttest_section_select_message())
-
-    elif action == 'new_test_carousel':
-        # 切換 new_test 題目 carousel 頁面
-        base = vars.get('base', 'pretest')
-        page = int(vars.get('page', 0))
-        user_state.category = f'{base}1'
-        await send_message(event, await new_test_carousel_message(user_id, base, page))
+    # ===== new_test 題目作答 (pretest1 / posttest1) — 由 rich menu 按鈕觸發 =====
 
     elif action == 'new_test_record':
-        # 選擇 new_test 單題作答
+        # 使用者點擊 rich menu 中的 Q 按鈕，顯示題目卡片
+        # Triggered when user taps a Q button in the pretest1/posttest1 rich menus
         sub = int(vars.get('sub', 0))
         base = vars.get('base', 'pretest')
         user_state.category = f'{base}1'
@@ -1175,7 +1135,8 @@ async def handle_postback(event):
         await send_message(event, await new_test_question_message(user_id, sub, base))
 
     elif action == 'new_test_last':
-        # 查看 new_test 某題的上次回饋
+        # 查看 new_test 某題的上次評分回饋
+        # Show last assessment result for a new_test question
         sub = int(vars.get('sub', 0))
         base = vars.get('base', 'pretest')
         section_category = f'{base}1'
@@ -1185,7 +1146,7 @@ async def handle_postback(event):
             return
         await send_message(event, await result_message(result[-1], section_category, sub))
 
-    # ===== NPC 顯示文字 (語音模式) (item 4) =====
+    # ===== NPC 顯示文字 (語音模式) =====
 
     elif action == 'game_show_npc_text':
         last_info = get_last_npc_reply(user_id)

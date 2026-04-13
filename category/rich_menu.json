@@ -122,29 +122,29 @@
             ]
         },
         "pretest": {
-            "file": "preposttest.jpg",
+            "file": "prelobby.jpg",
             "chat_bar_text": "Pre-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
-                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
-                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
-                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" }
+                { "type": "switch", "label": "pretest1", "alias_id": "pretest1" },
+                { "type": "switch", "label": "pretest2", "alias_id": "pretest2" },
+                {},
+                {},
+                {},
+                { "type": "switch", "label": "back", "alias_id": "menu" }
             ]
         },
         "posttest": {
-            "file": "preposttest.jpg",
+            "file": "postlobby.jpg",
             "chat_bar_text": "Post-test",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
-                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
-                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
-                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
-                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
-                { "type": "switch", "label": "menu", "alias_id": "menu" }
+                { "type": "switch", "label": "posttest1", "alias_id": "posttest1" },
+                { "type": "switch", "label": "posttest2", "alias_id": "posttest2" },
+                {},
+                {},
+                {},
+                { "type": "switch", "label": "back", "alias_id": "menu" }
             ]
         },
         "admin": {
@@ -544,6 +544,136 @@
                 { "type": "switch", "label": "prev", "alias_id": "game_respond2" },
                 { "type": "postback", "label": "ex6", "data": "action=respond&alias=ex6" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "pretest1": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=new_test_record&sub=0&base=pretest" },
+                { "type": "postback", "label": "q2", "data": "action=new_test_record&sub=1&base=pretest" },
+                { "type": "postback", "label": "q3", "data": "action=new_test_record&sub=2&base=pretest" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "pretest1-2" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=pretest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=pretest" },
+                { "type": "postback", "label": "q6", "data": "action=new_test_record&sub=5&base=pretest" },
+                { "type": "switch", "label": "prev", "alias_id": "pretest1" },
+                { "type": "switch", "label": "next", "alias_id": "pretest1-3" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=new_test_record&sub=6&base=pretest" },
+                { "type": "postback", "label": "q8", "data": "action=new_test_record&sub=7&base=pretest" },
+                { "type": "postback", "label": "q9", "data": "action=new_test_record&sub=8&base=pretest" },
+                { "type": "switch", "label": "prev", "alias_id": "pretest1-2" },
+                { "type": "switch", "label": "next", "alias_id": "pretest1-4" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=new_test_record&sub=9&base=pretest" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "pretest1-3" },
+                {},
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Pre-test 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "posttest1": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=new_test_record&sub=0&base=posttest" },
+                { "type": "postback", "label": "q2", "data": "action=new_test_record&sub=1&base=posttest" },
+                { "type": "postback", "label": "q3", "data": "action=new_test_record&sub=2&base=posttest" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "posttest1-2" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=posttest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=posttest" },
+                { "type": "postback", "label": "q6", "data": "action=new_test_record&sub=5&base=posttest" },
+                { "type": "switch", "label": "prev", "alias_id": "posttest1" },
+                { "type": "switch", "label": "next", "alias_id": "posttest1-3" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=new_test_record&sub=6&base=posttest" },
+                { "type": "postback", "label": "q8", "data": "action=new_test_record&sub=7&base=posttest" },
+                { "type": "postback", "label": "q9", "data": "action=new_test_record&sub=8&base=posttest" },
+                { "type": "switch", "label": "prev", "alias_id": "posttest1-2" },
+                { "type": "switch", "label": "next", "alias_id": "posttest1-4" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=new_test_record&sub=9&base=posttest" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "posttest1-3" },
+                {},
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Post-test 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
             ]
         }
     }
