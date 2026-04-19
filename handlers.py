@@ -19,6 +19,8 @@ from utils.message_utils import (
     # New messages for service4 enhancements
     game_rules_instruction_message, progress_select_message,
     game_progress_message, other_progress_message,
+    # Pretest / Posttest detailed progress (split by section)
+    pretest_progress_message, posttest_progress_message,
     # Game lobby info messages
     game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
@@ -64,37 +66,22 @@ def convert_m4a_to_mp3_base64(message_content: bytes) -> str:
     return base64.b64encode(mp3_bytes).decode('utf-8')
 
 
-async def generate_npc_tts(npc_reply: str, voice: str = "onyx", instructions: str = None) -> tuple:
+async def generate_npc_tts(npc_reply: str, voice: str = "onyx") -> tuple:
     """產生 NPC 語音 TTS，回傳 (相對於 templates/ 的路徑, 毫秒長度)。
     Generate NPC TTS audio and return (path relative to templates/, duration_ms).
 
     Args:
         npc_reply: NPC 回覆文字
-        voice: TTS 語音名稱 (預設 onyx)
-        instructions: TTS 風格指示，用於控制口音、語氣等；None 則使用預設英式口音指示。
-                      Supports accent/tone control via gpt-4o-mini-tts instructions param.
+        voice: TTS 聲音 (預設 onyx，具角色感)
     """
     import uuid
     import aiofiles
 
-    # 預設英式口音指示 (若未指定 instructions 則套用)
-    # Default British RP style instruction applied when none is specified.
-    _DEFAULT_INSTRUCTIONS = (
-        "Speak with a British Received Pronunciation (RP) accent. "
-        "Keep a calm, measured, and composed tone throughout."
-    )
-    effective_instructions = instructions if instructions else _DEFAULT_INSTRUCTIONS
-
-    create_kwargs = dict(
+    tts_response = await client.audio.speech.create(
         model="gpt-4o-mini-tts",
         voice=voice,
         input=npc_reply,
     )
-    # instructions is only supported by gpt-4o-mini-tts, not tts-1/tts-1-hd
-    if effective_instructions:
-        create_kwargs["instructions"] = effective_instructions
-
-    tts_response = await client.audio.speech.create(**create_kwargs)
 
     filename = f"audio/{uuid.uuid4()}.mp3"
     os.makedirs("templates/audio", exist_ok=True)
@@ -527,47 +514,11 @@ async def handle_npc_chat(event, user_id, user_state):
             # 儲存最近一次 NPC 回覆，供「顯示文字 / Show Text」功能使用
             set_last_npc_reply(user_id, npc_info['name'], quick_res.npc_reply, npc_image)
 
-            # ── 每個 NPC 的語音設定 ──────────────────────────────────────────
-            # 優先讀取 theme_config.json 中 NPC 的 tts_voice / tts_instructions 欄位。
-            # 若未設定則按索引套用以下預設值，三個聲音皆為男性英式口音、低沉沉穩：
-            #   npc 0 (Dr. Watson)     → onyx  : 最深沉、最威嚴，沉穩可靠如老兵軍醫
-            #   npc 1 (Mycroft Holmes) → echo  : 深沉平穩，冷靜客觀如政府高官
-            #   npc 2 (Sherlock Holmes)→ fable : 敘事感強、略帶戲劇性，像洞察一切的神探
-            # Priority: theme_config.json tts_voice field → index-based default below.
-            _DEFAULT_NPC_VOICES = {0: "onyx", 1: "echo", 2: "fable"}
-            _DEFAULT_NPC_INSTRUCTIONS = {
-                0: (
-                    "Speak with a British Received Pronunciation accent. "
-                    "Tone: calm, warm, and dependable — like a seasoned military doctor."
-                ),
-                1: (
-                    "Speak with a British Received Pronunciation accent. "
-                    "Tone: cold, measured, and authoritative — like a senior government official."
-                ),
-                2: (
-                    "Speak with a British Received Pronunciation accent. "
-                    "Tone: precise, slightly theatrical, and analytical — like a brilliant detective."
-                ),
-            }
-            npc_tts_voice = (
-                npc_info.get('tts_voice')
-                or _DEFAULT_NPC_VOICES.get(npc_idx, "onyx")
-            )
-            npc_tts_instructions = (
-                npc_info.get('tts_instructions')
-                or _DEFAULT_NPC_INSTRUCTIONS.get(npc_idx)
-            )
-            # ────────────────────────────────────────────────────────────────
-
             # 嘗試生成 TTS 語音；若失敗則退回純文字卡片
             npc_audio_file = None
             npc_audio_duration = 0
             try:
-                npc_audio_file, npc_audio_duration = await generate_npc_tts(
-                    quick_res.npc_reply,
-                    voice=npc_tts_voice,
-                    instructions=npc_tts_instructions
-                )
+                npc_audio_file, npc_audio_duration = await generate_npc_tts(quick_res.npc_reply)
             except Exception as tts_err:
                 print(f"NPC TTS error (falling back to text card): {tts_err}")
 
@@ -1220,9 +1171,14 @@ async def handle_postback(event):
             await send_message(event, await game_progress_message(user_id))
         elif category == 'other':
             await send_message(event, await other_progress_message(user_id))
-        elif category in ['pretest', 'posttest']:
-            # Reuse existing progress message filtered by category
-            await send_message(event, await progress_message(user_id))
+        elif category == 'pretest':
+            # 前測進度：前測1 (10題) + 前測2 (5題) 分開呈現
+            # Pre-test progress: Pre-test 1 (10 Qs) + Pre-test 2 (5 Qs) shown separately
+            await send_message(event, await pretest_progress_message(user_id))
+        elif category == 'posttest':
+            # 後測進度：後測1 (10題) + 後測2 (5題) 分開呈現
+            # Post-test progress: Post-test 1 (10 Qs) + Post-test 2 (5 Qs) shown separately
+            await send_message(event, await posttest_progress_message(user_id))
         else:
             await send_text_message(event, "未知的進度類別。\nUnknown progress category.")
     elif action == 'enabled':

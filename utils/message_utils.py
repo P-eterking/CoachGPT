@@ -2,7 +2,7 @@ from config import line_bot_api, rich_menu_manager, DOMAIN, question_manager, cl
 from linebot.v3.messaging import (
     ReplyMessageRequest, TextMessage, PostbackAction, QuickReply,
     QuickReplyItem, FlexMessage, FlexCarousel, FlexBubble, FlexImage,
-    FlexText, FlexBox, FlexButton, AudioMessage, ShowLoadingAnimationRequest,
+    FlexText, FlexBox, FlexButton, FlexSeparator, AudioMessage, ShowLoadingAnimationRequest,
     VideoMessage, URIAction
 )
 from manager.richmenu import *
@@ -1122,7 +1122,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
             spacing='lg',
             contents=[
                 FlexText(
-                    text=f'Topic {get_theme_display_number(theme_id)} Level {level_idx + 1}: {level_info["title"]}',
+                    text=f'Topic {get_theme_display_number(theme_id)}, Level {level_idx + 1}: {level_info["title"]}',
                     wrap=True,
                     weight='bold',
                     size='xl',
@@ -1142,7 +1142,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                     margin='lg',
                 ),
                 FlexText(
-                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!(Videos may take a moment to load. If you encounter a black screen, please reload the video and wait patiently. Thank you!)',
+                    text='[Tip] Click NPC icons in the menu below to chat with NPCs and get clues!(Videos may take a moment to load. If you encounter a black screen, please reopen the video and wait patiently. Thank you!)',
                     wrap=True,
                     size='xs',
                     color='#888888',
@@ -1458,7 +1458,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
         bubbles.append(progress_bubble)
     
     return FlexMessage(
-        altText=f'Topic {topic_num} Level {level_idx + 1} Questions',
+        altText=f'Topic {topic_num}, Level {level_idx + 1} Questions',
         contents=FlexCarousel(contents=bubbles)
     )
 
@@ -2241,6 +2241,15 @@ async def game_characters_message() -> list:
             preview_url = f'{URL}/templates/videos/{video_value.replace(".mp4", "_preview.jpg")}'
         
         messages.append(
+            TextMessage(
+                text=(
+                    "由於影片加載需要時間，因此若影片出現黑屏請重開影片並耐心等候，感謝！\n"
+                    "Videos may take a moment to load. If you encounter a black screen, please reopen the video and wait patiently. Thank you!"
+                )
+            )
+        )
+
+        messages.append(
             VideoMessage(
                 originalContentUrl=video_url,
                 previewImageUrl=preview_url
@@ -2977,6 +2986,145 @@ async def other_progress_message(user_id: str) -> FlexMessage:
                 contents=body_contents
             )
         )
+    )
+
+
+def _build_test_section_bubble(
+    user_id: str,
+    section_label: str,
+    section_label_chi: str,
+    category: str,
+    total_q: int,
+) -> FlexBubble:
+    """建立單一測驗區塊的進度泡泡，每題一行，全部完成顯示綠色，否則灰色。
+    Build a single test section progress bubble; each question is one row,
+    green if answered, gray if not.
+    """
+    answered_count = 0
+    q_rows = []
+
+    for q_idx in range(total_q):
+        history = getHistory(user_id, f'{category}-{q_idx}')
+        answered = history and len(history) > 0
+        if answered:
+            answered_count += 1
+
+        color = '#00aa00' if answered else '#aaaaaa'
+        status_eng = 'Answered' if answered else 'Not yet answered'
+        status_chi = '已作答' if answered else '尚未作答'
+
+        q_rows.append(
+            FlexBox(
+                layout='horizontal',
+                spacing='sm',
+                margin='sm',
+                contents=[
+                    FlexText(
+                        text=f'Q{q_idx + 1}',
+                        size='sm',
+                        color=color,
+                        flex=1,
+                        weight='bold',
+                    ),
+                    FlexText(
+                        text=f'{status_eng} / {status_chi}',
+                        size='sm',
+                        color=color,
+                        flex=4,
+                        wrap=True,
+                    ),
+                ]
+            )
+        )
+
+    all_done = answered_count == total_q
+    summary_color = '#00aa00' if all_done else '#5b5b5b'
+
+    header_contents = [
+        FlexText(
+            text=f'{section_label} / {section_label_chi}',
+            wrap=True,
+            weight='bold',
+            size='lg',
+            color='#1a1a2e',
+        ),
+        FlexText(
+            text=f'{answered_count}/{total_q} answered / 已作答',
+            wrap=True,
+            size='sm',
+            color=summary_color,
+            margin='xs',
+        ),
+        FlexSeparator(margin='md'),
+    ]
+
+    return FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=header_contents + q_rows
+        )
+    )
+
+
+async def pretest_progress_message(user_id: str) -> FlexMessage:
+    """顯示前測進度，分為前測1 (10題) 和前測2 (5題) 兩個泡泡。
+    Show pre-test progress split into Pre-test 1 (10 Qs) and Pre-test 2 (5 Qs).
+    全部作答完成顯示綠色，未完成顯示灰色。
+    Fully completed sections are shown in green; incomplete ones in gray.
+    """
+    NEW_TEST_TOTAL = get_new_test_questions_count()
+    PRETEST2_TOTAL = 5
+
+    bubble1 = _build_test_section_bubble(
+        user_id,
+        section_label='Pre-test 1',
+        section_label_chi='前測1',
+        category='pretest1',
+        total_q=NEW_TEST_TOTAL,
+    )
+    bubble2 = _build_test_section_bubble(
+        user_id,
+        section_label='Pre-test 2',
+        section_label_chi='前測2',
+        category='pretest',
+        total_q=PRETEST2_TOTAL,
+    )
+
+    return FlexMessage(
+        altText='Pre-test Progress / 前測進度',
+        contents=FlexCarousel(contents=[bubble1, bubble2])
+    )
+
+
+async def posttest_progress_message(user_id: str) -> FlexMessage:
+    """顯示後測進度，分為後測1 (10題) 和後測2 (5題) 兩個泡泡。
+    Show post-test progress split into Post-test 1 (10 Qs) and Post-test 2 (5 Qs).
+    全部作答完成顯示綠色，未完成顯示灰色。
+    Fully completed sections are shown in green; incomplete ones in gray.
+    """
+    NEW_TEST_TOTAL = get_new_test_questions_count()
+    POSTTEST2_TOTAL = 5
+
+    bubble1 = _build_test_section_bubble(
+        user_id,
+        section_label='Post-test 1',
+        section_label_chi='後測1',
+        category='posttest1',
+        total_q=NEW_TEST_TOTAL,
+    )
+    bubble2 = _build_test_section_bubble(
+        user_id,
+        section_label='Post-test 2',
+        section_label_chi='後測2',
+        category='posttest',
+        total_q=POSTTEST2_TOTAL,
+    )
+
+    return FlexMessage(
+        altText='Post-test Progress / 後測進度',
+        contents=FlexCarousel(contents=[bubble1, bubble2])
     )
 
 # ========== [END] Game Message Functions ==========
