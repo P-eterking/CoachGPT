@@ -111,6 +111,50 @@ def get_display_feedback() -> bool:
     """取得是否顯示回饋的設定"""
     return config.get('display_feedback', True)
 
+def should_show_feedback(category: str) -> bool:
+    """判斷是否應顯示指定類別的回饋。
+    Check whether feedback should be displayed for the given category.
+
+    display_feedback 作為全域總開關；若 response 清單非空，則進一步逐類別控管。
+    若 response 清單為空，則僅以全域開關決定（向後相容 service1/2/3）。
+
+    display_feedback acts as the global master switch.
+    If the response list is non-empty, it further gates per-category feedback.
+    If the response list is empty, the global flag alone decides (backward compatible with service1/2/3).
+    """
+    if not get_display_feedback():
+        return False
+    response_list = config.get('response', [])
+    if not response_list:
+        return True
+    return category in response_list
+
+def get_enabled_category_for_alias(alias: str) -> str:
+    """將 rich menu 別名解析為對應的啟用控制類別。
+    Map a rich menu alias to its corresponding enabled-control category.
+
+    例如：'pretest1' / 'pretest1-2' -> 'pretest'，'posttest1' -> 'posttest'，
+    'game_lobby' / 'game_theme1' 等遊戲相關別名 -> 'rag_test'，
+    'ex1' -> 'ex1'（其餘原樣回傳）。
+
+    Examples: 'pretest1' / 'pretest1-2' -> 'pretest', 'posttest1' -> 'posttest',
+    'game_lobby' / 'game_theme1' and other game aliases -> 'rag_test',
+    'ex1' -> 'ex1' (others returned as-is).
+    """
+    if alias.startswith('pretest'):
+        return 'pretest'
+    if alias.startswith('posttest'):
+        return 'posttest'
+    # 所有遊戲大廳、主題、關卡相關別名統一對應 rag_test 啟用控制
+    # All game lobby / theme / level aliases map to the rag_test enable key
+    _GAME_ALIASES = {
+        'game_lobby', 'game_theme_select',
+        'game_theme1', 'game_theme2', 'game_theme3',
+    }
+    if alias in _GAME_ALIASES or alias.startswith('game_theme'):
+        return 'rag_test'
+    return alias
+
 # ========== 使用者狀態管理 ==========
 
 def get_user_state(user_id: str) -> UserState | None:

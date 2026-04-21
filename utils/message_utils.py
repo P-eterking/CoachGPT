@@ -18,7 +18,8 @@ from utils.file_utils import (
     get_questions_per_level, get_user_question_score, get_user_unlocked_level,
     get_user_level_score, get_display_feedback, get_levels_per_theme,
     get_game_info_config, get_theme_display_number,
-    get_new_test_question, get_new_test_questions_count, get_new_test_questions_all
+    get_new_test_question, get_new_test_questions_count, get_new_test_questions_all,
+    isAdmin, get_enabled_category_for_alias,
 )
 
 URL = f'https://{DOMAIN}'
@@ -703,8 +704,14 @@ async def chat_message(user_id, sub):
     )
 
 
-async def result_message(assessment: SpeechAssessment, category: str, sub: int):
-    display_feedback = get_display_feedback()
+async def result_message(assessment: SpeechAssessment, category: str, sub: int,
+                         show_feedback: bool = None):
+    """顯示作答結果。score 卡片永遠顯示；feedback 卡片由 show_feedback 控制。
+    若 show_feedback 為 None，退而使用全域 display_feedback 設定。
+    Show assessment result. Score card always renders; feedback cards are
+    controlled by show_feedback. Falls back to global display_feedback when None.
+    """
+    display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     bubbles = []
     
     # Score bubble
@@ -1557,15 +1564,17 @@ async def game_answer_card_message(
 
 async def game_score_message(user_id: str, theme_id: str, level_idx: int, question_idx: int, 
                              score: int, is_new_high: bool, feedback_eng: str = "", feedback_chi: str = "",
-                             reference_comparison: str = "") -> FlexMessage:
-    """Show game result and score - English feedback first, Chinese feedback second
-    
+                             reference_comparison: str = "", show_feedback: bool = None) -> FlexMessage:
+    """Show game result and score - English feedback first, Chinese feedback second.
+    Score card always renders; feedback cards are controlled by show_feedback.
+    Falls back to global display_feedback when show_feedback is None.
+
     Button logic:
     - Score < 6: Show "Try Again" + "Improvement Hint"
     - Score 6-9: Show "Try Again" + "Improvement Hint" + "Next Question"
     - Score = 10: Show only "Next Question"
     """
-    display_feedback = get_display_feedback()
+    display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
     max_score = get_max_theme_score()
     topic_num = get_theme_display_number(theme_id)
@@ -3069,12 +3078,12 @@ def _build_test_section_bubble(
 
 
 async def pretest_progress_message(user_id: str) -> FlexMessage:
-    """顯示前測進度，分為前測1 (10題) 和前測2 (5題) 兩個泡泡。
-    Show pre-test progress split into Pre-test 1 (10 Qs) and Pre-test 2 (5 Qs).
+    """顯示前測進度，分為前測1 (5題) 和前測2 (5題) 兩個泡泡。
+    Show pre-test progress split into Pre-test 1 (5 Qs) and Pre-test 2 (5 Qs).
     全部作答完成顯示綠色，未完成顯示灰色。
     Fully completed sections are shown in green; incomplete ones in gray.
     """
-    NEW_TEST_TOTAL = get_new_test_questions_count()
+    NEW_TEST_TOTAL = 5
     PRETEST2_TOTAL = 5
 
     bubble1 = _build_test_section_bubble(
@@ -3099,12 +3108,12 @@ async def pretest_progress_message(user_id: str) -> FlexMessage:
 
 
 async def posttest_progress_message(user_id: str) -> FlexMessage:
-    """顯示後測進度，分為後測1 (10題) 和後測2 (5題) 兩個泡泡。
-    Show post-test progress split into Post-test 1 (10 Qs) and Post-test 2 (5 Qs).
+    """顯示後測進度，分為後測1 (5題) 和後測2 (5題) 兩個泡泡。
+    Show post-test progress split into Post-test 1 (5 Qs) and Post-test 2 (5 Qs).
     全部作答完成顯示綠色，未完成顯示灰色。
     Fully completed sections are shown in green; incomplete ones in gray.
     """
-    NEW_TEST_TOTAL = get_new_test_questions_count()
+    NEW_TEST_TOTAL = 5
     POSTTEST2_TOTAL = 5
 
     bubble1 = _build_test_section_bubble(
@@ -3165,21 +3174,85 @@ async def show_loading(user_id, secs=20):
     await line_bot_api.show_loading_animation(show_loading_animation_request=ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=secs), async_req=True).get()
     
 async def handle_rich_menu(user_id):
+    """初始化或修正使用者的 rich menu 狀態。
+    Initialise or correct the user's rich menu state.
+
+    每次互動開始時都會呼叫此函式。除了原本的「偵測目前選單並設定 category」邏輯外，
+    還會主動檢查使用者目前所在的選單區塊是否仍處於開放狀態，若已被管理員關閉，
+    立即將使用者重新連結回預設主選單，確保無法在關閉後的區塊繼續操作。
+
+    Called at the start of every interaction. In addition to the original
+    'detect current menu and set category' logic, it actively checks whether
+    the user's current menu section is still enabled. If the admin has since
+    disabled it, the user is immediately re-linked to the default main menu.
+    """
+    _SWITCH_CONTROLLED = {
+        'pretest', 'posttest', 'rag_test',
+        'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'
+    }
+
     user_state = get_user_state(user_id)
+    is_rag = config.get('rag_mode', False)
+    default_menu = 'menu_game' if is_rag else 'menu'
+
     if user_state.category:
+        # 即使 category 已知，仍需驗證該區塊是否仍開放（管理員可能在使用者進入後才關閉）。
+        # Even if the category is already known, verify the section is still enabled
+        # (admin may have disabled it after the user navigated in).
+        enabled_cat = get_enabled_category_for_alias(user_state.category)
+        if (
+            enabled_cat in _SWITCH_CONTROLLED
+            and not isEnabled(enabled_cat)
+            and not isAdmin(user_id)
+        ):
+            # 使用者仍停留在已關閉的區塊，立即踢回主選單。
+            # User is still on a now-disabled section; kick them back to main menu.
+            default_menu_id = get_rich_menu_id(default_menu)
+            if default_menu_id:
+                try:
+                    await rich_menu_manager.link_rich_menu_to_user(
+                        user_id=user_id, rich_menu_id=default_menu_id
+                    )
+                except Exception as _evict_err:
+                    print(f"[WARN] handle_rich_menu eviction failed: {_evict_err}")
+            user_state.category = default_menu
+            user_state.in_npc_chat = False
         return
+
+    # category 尚未設定：從 LINE 平台查詢使用者目前連結的 rich menu。
+    # Category not yet set: query LINE platform for the user's currently linked menu.
     try:
         rich_menu_id = await rich_menu_manager.get_rich_menu_id(user_id)
         category = get_rich_menu_category_from_id(rich_menu_id)
         if not category:
             raise ApiException('No rich menu category found.')
-        user_state.category = category
-    except ApiException as e:
-        # [FIX #2] For rag_mode (service4), default to menu_game instead of menu
-        is_rag = config.get('rag_mode', False)
-        default_menu = 'menu_game' if is_rag else 'menu'
-        rich_menu_id = get_rich_menu_id(default_menu)
-        await rich_menu_manager.link_rich_menu_to_user(user_id=user_id, rich_menu_id=rich_menu_id)
+        # 查詢到的 category 也需要通過 enabled 檢查。
+        # The detected category also needs to pass the enabled check.
+        enabled_cat = get_enabled_category_for_alias(category)
+        if (
+            enabled_cat in _SWITCH_CONTROLLED
+            and not isEnabled(enabled_cat)
+            and not isAdmin(user_id)
+        ):
+            default_menu_id = get_rich_menu_id(default_menu)
+            if default_menu_id:
+                try:
+                    await rich_menu_manager.link_rich_menu_to_user(
+                        user_id=user_id, rich_menu_id=default_menu_id
+                    )
+                except Exception as _evict_err:
+                    print(f"[WARN] handle_rich_menu eviction (fresh) failed: {_evict_err}")
+            user_state.category = default_menu
+        else:
+            user_state.category = category
+    except ApiException:
+        # LINE 回報沒有連結的 rich menu，連結預設主選單。
+        # LINE reports no linked rich menu; link the default main menu.
+        default_menu_id = get_rich_menu_id(default_menu)
+        if default_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(
+                user_id=user_id, rich_menu_id=default_menu_id
+            )
         user_state.category = default_menu
     except Exception as e:
         print(e)

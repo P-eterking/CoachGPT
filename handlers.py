@@ -42,6 +42,8 @@ from utils.file_utils import *
 from utils.file_utils import (
     get_new_test_question,
     set_last_npc_reply, get_last_npc_reply,
+    should_show_feedback,
+    get_enabled_category_for_alias,
 )
 import tempfile
 import time
@@ -205,15 +207,24 @@ async def handle_audio_message(event):
     if config.get('rag_mode'):
         # Check if in NPC chat mode
         if user_state.in_npc_chat and user_state.game_theme and user_state.game_npc >= 0:
+            if not isEnabled('rag_test') and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
             await handle_npc_chat(event, user_id, user_state)
             return
         
         # Check if user is in game mode and has selected a question
         if user_state.game_theme and user_state.game_level >= 0 and user_state.game_question >= 0:
+            if not isEnabled('rag_test') and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
             await handle_game_answer(event, user_id, user_state)
             return
         # Handle old rag_test category
         elif user_state.category == 'rag_test' and user_state.sub >= 0:
+            if not isEnabled('rag_test') and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
             await handle_game_mode(event, user_id, user_state)
             return
 
@@ -223,13 +234,17 @@ async def handle_audio_message(event):
         
         if category in ['chat', 'sex', 'accent', 'audio']:
             if not isEnabled('chat'):
-                await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
                 return
             await handle_chat(event)
             return
         
         # ===== pretest1 / posttest1：使用 new_test.json 題目與十級評分 =====
         if category in ['pretest1', 'posttest1']:
+            base_cat = 'pretest' if category == 'pretest1' else 'posttest'
+            if not isEnabled(base_cat) and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
             sub = user_state.sub
             if sub < 0:
                 await send_text_message(event, "請先選擇題目。\nPlease select a question first.")
@@ -282,10 +297,10 @@ async def handle_audio_message(event):
             history_key = f'{category}-{sub}'
             updateHistory(user_id, history_key, assessment)
 
-            if get_display_feedback():
-                await send_message(event, await result_message(assessment, category, sub))
+            if should_show_feedback(base_cat):
+                await send_message(event, await result_message(assessment, category, sub, show_feedback=True))
             else:
-                await send_text_message(event, "已收到您的回答！\nReceived your answer!")
+                await send_message(event, await result_message(assessment, category, sub, show_feedback=False))
 
             await save_user_data()
             return
@@ -293,6 +308,10 @@ async def handle_audio_message(event):
 
         if not category or not question_manager.has_question(category):
             return 
+        
+        if not isEnabled(category) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+            return
         
         sub = user_state.sub
         
@@ -345,10 +364,10 @@ async def handle_audio_message(event):
         history_key = f'{category}-{sub}'
         updateHistory(user_id, history_key, assessment)
         
-        if get_display_feedback():
-            await send_message(event, await result_message(assessment, category, sub))
+        if should_show_feedback(category):
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=True))
         else:
-            await send_text_message(event, "已收到您的回答！\nReceived your answer!")
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=False))
         
         # Save user data
         await save_user_data()
@@ -641,7 +660,7 @@ async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info
             eval_res.feedback_chi
         )
         
-        if eval_message:
+        if eval_message and should_show_feedback('rag_test'):
             await send_message(event, eval_message)
         
     except Exception as e:
@@ -803,12 +822,13 @@ async def handle_game_answer(event, user_id, user_state):
         # Reset question state (exit answer mode)
         user_state.game_question = -1
         
-        # Send result message
+        # Send result message (score always shown; feedback controlled per-category)
         await send_message(event, await game_score_message(
             user_id, theme_id, level_idx, question_idx,
             answer_res.score, is_new_high,
             feedback_chi=answer_res.feedback_chi if answer_res.feedback_chi else "",
-            feedback_eng=answer_res.feedback_eng if answer_res.feedback_eng else ""
+            feedback_eng=answer_res.feedback_eng if answer_res.feedback_eng else "",
+            show_feedback=should_show_feedback('rag_test')
         ))
         
         # If new level unlocked, send notification
@@ -1047,6 +1067,9 @@ async def handle_postback(event):
                 await send_text_message(event, history.answers[-1])
     elif action == 'sub':
         sub = int(vars.get('sub'))
+        if not isEnabled('chat') and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+            return
         user_state.sub = sub
         await send_message(event, await chat_message(user_id, sub))
     elif action == 'record':
@@ -1054,13 +1077,24 @@ async def handle_postback(event):
         # pretest1/posttest1 should use new_test_record, not record; guard against stale state
         if user_state.category in ['pretest1', 'posttest1']:
             base = 'pretest' if user_state.category == 'pretest1' else 'posttest'
+            if not isEnabled(base) and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
             user_state.sub = sub
             await send_message(event, await new_test_question_message(user_id, sub, base))
+            return
+        _record_cat = get_enabled_category_for_alias(user_state.category)
+        if not isEnabled(_record_cat) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
         user_state.sub = sub
         await send_message(event, await question_message(user_id, user_state.category, sub))
     elif action == 'carousel':
         page = int(vars.get('page', 0))
+        _carousel_cat = get_enabled_category_for_alias(user_state.category)
+        if not isEnabled(_carousel_cat) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+            return
         await send_message(event, await carousel_message(user_id, user_state.category, page))
     elif action == 'last':
         category = vars.get('category', user_state.category)
@@ -1069,8 +1103,9 @@ async def handle_postback(event):
         if not result:
             await send_text_message(event, f'Q{sub+1} 查無紀錄！\nNo history found in Q{sub+1}!')
             return
-        if not isEnabled(category):
-            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+        _last_enabled_cat = get_enabled_category_for_alias(category)
+        if not isEnabled(_last_enabled_cat) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
         
         is_rag = config.get('rag_mode', False)
@@ -1094,8 +1129,23 @@ async def handle_postback(event):
             if not is_rag:
                 alias = 'menu'
         
-        if alias not in ['rag_test', 'menu_other'] and alias in ['pretest', 'posttest', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'] and not isEnabled(alias) and not isAdmin(user_id):
-            await send_text_message(event, "該單元目前不可用。\nCurrently unavailable.")
+        # Check enabled status using alias resolution (covers sub-aliases like pretest1, pretest1-2, etc.)
+        _switch_enabled_cat = get_enabled_category_for_alias(alias)
+        _SWITCH_CONTROLLED = {'pretest', 'posttest', 'rag_test', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'}
+        if alias not in ['menu_other'] and _switch_enabled_cat in _SWITCH_CONTROLLED and not isEnabled(_switch_enabled_cat) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+            # 若 LINE 平台已先執行了選單跳轉（RichMenuSwitchAction），立刻將使用者拉回預設主選單，
+            # 確保不論底層用哪種 action 類型，使用者都不會停留在被關閉的選單上。
+            # If LINE's platform already performed a rich menu switch before the webhook fired
+            # (RichMenuSwitchAction), immediately re-link the user to the default main menu so
+            # they never remain on the locked section regardless of the action type used.
+            _default_menu_alias = 'menu_game' if config.get('rag_mode', False) else 'menu'
+            _default_menu_id = get_rich_menu_id(_default_menu_alias)
+            if _default_menu_id:
+                try:
+                    await rich_menu_manager.link_rich_menu_to_user(user_id, _default_menu_id)
+                except Exception as _relink_err:
+                    print(f"[WARN] Failed to re-link rich menu after blocked switch: {_relink_err}")
             return
         
         # pretest2/posttest2 are rich-menu aliases for the original pretest/posttest questions;
@@ -1132,6 +1182,9 @@ async def handle_postback(event):
         # Triggered when user taps a Q button in the pretest1/posttest1 rich menus
         sub = int(vars.get('sub', 0))
         base = vars.get('base', 'pretest')
+        if not isEnabled(base) and not isAdmin(user_id):
+            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+            return
         user_state.category = f'{base}1'
         user_state.sub = sub
         await send_message(event, await new_test_question_message(user_id, sub, base))
