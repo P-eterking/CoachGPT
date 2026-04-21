@@ -145,6 +145,10 @@ def get_enabled_category_for_alias(alias: str) -> str:
         return 'pretest'
     if alias.startswith('posttest'):
         return 'posttest'
+    # exercises 大廳及其子頁（exercises2 等）統一對應 exercises 啟用控制
+    # The exercises lobby and all sub-page aliases map to the exercises enable key
+    # if alias.startswith('exercises'):
+    #     return 'exercises'
     # 所有遊戲大廳、主題、關卡相關別名統一對應 rag_test 啟用控制
     # All game lobby / theme / level aliases map to the rag_test enable key
     _GAME_ALIASES = {
@@ -258,6 +262,7 @@ FEATURE_DISPLAY_NAMES = {
     'posttest': '後測',
     'chat': '聊天功能',
     'rag_test': '遊戲功能',
+    # 'exercises': '練習題目',
     'ex1': '練習一',
     'ex2': '練習二',
     'ex3': '練習三',

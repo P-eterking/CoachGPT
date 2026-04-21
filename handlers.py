@@ -1130,10 +1130,16 @@ async def handle_postback(event):
                 alias = 'menu'
         
         # Check enabled status using alias resolution (covers sub-aliases like pretest1, pretest1-2, etc.)
+        # 注意：此處刻意不豁免管理員，確保管理員測試時也能驗證開關效果（與原始 service1/2/3 行為一致）。
+        # 管理員仍可透過 game_admin / admin 選單進行設定；如需進入已關閉的區塊，請先將該區塊設為開啟。
+        # Note: admin bypass is intentionally omitted here so admins can verify the enable/disable
+        # behaviour from the user's perspective, matching the original service1/2/3 design.
+        # Admins can still manage settings via game_admin/admin menus; to access a closed section,
+        # enable it first from the admin panel.
         _switch_enabled_cat = get_enabled_category_for_alias(alias)
         _SWITCH_CONTROLLED = {'pretest', 'posttest', 'rag_test', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'}
-        if alias not in ['menu_other'] and _switch_enabled_cat in _SWITCH_CONTROLLED and not isEnabled(_switch_enabled_cat) and not isAdmin(user_id):
-            await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+        if alias not in ['menu_other'] and _switch_enabled_cat in _SWITCH_CONTROLLED and not isEnabled(_switch_enabled_cat):
+            await send_text_message(event, "此區塊尚未開放作答或使用，請等待老師開啟。\nThis section is not yet open for answering or use. Please wait for your teacher to enable it.")
             # 若 LINE 平台已先執行了選單跳轉（RichMenuSwitchAction），立刻將使用者拉回預設主選單，
             # 確保不論底層用哪種 action 類型，使用者都不會停留在被關閉的選單上。
             # If LINE's platform already performed a rich menu switch before the webhook fired

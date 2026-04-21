@@ -3586,20 +3586,33 @@ async def game_npc_text_card_message(
 async def create_rich_menu():
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
+
+    # 每次伺服器啟動時，強制刪除並重建 LINE 平台上所有 rich menu。
+    # 這確保按鈕一律使用 PostbackAction（由伺服器決定是否跳轉），
+    # 而非 RichMenuSwitchAction（由 LINE 用戶端直接跳轉，繞過伺服器 enable 判斷）。
+    # 若舊版部署曾使用 RichMenuSwitchAction，舊選單會殘留在 LINE 伺服器上，
+    # 導致即使後台關閉某區塊，用戶端仍能直接跳轉。強制重建可徹底清除此問題。
+    #
+    # Force-delete and rebuild ALL rich menus on every server startup.
+    # This guarantees every button uses PostbackAction (server decides the switch)
+    # rather than RichMenuSwitchAction (client switches directly, bypassing enable checks).
+    # If a previous deployment used RichMenuSwitchAction, stale menus would linger on
+    # LINE's servers; a forced rebuild eliminates those completely.
     response = await rich_menu_manager.get_all_rich_menus()
-    if len(response) != len(configs['rich_menus'].items()):
-        print("Deleting all rich menus...")
+    if response:
+        print(f'Deleting {len(response)} existing rich menu(s) for fresh rebuild...')
         for r in response:
-            await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
-        clear_rich_menu_id()
-    
+            try:
+                await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
+            except Exception as _del_err:
+                print(f'[WARN] Could not delete rich menu {r.rich_menu_id}: {_del_err}')
+    clear_rich_menu_id()
+
     # Decide default menu based on RAG mode
     target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
-    
+
     for menu_name, config_data in configs['rich_menus'].items():
         rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
-        if get_rich_menu_id(menu_name):
-            continue
         try:
             builder = build_rich_menu_from_config(menu_name, config_data)
             rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
@@ -3607,11 +3620,9 @@ async def create_rich_menu():
             if image_file:
                 image_path = os.path.join("./templates/richmenu", image_file)
                 await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-            
             # If current menu is target default, set as default
             if menu_name == target_default:
                 await rich_menu_manager.set_default_rich_menu(rich_menu_id)
-                
             set_rich_menu_id(rich_menu_id, menu_name)
             print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
         except Exception as e:
