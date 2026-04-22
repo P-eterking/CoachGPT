@@ -549,7 +549,7 @@ async def progress_message(user_id):
     )
 
 
-async def question_message(user_id, category, sub):
+async def question_message(user_id, category, sub, show_feedback: bool = True):
     question = question_manager.get_question(category, sub)
     history = getHistory(user_id, f'{category}-{sub}')
     
@@ -619,6 +619,8 @@ async def question_message(user_id, category, sub):
                     ),
                 ]
             ),
+            # 僅在後台開啟回饋時顯示 View Feedback 按鈕
+            # Show View Feedback button only when feedback is enabled in admin
             footer=FlexBox(
                 layout='vertical',
                 contents=[
@@ -630,7 +632,7 @@ async def question_message(user_id, category, sub):
                         style='secondary',
                     ),
                 ]
-            )
+            ) if show_feedback else None
         )
         contents.append(history_bubble)
     
@@ -3139,14 +3141,14 @@ async def posttest_progress_message(user_id: str) -> FlexMessage:
 # ========== [END] Game Message Functions ==========
 
 CHI_HINT = [
-    'Please enter your class number\n請依照指示輸入你的課程編號\n1 for English Presentation(4-12)\n2 for English Presentation(4-34)\n3 for English Culture(1-56)\n4 for English Culture(1-78)\n5 for Others',
+    'Please enter your class number\n請依照指示輸入你的課程編號\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to go back.\n接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to go back.\n接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
     'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to go back.\n接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
 ]
 
 ENG_HINT =[
-    'Enter your class number\n1 for English Presentation(4-12)\n2 for English Presentation(4-34)\n3 for English Culture and Lifestyle(1-56)\n4 for English Culture and Lifestyle(1-78)\n5 for Others',
+    'Enter your class number\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
     'Next, what is you name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
@@ -3259,7 +3261,7 @@ async def handle_rich_menu(user_id):
 
 # ========== [START] new_test 題目訊息 (pretest1 / posttest1 rich menu) ==========
 
-async def new_test_question_message(user_id: str, sub: int, base_category: str) -> FlexMessage:
+async def new_test_question_message(user_id: str, sub: int, base_category: str, show_feedback: bool = True) -> FlexMessage:
     """顯示 new_test 單道題目卡片 (含作答紀錄)。
     Show a single new_test question card with history if available.
 
@@ -3346,6 +3348,8 @@ async def new_test_question_message(user_id: str, sub: int, base_category: str) 
                     ),
                 ]
             ),
+            # 僅在後台開啟回饋時顯示 View Feedback 按鈕
+            # Show View Feedback button only when feedback is enabled in admin
             footer=FlexBox(
                 layout='vertical',
                 contents=[
@@ -3357,7 +3361,7 @@ async def new_test_question_message(user_id: str, sub: int, base_category: str) 
                         style='secondary',
                     ),
                 ]
-            )
+            ) if show_feedback else None
         ))
 
     # 作答提示卡

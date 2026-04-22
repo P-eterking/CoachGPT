@@ -180,7 +180,7 @@ async def check_user_login(event, message: str = None) -> bool:
         initData(user_id, info[0], info[1], info[2], info[3])
         del user_data_enter[user_id]
         await send_message(event, [
-            await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message}!"), 
+            await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message}!\n\n請點擊訊息輸入框左側的三條橫槓圖示，以切換至選單開始使用此CoachGPT聊天機器人。\nTap the three-bar icon to the left of the input field to switch to the menu and start using the CoachGPT Chatbot."), 
         ])
         # Save after binding
         await save_user_data()
@@ -1081,14 +1081,14 @@ async def handle_postback(event):
                 await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
                 return
             user_state.sub = sub
-            await send_message(event, await new_test_question_message(user_id, sub, base))
+            await send_message(event, await new_test_question_message(user_id, sub, base, show_feedback=should_show_feedback(base)))
             return
         _record_cat = get_enabled_category_for_alias(user_state.category)
         if not isEnabled(_record_cat) and not isAdmin(user_id):
             await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
         user_state.sub = sub
-        await send_message(event, await question_message(user_id, user_state.category, sub))
+        await send_message(event, await question_message(user_id, user_state.category, sub, show_feedback=should_show_feedback(user_state.category)))
     elif action == 'carousel':
         page = int(vars.get('page', 0))
         _carousel_cat = get_enabled_category_for_alias(user_state.category)
@@ -1111,6 +1111,11 @@ async def handle_postback(event):
         is_rag = config.get('rag_mode', False)
         if not isResponse(category) and not is_rag:
             await send_text_message(event, "該單元目前不提供回饋。\nCurrently unavailable.")
+            return
+        # 後台關閉回饋時，即使 postback 被直接觸發也拒絕顯示詳細回饋
+        # Block detailed feedback when admin has disabled it, even if postback is triggered directly
+        if not should_show_feedback(category):
+            await send_text_message(event, "此單元目前不提供詳細回饋。\nDetailed feedback is not available for this section.")
             return
         await send_message(event, await result_message(result[-1], category, sub))
         
@@ -1193,7 +1198,7 @@ async def handle_postback(event):
             return
         user_state.category = f'{base}1'
         user_state.sub = sub
-        await send_message(event, await new_test_question_message(user_id, sub, base))
+        await send_message(event, await new_test_question_message(user_id, sub, base, show_feedback=should_show_feedback(base)))
 
     elif action == 'new_test_last':
         # 查看 new_test 某題的上次評分回饋
@@ -1204,6 +1209,11 @@ async def handle_postback(event):
         result = getHistory(user_id, f'{section_category}-{sub}')
         if not result:
             await send_text_message(event, f'Q{sub + 1} 查無紀錄！\nNo history found in Q{sub + 1}!')
+            return
+        # 後台關閉回饋時，即使 postback 被直接觸發也拒絕顯示詳細回饋
+        # Block detailed feedback when admin has disabled it, even if postback is triggered directly
+        if not should_show_feedback(base):
+            await send_text_message(event, "此單元目前不提供詳細回饋。\nDetailed feedback is not available for this section.")
             return
         await send_message(event, await result_message(result[-1], section_category, sub))
 
