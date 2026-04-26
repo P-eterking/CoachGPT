@@ -91,6 +91,15 @@ _new_test_loaded: bool = False
 # 記錄每位使用者最近一次 NPC 回覆，用於「顯示文字 / Show Text」功能
 _last_npc_replies: Dict[str, Dict] = {}
 
+# ========== NPC 對話即時記憶快取 (修改 2：解決 NPC 無記憶問題) ==========
+# 在 Phase 1 回覆生成後立即寫入，避免等待 Phase 2 非同步儲存的競態問題。
+# Written immediately after Phase 1 reply to avoid race conditions with async Phase 2.
+_npc_chat_memory: Dict[str, List[dict]] = {}
+
+# ========== 引導型客服機器人文件快取 (新增 1：fallback guide) ==========
+# Cached guide document content for the fallback support assistant.
+_guide_content: str = ""
+
 # ========== 檔案路徑處理 (修復 Docker 持久化問題) ==========
 
 def get_user_data_file() -> str:
@@ -406,6 +415,130 @@ def get_last_npc_reply(user_id: str) -> dict:
     Get the most recent NPC reply info for the user.
     """
     return _last_npc_replies.get(user_id)
+
+# ========== NPC 對話即時記憶快取功能 (修改 2) ==========
+
+def get_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int, npc_name: str) -> str:
+    """
+    取得 NPC 對話的最近五輪對話紀錄，格式化為字串。
+    優先讀取即時記憶快取；若快取尚未初始化，則從 npc_chat_history 或 SpeechAssessment 歷史中載入。
+
+    Get the last 5 NPC chat turns as a formatted string.
+    Reads from in-memory cache first; seeds from persisted history on first access.
+    """
+    global _npc_chat_memory
+    mem_key = f"{user_id}:{theme_id}-npc-{npc_idx}"
+
+    if mem_key not in _npc_chat_memory:
+        # 初始化：從持久化資料載入歷史
+        # Seed from persisted data on first access in this session
+        user = user_data.get(user_id)
+        loaded: List[dict] = []
+        if user:
+            hist_key = f"{theme_id}-npc-{npc_idx}"
+            # 優先使用 npc_chat_history（較完整的紀錄）
+            # Prefer npc_chat_history (richer records)
+            if hasattr(user, 'npc_chat_history') and hist_key in (user.npc_chat_history or {}):
+                records = user.npc_chat_history[hist_key][-5:]
+                loaded = [
+                    {"user_text": r.get("user_text", ""), "npc_reply": r.get("npc_reply", "")}
+                    for r in records
+                ]
+            elif hist_key in (user.history or {}):
+                # Fallback: SpeechAssessment 歷史
+                assessments = user.history[hist_key][-5:]
+                loaded = [
+                    {"user_text": a.transcript, "npc_reply": a.better_ans}
+                    for a in assessments
+                ]
+        _npc_chat_memory[mem_key] = loaded
+
+    turns = _npc_chat_memory.get(mem_key, [])
+    if not turns:
+        return ""
+
+    history_str = ""
+    for turn in turns:
+        user_text = turn.get("user_text", "")
+        npc_reply = turn.get("npc_reply", "")
+        if user_text or npc_reply:
+            history_str += f"User: {user_text}\nNPC ({npc_name}): {npc_reply}\n"
+    return history_str
+
+
+def append_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int,
+                            user_text: str, npc_reply: str) -> None:
+    """
+    在 Phase 1 NPC 回覆生成後，立即將本輪對話寫入即時記憶快取（最多保留五輪）。
+    只保留最近五輪，以維持記憶的相關性。
+
+    Immediately save the current NPC chat turn to in-memory cache after Phase 1 reply.
+    Keeps only the most recent 5 turns.
+    """
+    global _npc_chat_memory
+    mem_key = f"{user_id}:{theme_id}-npc-{npc_idx}"
+    if mem_key not in _npc_chat_memory:
+        _npc_chat_memory[mem_key] = []
+    _npc_chat_memory[mem_key].append({"user_text": user_text, "npc_reply": npc_reply})
+    _npc_chat_memory[mem_key] = _npc_chat_memory[mem_key][-5:]
+
+
+# ========== 「顯示文字」使用次數追蹤功能 (修改 4) ==========
+
+def increment_show_text_count(user_id: str) -> int:
+    """
+    增加使用者的「顯示文字」功能使用次數，並回傳新的次數。
+    僅在 npc_voice_output=True 的服務中呼叫（呼叫端負責判斷）。
+
+    Increment the user's 'Show Text' feature usage count and return the new count.
+    Caller is responsible for checking npc_voice_output before calling.
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    if not hasattr(user, 'show_text_count') or user.show_text_count is None:
+        user.show_text_count = 0
+    user.show_text_count += 1
+    return user.show_text_count
+
+
+def get_show_text_count(user_id: str) -> int:
+    """
+    取得使用者的「顯示文字」功能使用次數。
+    Get the user's 'Show Text' feature usage count.
+    """
+    user = user_data.get(user_id)
+    if not user:
+        return 0
+    return getattr(user, 'show_text_count', 0)
+
+
+# ========== 引導型客服文件載入 (修改 1：fallback guide) ==========
+
+def load_guide_content(guide_path: str = 'category/chatbot_guide.md') -> str:
+    """
+    載入引導型客服機器人文件內容。若載入失敗則回傳空字串。
+    Load the fallback guide document. Returns empty string if not found.
+    """
+    global _guide_content
+    if _guide_content:
+        return _guide_content
+    try:
+        with open(guide_path, 'r', encoding='utf-8') as f:
+            _guide_content = f.read()
+        print(f"Chatbot guide loaded from {guide_path} ({len(_guide_content)} chars).")
+    except Exception as e:
+        print(f"[WARN] Could not load chatbot guide from {guide_path}: {e}")
+        _guide_content = ""
+    return _guide_content
+
+
+def is_fallback_guide_enabled() -> bool:
+    """
+    判斷是否為 service4/5，以決定是否啟用引導型客服機器人 fallback 功能。
+    Determine whether the fallback guide feature should be active (service 4/5 only).
+    """
+    return config.get('service_number', 1) in [4, 5]
 
 def get_game_info_config() -> dict:
     """取得遊戲大廳介紹所需的媒體設定
@@ -1076,6 +1209,10 @@ async def load_user_data():
                 value['question_history'] = {}
             if 'game_scores' not in value:
                 value['game_scores'] = {'themes': {}}
+            # [修改 4] 確保 show_text_count 欄位存在於舊資料中 (向後相容)
+            # Ensure show_text_count field exists for backward compatibility
+            if 'show_text_count' not in value:
+                value['show_text_count'] = 0
             # 確保 hint_count 欄位存在於舊資料中
             if 'themes' in value.get('game_scores', {}):
                 for theme_key, theme_data in value['game_scores']['themes'].items():

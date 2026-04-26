@@ -19,7 +19,7 @@ from utils.file_utils import (
     get_user_level_score, get_display_feedback, get_levels_per_theme,
     get_game_info_config, get_theme_display_number,
     get_new_test_question, get_new_test_questions_count, get_new_test_questions_all,
-    isAdmin, get_enabled_category_for_alias,
+    isAdmin, get_enabled_category_for_alias, get_min_score_to_pass,
 )
 
 URL = f'https://{DOMAIN}'
@@ -1602,6 +1602,21 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
         ),
     ]
     
+    # [修改 3] 當分數未達最低通過分數時，在卡片中顯示最低通過分數規則，避免學生感到疑惑。
+    # Show minimum passing score rule when score is below threshold, so students understand why they cannot proceed.
+    _min_score = get_min_score_to_pass()
+    if score < _min_score:
+        main_contents.append(
+            FlexText(
+                text=f'Minimum passing score: {_min_score}/10\n最低通過分數：{_min_score} 分',
+                wrap=True,
+                size='sm',
+                align='center',
+                color='#cc6600',
+                margin='sm',
+            )
+        )
+    
     if is_new_high:
         main_contents.append(
             FlexText(
@@ -1726,7 +1741,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     # Score < 6: "Try Again" + "Improvement Hint"
     # Score 6-9: "Try Again" + "Improvement Hint" + "Next Question"
     # Score = 10: Only "Next Question"
-    from utils.file_utils import get_min_score_to_pass, is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level
+    from utils.file_utils import is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level
     min_score = get_min_score_to_pass()
     is_passed = score >= min_score
     is_perfect = score == 10

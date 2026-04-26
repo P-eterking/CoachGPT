@@ -277,6 +277,9 @@ class User(BaseModel):
     npc_evaluation_history: dict[str, list[dict]] = Field(description='NPC對話詳細評估紀錄', default_factory=dict)  # NPC評估紀錄
     # 問題回答紀錄 (分開儲存)
     question_history: dict[str, list[dict]] = Field(description='問題回答紀錄', default_factory=dict)  # 問題回答紀錄
+    # [新增] 「顯示文字」功能使用次數 (僅在 npc_voice_output=True 的服務中記錄，用於研究分析)
+    # "Show Text" feature usage count (recorded only when npc_voice_output=True, for research analysis)
+    show_text_count: int = Field(description='顯示文字功能使用次數 (service5 語音模式)', default=0)
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)

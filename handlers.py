@@ -44,6 +44,9 @@ from utils.file_utils import (
     set_last_npc_reply, get_last_npc_reply,
     should_show_feedback,
     get_enabled_category_for_alias,
+    get_npc_chat_memory, append_npc_chat_memory,
+    increment_show_text_count, get_show_text_count,
+    is_fallback_guide_enabled, load_guide_content,
 )
 import tempfile
 import time
@@ -51,6 +54,67 @@ import base64
 from pydub import AudioSegment
 from io import BytesIO
 import os
+
+# ========== 引導型客服機器人系統提示詞 (修改 1) ==========
+# 作為文件載入失敗時的備援，直接嵌入核心指引。
+# Embedded as fallback in case the guide file cannot be loaded.
+_FALLBACK_GUIDE_SYSTEM_PROMPT_CORE = """
+You are a concise bilingual (English / Traditional Chinese) support assistant for CoachGPT, an English-learning LINE chatbot.
+Your ONLY purpose: guide users on how to use this chatbot. Never engage in extended conversation or off-topic discussion.
+Always respond in BOTH English AND Traditional Chinese in the same reply. Keep total response under 60 words. Be direct and action-oriented.
+
+CoachGPT features: Mystery Game (NPC chat + voice Q&A), Exercises (ex1-ex6 voice practice), Pre/Post-Test, Chat Practice, Progress view.
+All features are accessed via the rich menu (tap the three-bar icon next to the text input box).
+Answering questions requires recording a voice message (tap the microphone icon in LINE).
+
+If user's message is unrelated to CoachGPT, always reply:
+English: "This assistant only handles CoachGPT-related questions. Please use the menu below to start practicing."
+Traditional Chinese: "此助理僅回應 CoachGPT 相關問題，請點選下方選單開始練習。"
+"""
+
+
+async def handle_fallback_guide(event, user_id: str, message_text: str) -> None:
+    """
+    引導型客服機器人：當使用者在無特定模式下傳送訊息時，以 AI 提供簡短的雙語引導回應。
+    僅在 service4/5 (rag_mode) 中啟用，不影響 service1/2/3。
+
+    Fallback guide handler: provides a short bilingual AI-generated guidance response
+    when the user sends a message outside any active interaction mode.
+    Only active for service 4/5. Does not affect service 1/2/3.
+    """
+    try:
+        # 載入引導文件（優先使用外部文件，備援使用內建提示詞）
+        # Load guide document; fall back to embedded prompt if file unavailable
+        guide_doc = load_guide_content()
+        system_prompt = (
+            f"{_FALLBACK_GUIDE_SYSTEM_PROMPT_CORE}\n\n--- Detailed Guide ---\n{guide_doc}"
+            if guide_doc
+            else _FALLBACK_GUIDE_SYSTEM_PROMPT_CORE
+        )
+
+        completion = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_completion_tokens=150,
+            temperature=0.3,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message_text},
+            ],
+        )
+
+        reply = completion.choices[0].message.content.strip()
+        if reply:
+            await send_text_message(event, reply)
+    except Exception as e:
+        print(f"Fallback Guide Error: {e}")
+        import traceback
+        traceback.print_exc()
+        await send_text_message(
+            event,
+            "This assistant only handles CoachGPT-related questions. Please use the menu below to start practicing.\n"
+            "此助理僅回應 CoachGPT 相關問題，請點選下方選單開始練習。"
+        )
+
 
 async def get_audio_content(event):
     result = await line_bot_api_blob.get_message_content_transcoding_by_message_id(event.message.id)
@@ -132,6 +196,11 @@ async def handle_text_message(event):
         await send_text_message(event, "你已變成管理員\nMagic!")
         await addAdmin(user_id)
         await save_config()
+    elif is_fallback_guide_enabled() and hasData(user_id):
+        # [修改 1] Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
+        # Service4/5: respond to any non-command text message with the guide AI.
+        await show_loading(user_id, secs=15)
+        await handle_fallback_guide(event, user_id, message)
 
 user_data_enter = {}
 
@@ -307,7 +376,19 @@ async def handle_audio_message(event):
         # ===== end pretest1 / posttest1 =====
 
         if not category or not question_manager.has_question(category):
-            return 
+            # [修改 1] Service4/5：對無法識別類別的語音訊息，轉錄後由引導型客服機器人回應。
+            # Service4/5: transcribe unmatched audio and pass to guide AI.
+            if is_fallback_guide_enabled():
+                try:
+                    message_content_fb = await get_audio_content(event)
+                    if message_content_fb:
+                        text_fb = await transcribe_audio(message_content_fb, language="en")
+                        if text_fb:
+                            await handle_fallback_guide(event, user_id, text_fb)
+                            return
+                except Exception as _fb_err:
+                    print(f"Fallback guide audio error: {_fb_err}")
+            return
         
         if not isEnabled(category) and not isAdmin(user_id):
             await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
@@ -493,13 +574,11 @@ async def handle_npc_chat(event, user_id, user_state):
         context_content = await get_rag_context_v2(rag_path, query=text)
         
         # Get chat history
-        history_key = f'{theme_id}-npc-{npc_idx}'
-        past_assessments = getHistory(user_id, history_key)
-        history_str = ""
-        if past_assessments:
-            recent = past_assessments[-5:]
-            for turn in recent:
-                history_str += f"User: {turn.transcript}\nNPC ({npc_info['name']}): {turn.better_ans}\n"
+        # [修改 2] 使用即時記憶快取取代 SpeechAssessment 歷史，解決 Phase 2 非同步儲存的競態問題。
+        # 快取在 Phase 1 回覆生成後立即更新，確保下一輪對話能正確看到本輪的內容。
+        # Use in-memory cache instead of persisted history to avoid Phase 2 async race condition.
+        # Cache is updated immediately after Phase 1 reply so next turn sees current conversation.
+        history_str = get_npc_chat_memory(user_id, theme_id, npc_idx, npc_info['name'])
         
         # ===== Phase 1: Quick NPC response (target: 3-5 sec) =====
         quick_prompt = NPC_CHAT_QUICK_RESPONSE.format(
@@ -522,6 +601,10 @@ async def handle_npc_chat(event, user_id, user_state):
         quick_res: NPCChatResponse = NPCChatResponse.model_validate_json(
             quick_completion.choices[0].message.content
         )
+
+        # [修改 2] 立即將本輪對話存入即時記憶快取，使下一輪 Phase 1 能看到本輪內容。
+        # Immediately save this turn to in-memory cache so the next Phase 1 sees it.
+        append_npc_chat_memory(user_id, theme_id, npc_idx, text, quick_res.npc_reply)
 
         # Send NPC response immediately with image
         npc_image = npc_info.get('image') if npc_info else None
@@ -1224,6 +1307,12 @@ async def handle_postback(event):
         if not last_info:
             await send_text_message(event, "找不到最近的 NPC 回覆。\nNo recent NPC reply found.")
             return
+        # [修改 4] 當語音輸出功能開啟時，記錄使用者使用「顯示文字」的次數，以供研究分析。
+        # Track 'Show Text' usage when npc_voice_output is enabled, for research analysis.
+        if config.get('npc_voice_output', False):
+            new_count = increment_show_text_count(user_id)
+            print(f"[STAT] User {user_id} used Show Text feature (total: {new_count} times)")
+            await save_user_data()
         await send_message(event, await game_npc_text_card_message(
             last_info.get('npc_name', 'NPC'),
             last_info.get('npc_reply', ''),
