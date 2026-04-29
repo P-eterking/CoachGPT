@@ -204,11 +204,145 @@ async def handle_text_message(event):
 
 user_data_enter = {}
 
+def _build_privacy_notice_message():
+    from linebot.v3.messaging import (
+        FlexMessage, FlexBubble, FlexBox, FlexText, FlexSeparator, FlexButton, PostbackAction
+    )
+    chi_inform = "語音資料與AI處理同意聲明"
+    eng_inform = "Consent for Voice Data Use and AI Processing"
+    chi_text = "本人同意於本課程中使用「CoachGPT AI情境解謎聊天機器人」時，提供之口說錄音資料供研究者用於教學分析與學術研究。本系統使用第三方 AI 技術（例如 ChatGPT）進行語音辨識與評分，語音資料可能會傳送至相關系統進行處理。使用者可獲得 AI 即時回饋，聊天機器人將提供英語口說改進之方法與具體建議。研究團隊將妥善保護資料安全，並以匿名方式使用，不會揭露個人身分。本人可選擇不提供錄音或隨時停止使用相關功能，且不影響課程成績或權益。同意上述聲明者可繼續進行帳號綁定；不同意者可選擇退出。"
+    eng_text = "I consent to providing my voice recordings while using the CoachGPT AI Scenario-Based Chatbot” for teaching analysis and academic research. This system uses third-party AI technologies (e.g., ChatGPT) for speech recognition and evaluation, and my data may be transmitted to external systems for processing. I will receive real-time AI feedback and suggestions for improving my English speaking. All data will be securely protected and anonymized without revealing my identity. I may choose not to provide recordings or stop using the features at any time without affecting my grade or rights. By agreeing, I may proceed with account binding; otherwise, I may choose to exit."
+    
+    bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text='重要告知 / Important Notice',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    color='#cc0000',
+                    align='center',
+                ),
+                FlexSeparator(margin='md'),
+                FlexText(
+                    text=chi_inform,
+                    wrap=True,
+                    weight='bold',
+                    size='md',
+                    color='#333333',
+                    margin='md',
+                ),
+                FlexText(
+                    text=chi_text,
+                    wrap=True,
+                    size='sm',
+                    color='#333333',
+                    margin='md',
+                ),
+                FlexSeparator(margin='md'),
+                FlexText(
+                    text=eng_inform,
+                    wrap=True,
+                    weight='bold',
+                    size='md',
+                    color='#333333',
+                    margin='md',
+                ),
+                FlexText(
+                    text=eng_text,
+                    wrap=True,
+                    size='sm',
+                    color='#333333',
+                    margin='md',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexButton(
+                    style='primary',
+                    color='#00aa00',
+                    action=PostbackAction(label='我同意 / I agree', data='action=consent&agree=true')
+                ),
+                FlexButton(
+                    style='primary',
+                    color='#dd0000',
+                    action=PostbackAction(label='我不同意 / I disagree', data='action=consent&agree=false')
+                )
+            ]
+        )
+    )
+    return FlexMessage(altText='重要告知 / Important Notice', contents=bubble)
+
+
+def _build_consent_declined_message():
+    from linebot.v3.messaging import (
+        FlexMessage, FlexBubble, FlexBox, FlexText, FlexButton, PostbackAction
+    )
+    chi_text = "您已拒絕AI處理您的語音資料，因為本機器人旨在透過AI輔導學生從情境式解謎遊戲過程中，提升其英語口說能力，因此同意本條款為使用此機器人的必要條件。若您想重新查看「語音資料與AI處理同意聲明」，請點擊下方按鈕。"
+    eng_text = "You have declined AI processing of your voice data. Since this chatbot aims to tutor students and improve their English speaking skills through an AI-assisted scenario-based puzzle game, agreeing to these terms is a necessary condition for using this chatbot. If you wish to review the 'Consent for Voice Data Use and AI Processing' again, please click the button below."
+    
+    bubble = FlexBubble(
+        size='giga',
+        body=FlexBox(
+            layout='vertical',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text='Consent Declined / 已拒絕授權',
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    color='#cc0000',
+                    align='center',
+                ),
+                FlexText(
+                    text=chi_text,
+                    wrap=True,
+                    size='sm',
+                    color='#333333',
+                    margin='md',
+                ),
+                FlexText(
+                    text=eng_text,
+                    wrap=True,
+                    size='sm',
+                    color='#333333',
+                    margin='md',
+                )
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexButton(
+                    style='primary',
+                    color='#0066cc',
+                    action=PostbackAction(label='再次查看 / View Again', data='action=consent_view')
+                )
+            ]
+        )
+    )
+    return FlexMessage(altText='Consent Declined / 已拒絕授權', contents=bubble)
+
+
 async def check_user_login(event, message: str = None) -> bool:
     user_id = event.source.user_id
     
     if hasData(user_id):
         return True
+    
+    # 如果使用者尚未同意聲明（也就是尚未進到資料填寫階段），阻擋所有對話強制他們同意
+    if user_id not in user_data_enter:
+        await send_message(event, _build_privacy_notice_message())
+        return False
     
     info = user_data_enter.get(user_id, [])
     if message is None:
@@ -248,9 +382,11 @@ async def check_user_login(event, message: str = None) -> bool:
         info.append(message)
         initData(user_id, info[0], info[1], info[2], info[3])
         del user_data_enter[user_id]
+        
+        # 綁定成功後，僅顯示歡迎訊息不再重複推送同意條款卡片
         await send_message(event, [
-            await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message}!\n\n請點擊訊息輸入框左側的三條橫槓圖示，以切換至選單開始使用此CoachGPT聊天機器人。\nTap the three-bar icon to the left of the input field to switch to the menu and start using the CoachGPT Chatbot."), 
-        ])
+            await text_message(f"綁定完成 你好! {message}\nSuccess! Hello, {message}!\n\n請點擊訊息輸入框左側的三條橫槓圖示，以切換至選單開始使用此CoachGPT聊天機器人。\nTap the three-bar icon to the left of the input field to switch to the menu and start using the CoachGPT Chatbot."),
+        ])  
         # Save after binding
         await save_user_data()
         return True
@@ -1128,6 +1264,33 @@ async def handle_postback(event):
     user_id = event.source.user_id
     
     await handle_rich_menu(user_id)
+
+    data = event.postback.data
+    params = dict(p.split('=') for p in data.split('&'))
+    action = params.get('action')
+    vars = {k: v for k, v in params.items() if k != 'action'}
+    
+    if action == 'consent':
+        if hasData(user_id):
+            return
+        agree = vars.get('agree')
+        if agree == 'true':
+            if user_id not in user_data_enter:
+                user_data_enter[user_id] = []
+                await send_message(event, await info_hint_message(0))
+            else:
+                info = user_data_enter[user_id]
+                await send_message(event, await info_hint_message(len(info)))
+        else:
+            if user_id in user_data_enter:
+                del user_data_enter[user_id]
+            await send_message(event, _build_consent_declined_message())
+        return
+    elif action == 'consent_view':
+        if hasData(user_id):
+            return
+        await send_message(event, _build_privacy_notice_message())
+        return
     
     if not await check_user_login(event):
         return
@@ -1135,11 +1298,6 @@ async def handle_postback(event):
     user_state = get_user_state(user_id)
     if not user_state:
         return
-    
-    data = event.postback.data
-    params = dict(p.split('=') for p in data.split('&'))
-    action = params.get('action')
-    vars = {k: v for k, v in params.items() if k != 'action'}
     
     if action == 'chat':
         if vars.get('summary'):
