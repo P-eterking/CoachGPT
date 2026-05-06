@@ -180,6 +180,62 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
         )
         return transcript_obj.text.strip()
 
+# 儲存尚未完成綁定的使用者資料暫存，key 為 user_id，value 為已填寫的資料列表
+# Temporary store for users in the middle of the account binding flow
+user_data_enter = {}
+
+
+async def handle_follow(event) -> None:
+    """處理使用者首次加入（或封鎖後重新加入）機器人好友的事件。
+    Handle the FollowEvent triggered when a user adds (or re-adds after blocking) the bot as a friend.
+
+    修正說明：
+      原本的同意聲明僅由 check_user_login 觸發，而 check_user_login 需要使用者先主動
+      發送訊息才會執行。若 Greeting message 為純文字（無按鈕），新使用者加入後不會有任何
+      事件打到 check_user_login，導致同意聲明完全不出現。
+      本函式直接攔截 FollowEvent，在使用者加入的瞬間主動推送同意聲明，
+      不再依賴使用者主動發送訊息。
+
+    Fix:
+      The consent notice was previously only shown inside check_user_login, which requires
+      the user to send a message first. With a plain-text Greeting Message (no buttons),
+      new users trigger no events, so check_user_login is never reached and the notice never
+      appears. This function intercepts FollowEvent and proactively pushes the consent notice
+      the moment the user adds the bot, without relying on the user sending any message.
+
+    正確流程 / Correct onboarding flow:
+      1. 使用者加入好友 -> LINE 平台送出 Greeting Message (由 LINE Manager 設定)
+         User adds bot -> LINE platform sends Greeting Message (configured in LINE Manager)
+      2. FollowEvent 觸發 -> 本函式立即推送「語音資料與AI處理同意聲明」
+         FollowEvent fires -> this function immediately sends the voice data consent notice
+      3. 使用者點擊「我同意 / I agree」-> handle_postback 處理 consent -> 進入帳號綁定
+         User taps "I agree" -> handle_postback handles consent -> account binding starts
+      4. 使用者點擊「我不同意 / I disagree」-> 顯示拒絕授權卡片
+         User taps "I disagree" -> consent declined card is shown
+
+    重新綁定流程 / Re-binding flow (after /unlink, without leaving the chat):
+      - 使用者使用 /unlink 解除綁定後仍在聊天室，不會再次觸發 FollowEvent
+      - 此時使用者發送任意訊息 -> handle_text_message -> check_user_login 顯示同意聲明
+      - After /unlink, the user stays in chat so FollowEvent does not fire again.
+      - Any message they send goes through check_user_login which shows the notice.
+    """
+    user_id = event.source.user_id
+
+    # 若使用者已完成綁定（封鎖後重新加入的老使用者），直接略過
+    # If the user is already bound (returning user who re-followed after blocking), skip
+    if hasData(user_id):
+        return
+
+    # 若使用者已在進行帳號綁定流程中，直接略過，避免中斷進行中的流程
+    # If the user is already in the middle of the binding flow, skip
+    if user_id in user_data_enter:
+        return
+
+    # 推送同意聲明卡片
+    # Push the consent notice card immediately
+    await send_message(event, _build_privacy_notice_message())
+
+
 async def handle_text_message(event):
     message: str = event.message.text.strip()
     user_id = event.source.user_id
@@ -201,8 +257,6 @@ async def handle_text_message(event):
         # Service4/5: respond to any non-command text message with the guide AI.
         await show_loading(user_id, secs=15)
         await handle_fallback_guide(event, user_id, message)
-
-user_data_enter = {}
 
 def _build_privacy_notice_message():
     from linebot.v3.messaging import (
