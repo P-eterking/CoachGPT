@@ -1437,7 +1437,10 @@ async def handle_postback(event):
         # Admins can still manage settings via game_admin/admin menus; to access a closed section,
         # enable it first from the admin panel.
         _switch_enabled_cat = get_enabled_category_for_alias(alias)
-        _SWITCH_CONTROLLED = {'pretest', 'posttest', 'rag_test', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'}
+        # [Change 2] 'sel' (Flow SEL / 心流SEL) added here so the enable/disable
+        # gate applies to it just like the standard exercises.
+        # 新增 'sel' 使其與一般練習相同，受到開啟/關閉開關控制。
+        _SWITCH_CONTROLLED = {'pretest', 'posttest', 'rag_test', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat', 'sel'}
         if alias not in ['menu_other'] and _switch_enabled_cat in _SWITCH_CONTROLLED and not isEnabled(_switch_enabled_cat):
             await send_text_message(event, "此區塊尚未開放作答或使用，請等待老師開啟。\nThis section is not yet open for answering or use. Please wait for your teacher to enable it.")
             # 若 LINE 平台已先執行了選單跳轉（RichMenuSwitchAction），立刻將使用者拉回預設主選單，

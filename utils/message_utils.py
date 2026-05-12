@@ -2177,8 +2177,31 @@ async def game_story_message() -> FlexMessage:
             "三位傑出的人物隨時準備好協助你破解案件。"
         )
     
+    # ===== [Change 1] Map image: displayed above the story text.
+    # The image is placed in the bubble hero so it always appears at the top.
+    # Path: templates/map/map.jpg (served via the static files route).
+    # To disable this image, set MAP_IMAGE_ENABLED to False.
+    # ===== 地圖圖片：顯示於故事背景文字上方。
+    # 圖片放在 bubble hero 使其永遠出現在最上方。
+    # 路徑：templates/map/map.jpg（透過靜態檔案路由提供）。
+    # 若要停用此圖片，請將 MAP_IMAGE_ENABLED 設為 False。
+    MAP_IMAGE_ENABLED = True
+    MAP_IMAGE_PATH = '/templates/map/map.jpg'
+
+    hero_image = (
+        FlexImage(
+            url=f'{URL}{MAP_IMAGE_PATH}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='fit',
+        )
+        if MAP_IMAGE_ENABLED
+        else None
+    )
+
     bubble = FlexBubble(
         size='giga',
+        hero=hero_image,
         body=FlexBox(
             layout='vertical',
             spacing='lg',
@@ -2216,7 +2239,7 @@ async def game_story_message() -> FlexMessage:
             ]
         )
     )
-    
+
     msg = FlexMessage(
         altText='Story / 故事背景',
         contents=bubble
@@ -2994,14 +3017,36 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         color = '#00aa00' if answered == total_q else '#5b5b5b'
         body_contents.append(
             FlexText(
-                text=f'Exercise {i}: {answered}/{total_q}',
+                text=f'Exercise {i} / 練習{i}: {answered}/{total_q}',
                 wrap=True,
                 size='md',
                 color=color,
                 margin='lg',
             )
         )
-    
+
+    # ===== [Change 2] Flow SEL / 心流SEL progress (5 questions) =====
+    # SEL uses category key 'sel' and has SEL_QUESTION_COUNT questions.
+    # SEL_QUESTION_COUNT can be adjusted here if the question set changes.
+    # 心流SEL 使用 'sel' 作為類別鍵值，共 SEL_QUESTION_COUNT 題。
+    SEL_QUESTION_COUNT = 5
+    sel_answered = 0
+    for q_idx in range(SEL_QUESTION_COUNT):
+        history = getHistory(user_id, f'sel-{q_idx}')
+        if history and len(history) > 0:
+            sel_answered += 1
+    sel_color = '#00aa00' if sel_answered == SEL_QUESTION_COUNT else '#5b5b5b'
+    body_contents.append(
+        FlexText(
+            text=f'Flow SEL / 心流SEL: {sel_answered}/{SEL_QUESTION_COUNT}',
+            wrap=True,
+            size='md',
+            color=sel_color,
+            margin='lg',
+        )
+    )
+    # ===== [End Change 2] =====
+
     return FlexMessage(
         altText='Other Progress / 其他進度',
         contents=FlexBubble(

@@ -278,6 +278,8 @@ FEATURE_DISPLAY_NAMES = {
     'ex4': '練習四',
     'ex5': '練習五',
     'ex6': '練習六',
+    # [Change 2] 心流SEL / Flow SEL
+    'sel': '心流SEL',
 }
 
 def get_feature_display_name(alias: str) -> str:

@@ -63,7 +63,7 @@
             "actions": [
                 { "type": "switch", "label": "exercises", "alias_id": "exercises" },
                 { "type": "switch", "label": "chat", "alias_id": "chat" },
-                {},
+                { "type": "switch", "label": "sel", "alias_id": "sel" },
                 {},
                 {},
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
@@ -377,7 +377,7 @@
                 { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
                 { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "enabled2" },
-                {},
+                { "type": "postback", "label": "sel", "data": "action=enabled&alias=sel" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -416,7 +416,7 @@
                 { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
                 { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
                 { "type": "switch", "label": "prev", "alias_id": "respond2" },
-                {},
+                { "type": "postback", "label": "sel", "data": "action=respond&alias=sel" },
                 { "type": "switch", "label": "menu", "alias_id": "admin" }
             ]
         },
@@ -476,7 +476,7 @@
                 { "type": "postback", "label": "pretest", "data": "action=enabled&alias=pretest" },
                 { "type": "postback", "label": "game", "data": "action=enabled&alias=rag_test" },
                 { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
-                {},
+                { "type": "postback", "label": "sel", "data": "action=enabled&alias=sel" },
                 { "type": "switch", "label": "next", "alias_id": "game_enabled2" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
@@ -515,7 +515,7 @@
                 { "type": "postback", "label": "pretest", "data": "action=respond&alias=pretest" },
                 { "type": "postback", "label": "game", "data": "action=respond&alias=rag_test" },
                 { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
-                {},
+                { "type": "postback", "label": "sel", "data": "action=respond&alias=sel" },
                 { "type": "switch", "label": "next", "alias_id": "game_respond2" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
             ]
@@ -674,6 +674,19 @@
                 { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
                 { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "sel": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Flow SEL",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "menu_other" }
             ]
         }
     }
