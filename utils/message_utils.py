@@ -10,6 +10,8 @@ from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse
 import json
+import asyncio
+import os
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, 
     set_rich_menu_id, save_config, get_rich_menu_category_from_id, 
@@ -2177,31 +2179,8 @@ async def game_story_message() -> FlexMessage:
             "三位傑出的人物隨時準備好協助你破解案件。"
         )
     
-    # ===== [Change 1] Map image: displayed above the story text.
-    # The image is placed in the bubble hero so it always appears at the top.
-    # Path: templates/map/map.jpg (served via the static files route).
-    # To disable this image, set MAP_IMAGE_ENABLED to False.
-    # ===== 地圖圖片：顯示於故事背景文字上方。
-    # 圖片放在 bubble hero 使其永遠出現在最上方。
-    # 路徑：templates/map/map.jpg（透過靜態檔案路由提供）。
-    # 若要停用此圖片，請將 MAP_IMAGE_ENABLED 設為 False。
-    MAP_IMAGE_ENABLED = True
-    MAP_IMAGE_PATH = '/templates/map/map.jpg'
-
-    hero_image = (
-        FlexImage(
-            url=f'{URL}{MAP_IMAGE_PATH}',
-            size='full',
-            aspect_ratio='20:13',
-            aspect_mode='fit',
-        )
-        if MAP_IMAGE_ENABLED
-        else None
-    )
-
     bubble = FlexBubble(
         size='giga',
-        hero=hero_image,
         body=FlexBox(
             layout='vertical',
             spacing='lg',
@@ -2239,7 +2218,7 @@ async def game_story_message() -> FlexMessage:
             ]
         )
     )
-
+    
     msg = FlexMessage(
         altText='Story / 故事背景',
         contents=bubble
@@ -3017,36 +2996,14 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         color = '#00aa00' if answered == total_q else '#5b5b5b'
         body_contents.append(
             FlexText(
-                text=f'Exercise {i} / 練習{i}: {answered}/{total_q}',
+                text=f'Exercise {i}: {answered}/{total_q}',
                 wrap=True,
                 size='md',
                 color=color,
                 margin='lg',
             )
         )
-
-    # ===== [Change 2] Flow SEL / 心流SEL progress (5 questions) =====
-    # SEL uses category key 'sel' and has SEL_QUESTION_COUNT questions.
-    # SEL_QUESTION_COUNT can be adjusted here if the question set changes.
-    # 心流SEL 使用 'sel' 作為類別鍵值，共 SEL_QUESTION_COUNT 題。
-    SEL_QUESTION_COUNT = 5
-    sel_answered = 0
-    for q_idx in range(SEL_QUESTION_COUNT):
-        history = getHistory(user_id, f'sel-{q_idx}')
-        if history and len(history) > 0:
-            sel_answered += 1
-    sel_color = '#00aa00' if sel_answered == SEL_QUESTION_COUNT else '#5b5b5b'
-    body_contents.append(
-        FlexText(
-            text=f'Flow SEL / 心流SEL: {sel_answered}/{SEL_QUESTION_COUNT}',
-            wrap=True,
-            size='md',
-            color=sel_color,
-            margin='lg',
-        )
-    )
-    # ===== [End Change 2] =====
-
+    
     return FlexMessage(
         altText='Other Progress / 其他進度',
         contents=FlexBubble(
@@ -3201,14 +3158,14 @@ async def posttest_progress_message(user_id: str) -> FlexMessage:
 # ========== [END] Game Message Functions ==========
 
 CHI_HINT = [
-    'Please enter your class number\n請依照指示輸入你的課程編號\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
+    'Please enter your class number\n請依照指示輸入你的課程編號\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to go back.\n接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to go back.\n接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
     'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to go back.\n接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
 ]
 
 ENG_HINT =[
-    'Enter your class number\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
+    'Enter your class number\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
     'Next, what is you name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
@@ -3647,9 +3604,62 @@ async def game_npc_text_card_message(
 
 # ========== [END] NPC 語音輸出相關訊息 ==========
 
+def _preflight_rich_menu_local_assets(configs: dict) -> None:
+    """在刪除 LINE 上既有選單之前，先確認本機圖檔齊全，避免清線後重建卡在一半。"""
+    missing: list[tuple[str, str]] = []
+    for menu_name, cfg in configs.get('rich_menus', {}).items():
+        image_file = cfg.get('file')
+        if not image_file:
+            continue
+        image_path = os.path.join('./templates/richmenu', image_file)
+        if not os.path.isfile(image_path):
+            missing.append((menu_name, image_path))
+    if missing:
+        detail = '; '.join(f'{n} -> {p}' for n, p in missing)
+        raise FileNotFoundError(
+            f'Rich menu 圖檔缺失，請補齊後再啟動（避免已刪除 LINE 選單卻無法重建）: {detail}'
+        )
+
+
+async def _create_one_rich_menu_with_retries(
+    menu_name: str,
+    config_data: dict,
+    target_default: str,
+    *,
+    per_attempt_retries: int = 3,
+    delay_sec: float = 0.5,
+) -> bool:
+    rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
+    last_err: Exception | None = None
+    for attempt in range(1, per_attempt_retries + 1):
+        try:
+            builder = build_rich_menu_from_config(menu_name, config_data)
+            rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
+            image_file = config_data.get('file')
+            if image_file:
+                image_path = os.path.join('./templates/richmenu', image_file)
+                await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
+            if menu_name == target_default:
+                await rich_menu_manager.set_default_rich_menu(rich_menu_id)
+            set_rich_menu_id(rich_menu_id, menu_name)
+            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
+            return True
+        except Exception as e:
+            last_err = e
+            print(f'[WARN] Rich menu {menu_name} attempt {attempt}/{per_attempt_retries} failed: {e}')
+            if attempt < per_attempt_retries:
+                await asyncio.sleep(delay_sec * attempt)
+    print(f'[ERROR] Rich menu {menu_name} failed after {per_attempt_retries} attempts. Last error: {last_err}')
+    import traceback
+    traceback.print_exc()
+    return False
+
+
 async def create_rich_menu():
-    await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
+    _preflight_rich_menu_local_assets(configs)
+
+    await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
 
     # 每次伺服器啟動時，強制刪除並重建 LINE 平台上所有 rich menu。
     # 這確保按鈕一律使用 PostbackAction（由伺服器決定是否跳轉），
@@ -3675,22 +3685,29 @@ async def create_rich_menu():
     # Decide default menu based on RAG mode
     target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
 
-    for menu_name, config_data in configs['rich_menus'].items():
-        rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
-        try:
-            builder = build_rich_menu_from_config(menu_name, config_data)
-            rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
-            image_file = config_data.get("file")
-            if image_file:
-                image_path = os.path.join("./templates/richmenu", image_file)
-                await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-            # If current menu is target default, set as default
-            if menu_name == target_default:
-                await rich_menu_manager.set_default_rich_menu(rich_menu_id)
-            set_rich_menu_id(rich_menu_id, menu_name)
-            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
-        except Exception as e:
-            print(f'[ERROR] Failed to create rich menu {menu_name}: {e}')
-            import traceback
-            traceback.print_exc()
+    rich_menus = configs['rich_menus']
+    expected_names = set(rich_menus.keys())
+
+    for menu_name, config_data in rich_menus.items():
+        await _create_one_rich_menu_with_retries(menu_name, config_data, target_default)
+        await asyncio.sleep(0.5)
+
+    # 第二輪：只重試仍未註冊成功的選單（常見於網路瞬斷、TLS 或 API 限流）
+    extra_passes = 2
+    for p in range(extra_passes):
+        missing = expected_names - set(config.get('rich_menu_ids', {}).keys())
+        if not missing:
+            break
+        print(f'[INFO] Rich menu rebuild pass {p + 2}/{1 + extra_passes}: retrying {len(missing)} missing menu(s)...')
+        for menu_name in sorted(missing):
+            await _create_one_rich_menu_with_retries(menu_name, rich_menus[menu_name], target_default)
+            await asyncio.sleep(0.5)
+
+    still_missing = expected_names - set(config.get('rich_menu_ids', {}).keys())
+    if still_missing:
+        raise RuntimeError(
+            'Rich menu 未全部註冊成功，config 中的 rich_menu_ids 不完整，請檢查網路、圖檔與 LINE API。'
+            f' 缺少: {sorted(still_missing)}'
+        )
+
     await save_config()

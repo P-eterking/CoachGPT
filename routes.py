@@ -1,8 +1,8 @@
 from fastapi import Request, HTTPException
 # from fastapi.templating import Jinja2Templates
 from config import parser
-from handlers import handle_text_message, handle_audio_message, handle_postback, handle_follow
-from linebot.v3.webhooks import MessageEvent, PostbackEvent, FollowEvent, TextMessageContent, AudioMessageContent
+from handlers import handle_text_message, handle_audio_message, handle_postback
+from linebot.v3.webhooks import MessageEvent, PostbackEvent, TextMessageContent, AudioMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
 # from analyze import analyze_by_question
 # from utils.file_utils import getData
@@ -18,11 +18,7 @@ async def callback(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
     
     for event in events:
-        if isinstance(event, FollowEvent):
-            # 使用者首次加入（或解除後重新加入）機器人為好友時觸發
-            # Triggered when a user adds (or re-adds) the bot as a friend
-            await handle_follow(event)
-        elif isinstance(event, PostbackEvent):
+        if isinstance(event, PostbackEvent):
             await handle_postback(event)
         elif isinstance(event, MessageEvent):
             if isinstance(event.message, TextMessageContent):
@@ -37,7 +33,7 @@ async def callback(request: Request):
 # async def index(request: Request):
 #     users = getData()
 #     analysis = analyze_by_question(users.values(), question_manager)
-#     
+    
 #     labels = []
 #     average_scores = []
 #     completion_rates = []
@@ -49,15 +45,15 @@ async def callback(request: Request):
 #             average_scores.append(unit["average_score"])
 #             completion_rate = (unit["users_completed"] / analysis["user_count"] * 100) if analysis["user_count"] > 0 else 0
 #             completion_rates.append(completion_rate)
-#     
+    
 #     analysis_data = {
 #         "labels": labels,
 #         "average_scores": average_scores,
 #         "completion_rates": completion_rates
 #     }
-#     
+    
 #     latest_histories = analysis["latest_histories"]  # Extract latest_histories
-#     
+    
 #     return templates.TemplateResponse("index.html", {
 #         "request": request,
 #         "category_analysis": analysis["category_analysis"],

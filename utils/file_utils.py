@@ -278,8 +278,6 @@ FEATURE_DISPLAY_NAMES = {
     'ex4': '練習四',
     'ex5': '練習五',
     'ex6': '練習六',
-    # [Change 2] 心流SEL / Flow SEL
-    'sel': '心流SEL',
 }
 
 def get_feature_display_name(alias: str) -> str:
@@ -1167,6 +1165,13 @@ async def load_config():
         merged_config.update(loaded_config)
         config.update(merged_config)
         print("Config loaded successfully.")
+    except json.JSONDecodeError as e:
+        print(
+            f"[ERROR] Config file is not valid JSON ({CONFIG_FILE}): {e}. "
+            "Falling back to DEFAULT_CONFIG; please repair the file."
+        )
+        config.clear()
+        config.update(DEFAULT_CONFIG.copy())
     except FileNotFoundError:
         async with _lock:
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
