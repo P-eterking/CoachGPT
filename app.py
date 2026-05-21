@@ -13,10 +13,6 @@ async def lifespan(app: FastAPI):
     await load_config()
     try:
         await create_rich_menu()
-    except (RuntimeError, FileNotFoundError) as e:
-        # 選單未完整同步或本機資源缺失：應讓啟動失敗以便 Docker / 部署立刻發現，避免寫入殘缺 rich_menu_ids
-        print(f'[FATAL] Rich menu startup check failed: {e}')
-        raise
     except Exception as e:
         print(f"Warning: Failed to create rich menus during startup. Error: {e}")
     asyncio.create_task(user_data_task())

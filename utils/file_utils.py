@@ -166,6 +166,12 @@ def get_enabled_category_for_alias(alias: str) -> str:
     }
     if alias in _GAME_ALIASES or alias.startswith('game_theme'):
         return 'rag_test'
+    # [新增 (SEL 多單元)] 心流SEL 單元選擇大廳的子頁面（sel-2）統一回到 sel 主開關。
+    # The Flow SEL unit-selection lobby sub-pages (sel-2) map to the master 'sel' gate.
+    # 個別單元（sel1..sel6）本身就是各自的啟用類別，原樣回傳。
+    # Individual units (sel1..sel6) are their own enabled categories and are returned as-is.
+    if alias == 'sel-2':
+        return 'sel'
     return alias
 
 # ========== 使用者狀態管理 ==========
@@ -244,6 +250,25 @@ async def addAdmin(user_id):
     config['admin'].append(user_id)
     config['admin'] = list(set(config['admin']))
 
+
+# ========== [新增] 移除管理員身分 (Remove admin status) ==========
+# 配合 /unmagic 指令使用，讓開發者可在不更動主帳號權限的前提下，
+# 暫時退出管理員身分以「學生視角」測試課程流程；之後再用 /magic 即可重新成為管理員。
+# 設計細節：
+#   - 若 user_id 本來就不在 admin 清單，不丟例外（避免 list.remove 的 ValueError）。
+#   - 為了避免在使用者誤打的情況下徹底鎖死後台，本函式 *不* 拒絕「移除最後一位管理員」，
+#     因為任何人都可以重新透過 /magic 取得管理員身分（與既有設計一致）。
+#
+# Companion to the /unmagic command. Lets a developer drop admin status temporarily
+# (for end-to-end testing as a regular student) and restore it later via /magic.
+# Design notes:
+#   - No-op (no exception) when the user_id is not currently an admin.
+#   - Removing the last admin is allowed by design, because anyone can re-acquire
+#     admin status via /magic (matching the existing addAdmin behaviour).
+async def removeAdmin(user_id):
+    if user_id in config['admin']:
+        config['admin'] = [u for u in config['admin'] if u != user_id]
+
 def addEnabled(category):
     config['enabled'].append(category)
     config['enabled'] = list(set(config['enabled']))
@@ -278,6 +303,16 @@ FEATURE_DISPLAY_NAMES = {
     'ex4': '練習四',
     'ex5': '練習五',
     'ex6': '練習六',
+    # [Change 2] 心流SEL / Flow SEL
+    'sel': '心流SEL',
+    # [新增 (SEL 多單元)] 六個 SEL 子單元，方便後台管理員啟用/停用訊息顯示出對應名稱。
+    # The six SEL sub-units, so admin enable/disable messages show the correct name.
+    'sel1': '心流SEL-地產大亨',
+    'sel2': '心流SEL-生命之旅',
+    'sel3': '心流SEL-換言一新',
+    'sel4': '心流SEL-驚險塔',
+    'sel5': '心流SEL-食人花',
+    'sel6': '心流SEL-Seven!',
 }
 
 def get_feature_display_name(alias: str) -> str:
@@ -1165,18 +1200,49 @@ async def load_config():
         merged_config.update(loaded_config)
         config.update(merged_config)
         print("Config loaded successfully.")
-    except json.JSONDecodeError as e:
-        print(
-            f"[ERROR] Config file is not valid JSON ({CONFIG_FILE}): {e}. "
-            "Falling back to DEFAULT_CONFIG; please repair the file."
-        )
-        config.clear()
-        config.update(DEFAULT_CONFIG.copy())
     except FileNotFoundError:
         async with _lock:
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as file:
                 await file.write(json.dumps(config, indent=4))
         print("Config created successfully.")
+
+    # ===== [新增] 心流SEL 多單元相容遷移 (Flow SEL multi-unit compatibility migration) =====
+    # 舊版本只有單一 'sel' 類別；新版本拆分為 sel1..sel6 並由後台個別控制開關。
+    # 若 config 仍處於「'sel' 啟用、但 sel1..sel6 完全未列入 enabled」的舊狀態，
+    # 視為「使用者尚未針對新版本做設定」，自動將 6 個單元加入 enabled 清單，
+    # 避免一般學生因為遷移後相容性問題而完全無法作答（管理員會因 isAdmin bypass 而無感）。
+    # 本遷移是 idempotent 的：執行後 sel1..sel6 已落在 enabled，下次啟動就不會再觸發；
+    # 管理員之後可從 game_enabled4/5/6 後台選單精細地關閉任一單元。
+    #
+    # The legacy 'sel' (single-unit) section was split into six independent units
+    # (sel1..sel6) controlled individually from the admin panel. If the on-disk config
+    # is still in the legacy state ('sel' enabled, but NONE of sel1..sel6 enabled),
+    # treat it as "not yet configured for the new layout" and auto-enable all six
+    # units, so that students (who don't enjoy the isAdmin bypass) can answer again
+    # immediately after the code upgrade. The migration is idempotent: once any
+    # sel{N} is present in enabled the migration will not re-trigger; admins can
+    # later toggle individual units from the game_enabled4/5/6 panels.
+    try:
+        enabled_list = config.get('enabled', [])
+        if isinstance(enabled_list, list) and 'sel' in enabled_list:
+            sel_unit_names = [f'sel{i}' for i in range(1, 7)]
+            if not any(u in enabled_list for u in sel_unit_names):
+                merged = set(enabled_list)
+                for u in sel_unit_names:
+                    merged.add(u)
+                config['enabled'] = list(merged)
+                async with _lock:
+                    async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as _f:
+                        await _f.write(json.dumps(config, indent=4))
+                print(
+                    "[MIGRATION] Legacy 'sel' was enabled but no per-unit toggle was set; "
+                    "auto-enabled sel1..sel6 so students can answer. Admins can disable "
+                    "individual units from the game_enabled4/5/6 panels."
+                )
+    except Exception as _mig_err:
+        # 遷移失敗不應阻擋啟動，僅警告。
+        # Migration failure must not block startup; just log a warning.
+        print(f"[WARN] SEL multi-unit migration skipped due to error: {_mig_err}")
 
 async def save_config():
     global config

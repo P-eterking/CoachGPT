@@ -10,8 +10,9 @@ from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse
 import json
+# [新增] 用於 rich menu 建立時的節流與重試延遲。
+# Used for throttling and retry-backoff sleeps during rich menu provisioning.
 import asyncio
-import os
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, 
     set_rich_menu_id, save_config, get_rich_menu_category_from_id, 
@@ -28,6 +29,77 @@ URL = f'https://{DOMAIN}'
 IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 CHAT_CATEGORY = ["Travel", "Sports", "Interview", "English Skills"]
 CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
+
+# ========== [新增] Chat 主題對應的中文標籤 (Chinese label for each chat topic) ==========
+# 順序需與 CHAT_CATEGORY 保持一致。
+# Order must mirror CHAT_CATEGORY.
+CHAT_CATEGORY_CHI = ["旅遊", "運動", "面試", "英語技巧"]
+
+# ========== [新增] Chat 主題專屬 AI 提示詞 (Topic-specific AI prompt fragments) ==========
+# 當使用者選定四個主題之一後，在 send_audio_request 的 system prompt 中追加對應段落，
+# 引導 AI 以該主題作為對話脈絡。每個主題包含「角色設定」與「對話建議」兩部分。
+# 此設計易於擴充：要新增主題只需在 CHAT_CATEGORY / CHAT_CATEGORY_CHI / CHAT_TOPIC_PROMPTS
+# 三個地方各加上對應索引的項目即可。
+#
+# Topic-specific prompt fragments appended to the chat system prompt when the user selects a topic.
+# Adding a new topic only requires appending to CHAT_CATEGORY, CHAT_CATEGORY_CHI, and CHAT_TOPIC_PROMPTS
+# at the same index.
+CHAT_TOPIC_PROMPTS = {
+    0: (
+        "Current Conversation Topic: TRAVEL.\n"
+        "Focus on travel experiences, dream destinations, cultural differences, transportation, "
+        "food while travelling, tips for budget or solo travel, and travel-related vocabulary "
+        "(itinerary, layover, jet lag, sightseeing, souvenir, accommodation, etc.).\n"
+        "Conversation moves: ask the student about a memorable trip, a place they want to visit, "
+        "or how they plan a journey. Share short, friendly travel anecdotes to keep the dialogue alive. "
+        "Gently introduce useful travel expressions when relevant."
+    ),
+    1: (
+        "Current Conversation Topic: SPORTS.\n"
+        "Focus on sports the student enjoys watching or playing, fitness habits, favorite athletes or teams, "
+        "rules of common sports, and sports-related vocabulary (warm-up, opponent, referee, stadium, "
+        "championship, workout, endurance, etc.).\n"
+        "Conversation moves: ask about a sport they like, their exercise routine, or a memorable game they "
+        "watched. Encourage them to describe actions in sequence. Introduce useful sports phrases naturally."
+    ),
+    2: (
+        "Current Conversation Topic: INTERVIEW PRACTICE.\n"
+        "Treat this as a friendly mock job interview. Act as a kind interviewer for entry-level or internship "
+        "roles relevant to a college student. Cover self-introduction, strengths and weaknesses, motivation, "
+        "teamwork experience, problem-solving, and future plans.\n"
+        "Conversation moves: ask one clear interview question at a time, then give brief, supportive feedback "
+        "on the student's answer (clarity, structure, professional tone) before moving to the next question. "
+        "Encourage the use of polite, professional vocabulary."
+    ),
+    3: (
+        "Current Conversation Topic: ENGLISH LEARNING SKILLS.\n"
+        "Focus on helping the student improve their English speaking, listening, vocabulary, pronunciation, "
+        "and study habits. Share practical, evidence-based learning tips (shadowing, spaced repetition, "
+        "watching TV with subtitles, journaling in English, etc.).\n"
+        "Conversation moves: ask the student what they find hardest about learning English, then offer one "
+        "actionable tip at a time. Recommend small daily exercises they can try. Praise effort and curiosity."
+    ),
+}
+
+def _get_chat_topic_label(sub: int) -> tuple:
+    """取得指定 sub 的中英主題名稱。
+    Get the bilingual topic labels for the given sub index.
+
+    Returns (eng_label, chi_label). Returns empty strings if sub is out of range.
+    """
+    if sub is None or sub < 0 or sub >= len(CHAT_CATEGORY):
+        return ("", "")
+    return (CHAT_CATEGORY[sub], CHAT_CATEGORY_CHI[sub])
+
+
+def get_chat_topic_system_prompt(sub: int) -> str:
+    """根據主題索引回傳要附加到 chat AI 系統提示詞的段落。
+    Get the topic-specific system prompt fragment for the given chat topic sub index.
+    Returns an empty string when no topic is selected (sub < 0 or out of range).
+    """
+    if sub is None or sub < 0:
+        return ""
+    return CHAT_TOPIC_PROMPTS.get(sub, "")
 
 def build_reference_answers_section(
     tiered_reference_answers: dict = None,
@@ -147,6 +219,89 @@ SYSTEM_INSTRUCTION = f"""
         
         IMPORTANT: All Chinese responses must use Traditional Chinese (zh-TW), NEVER use Simplified Chinese.
         
+        The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
+    """
+
+# ========== 心流SEL 評分系統指示 (Flow SEL evaluation system instruction) ==========
+# 心流SEL 區塊是讓使用者分享個人經驗與心情，沒有固定答案。
+# 評分重點：句子表達完整性、論述結構、用詞精準度。
+# 評分標準維持與練習區塊相同的 10 級制（與 exercises 一致），但採取「寬鬆但具鑑別度」的策略，
+# 避免因要求固定答案而過度嚴苛。
+#
+# The Flow SEL section invites users to share personal experiences and feelings; there is no fixed answer.
+# Scoring focus: sentence completeness, argument structure, word precision.
+# The 10-point scale is preserved (same framework as the exercises section) but the grading is
+# intentionally more lenient while still discriminating between expression quality levels.
+SEL_SYSTEM_INSTRUCTION = f"""
+        You are a supportive English speaking assessment assistant for Taiwanese non-native speaker college students.
+        You are evaluating responses in the "Flow SEL" section, where students share their personal experiences,
+        feelings, opinions, and reflections in English. There is NO fixed correct answer.
+
+        userAnswer represents the user's spoken response
+        question represents the open-ended prompt that invites personal sharing
+        standard represents any optional guidance (it is informational only; do NOT treat it as a required answer)
+        maxScore represents the maximum score
+
+        EVALUATION FOCUS (in order of importance):
+        1. Sentence Completeness: Did the student speak in complete English sentences (subject + verb + object),
+           rather than isolated words or fragments?
+        2. Argument / Discourse Structure: Did the student organize ideas logically? For example, a clear topic
+           sentence, supporting details or examples, and (optionally) a brief closing thought.
+        3. Word Precision: Did the student choose words that accurately convey what they mean? Are word forms
+           (noun / verb / adjective / adverb) used appropriately?
+
+        WHAT YOU MUST NOT DO:
+        - Do NOT penalize the student for the content of their personal experience or opinion.
+        - Do NOT require any specific information, vocabulary, or "correct answer". Any sincere, on-topic
+          personal response is acceptable.
+        - Do NOT down-grade for cultural background, lifestyle choices, or personal preferences.
+
+        GRADING STYLE: Be lenient but still discriminating. Reward genuine effort to express thoughts in
+        complete English. The grade should reflect language expression quality, not the content of the answer.
+
+        10-POINT SCALE (for personal-expression responses):
+        10 - Outstanding Expresser: Uses complete, varied English sentences to present a clear, well-structured
+             personal response (e.g. topic + supporting detail/example + closing). Word choice is precise and
+             natural, with very few or no grammar issues. Awarding full marks is appropriate when the response
+             is fluent and well-organized; do not withhold 10 just because the answer is short, as long as it
+             is complete, structured, and precise.
+        9  - Very Strong Expresser: Mostly complete and well-structured sentences with rich, accurate wording.
+             Only occasional minor errors that do not impede understanding.
+        8  - Strong Expresser: Complete sentences with a clear main idea and at least one supporting detail.
+             Word choice is mostly precise; minor grammar issues may appear but the response remains coherent.
+        7  - Solid Expresser: Generally complete sentences and a recognisable structure (e.g. topic + reason or
+             example), with some grammar or word-choice imperfections that do not block understanding.
+        6  - Adequate Expresser: At least one complete sentence with a relevant idea, though structure is
+             simple or partially developed. Wording may be repetitive or imprecise, but the overall message
+             is understandable.
+        5  - Emerging Expresser: Mostly short or simple sentences, limited development of the idea, some
+             grammar or word-form errors. The personal point is still discernible.
+        4  - Limited Expresser: Fragmented or partially formed sentences; the response gestures toward an idea
+             but lacks clear structure or precision.
+        3  - Very Limited Expresser: Mostly phrases or isolated words, with little sentence structure. The
+             student tries but the message is hard to follow.
+        2  - Minimal Expression: Single words or memorised fragments only; communication is mostly broken.
+        1  - No Effective Expression: The student does not respond meaningfully, is silent, or speaks
+             unrelated content / nonsense.
+
+        Tips for being lenient yet discriminating:
+        - When the student speaks complete sentences with a clear personal point and reasonable word choice,
+          start the score at 8 and adjust up or down from there.
+        - Short responses can still earn 8-10 if they are complete sentences with precise wording and a
+          clear, well-organized idea (e.g. "I love hiking because it clears my mind and lets me reconnect
+          with nature.").
+        - Do NOT lower the score because the content is "ordinary" — content is not graded here.
+
+        Perform the task step by step:
+        1. Identify how the student expressed their personal view (sentence completeness, structure, word choice).
+        2. Pick a score on the 10-point scale based on EXPRESSION QUALITY only, not content correctness.
+        3. Provide encouraging, specific suggestions on grammar, sentence structure, or word precision in
+           BOTH Traditional Chinese (zh-TW) and English (en-US). Keep feedback constructive and supportive.
+        4. Provide an improved English version of the student's answer that preserves their original personal
+           meaning but upgrades sentence completeness, structure, and word precision.
+
+        IMPORTANT: All Chinese responses must use Traditional Chinese (zh-TW), NEVER use Simplified Chinese.
+
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
 
@@ -705,6 +860,270 @@ async def chat_message(user_id, sub):
     return FlexMessage(
         altText=f'Chat: {topic}',
         contents=bubble
+    )
+
+
+# ========== [新增] Chat 進入提示與主題選擇提示訊息 ==========
+# 這些訊息僅針對 service4/5 (rag_mode=true) 的 menu_other → chat 入口而設計，
+# 但函式本身無服務限制；呼叫端負責判斷是否需要使用。
+#
+# These message builders are designed for the service4/5 (rag_mode=true) chat entry experience,
+# but the functions themselves are service-agnostic; the caller decides when to invoke them.
+
+async def chat_welcome_message():
+    """進入 Chat 頁面時的中英文歡迎/說明訊息。
+    Bilingual welcome message shown when the user enters the chat menu.
+
+    告知使用者：
+      1. 可直接傳送語音訊息和 AI 對話；
+      2. 可至「語音設定」調整語音性別與口音；
+      3. 下方主題按鈕可選擇對話主題（旅遊 / 運動 / 面試 / 英語技巧）。
+    """
+    text = (
+        "歡迎進入 Chat 區！\n"
+        "傳送語音訊息即可直接和 AI 開始進行對話，如有偏好的語音性別與口音，"
+        "可以到語音設定調整。\n"
+        "下方按鈕還可選擇對話主題：旅遊、運動、面試、英語技巧。\n"
+        "\n"
+        "Welcome to the Chat section!\n"
+        "Send a voice message to start chatting with the AI directly. "
+        "If you have a preferred voice gender or accent, you can adjust it in the voice settings.\n"
+        "You may also tap the buttons below to choose a topic: Travel, Sports, Interview, or English Skills."
+    )
+    return TextMessage(text=text)
+
+
+async def chat_topic_intro_message(sub: int):
+    """使用者選擇 Chat 主題（旅遊 / 運動 / 面試 / 英語技巧）後送出的中英文確認訊息。
+    Bilingual confirmation message shown after the user picks a chat topic.
+
+    Args:
+        sub: 主題索引（0=旅遊 / 1=運動 / 2=面試 / 3=英語技巧）。
+             Topic index (0=Travel / 1=Sports / 2=Interview / 3=English Skills).
+    """
+    eng_label, chi_label = _get_chat_topic_label(sub)
+    if not eng_label:
+        # 防呆：若 sub 超出範圍，回傳一般提示。
+        # Safety fallback: if sub is out of range, return a generic prompt.
+        text = (
+            "您已進入聊天模式，請傳送語音訊息開始與 AI 對話。\n"
+            "You have entered chat mode. Please send a voice message to start chatting with the AI."
+        )
+        return TextMessage(text=text)
+
+    # 為四個主題客製化中英對照的提示文案。
+    # Topic-specific bilingual intro text for the four supported topics.
+    TOPIC_TEMPLATES_CHI = {
+        0: "您已選擇「旅遊」主題，AI 將與您聊聊有關旅遊的話題，例如旅行經驗、嚮往的目的地或旅遊小撇步。",
+        1: "您已選擇「運動」主題，AI 將與您聊聊有關運動的話題，例如喜歡的運動、運動習慣或印象深刻的比賽。",
+        2: "您已選擇「面試」主題，AI 將以親切的面試官身份和您進行模擬面試對話，協助您熟悉常見面試問題。",
+        3: "您已選擇「英語技巧」主題，AI 將與您討論英語學習相關的技巧，並提供口說、聽力與字彙等方面的實用建議。",
+    }
+    TOPIC_TEMPLATES_ENG = {
+        0: "You have selected the \"Travel\" topic. The AI will chat with you about travel-related subjects, such as travel experiences, dream destinations, or travel tips.",
+        1: "You have selected the \"Sports\" topic. The AI will chat with you about sports, including your favorite sports, exercise habits, or memorable matches.",
+        2: "You have selected the \"Interview\" topic. The AI will act as a friendly interviewer and run a mock interview to help you practice common interview questions.",
+        3: "You have selected the \"English Skills\" topic. The AI will discuss English-learning skills with you and offer practical tips on speaking, listening, and vocabulary.",
+    }
+
+    chi_text = TOPIC_TEMPLATES_CHI.get(sub, f"您已選擇「{chi_label}」主題，AI 將圍繞此主題與您對話。")
+    eng_text = TOPIC_TEMPLATES_ENG.get(sub, f"You have selected the \"{eng_label}\" topic. The AI will guide the conversation around this topic.")
+
+    text = (
+        f"{eng_text}\n"
+        f"Please send a voice message to start the conversation.\n"
+        f"\n"
+        f"{chi_text}\n"
+        f"請傳送語音訊息開始對話。"
+    )
+    return TextMessage(text=text)
+
+
+# ========== [新增 (SEL 多單元)] 心流SEL 六個單元的設定與單元介紹卡片 ==========
+# Flow SEL six-unit configuration and the unit intro card builder.
+#
+# 設計：每一個 SEL 單元在進入時都會先顯示一張卡片，卡片包含該單元的圖片與雙語說明，
+# 使用者了解該單元的桌遊背景後，才從 rich menu 中選擇題目作答。
+# 圖片預設放在 /templates/sel/sel{N}.jpg；若圖片缺失則僅顯示文字。
+#
+# Design: when a user enters a SEL unit, an intro card is shown first. The card carries the
+# unit image and the bilingual description, so the user knows which board game context the
+# unit is based on before selecting questions. Images default to /templates/sel/sel{N}.jpg;
+# if the image is missing, the card renders text-only.
+
+SEL_UNITS_CONFIG = {
+    1: {
+        "name_eng": "Monopoly",
+        "name_chi": "超級瑪利歐地產大亨",
+        "image": "/templates/sel/monopoly.jpg",
+    },
+    2: {
+        "name_eng": "The Game of Life",
+        "name_chi": "生命之旅",
+        "image": "/templates/sel/life_game.jpg",
+    },
+    3: {
+        "name_eng": "FLIP",
+        "name_chi": "換言一新",
+        "image": "/templates/sel/flip.jpg",
+    },
+    4: {
+        "name_eng": "Balancing Tower Game",
+        "name_chi": "瑪利歐驚險塔",
+        "image": "/templates/sel/scare_tower.jpg",
+    },
+    5: {
+        "name_eng": "Piranha Plant Escape",
+        "name_chi": "瑪利歐食人花遊戲",
+        "image": "/templates/sel/eat_flower.png",
+    },
+    6: {
+        "name_eng": "Seven!",
+        "name_chi": "Seven!",
+        "image": "/templates/sel/seven!.jpg",
+    },
+}
+
+
+def get_sel_unit_config(unit_num: int) -> dict:
+    """取得指定 SEL 單元的設定（含中英文名稱與圖片網址）。
+    Get the SEL unit configuration (bilingual names and image path) for the given unit number.
+    """
+    return SEL_UNITS_CONFIG.get(unit_num, {})
+
+
+def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
+    """取得 SEL 單元的中文 / 英文 / 中英對照名稱。
+    Get the SEL unit name in English, Traditional Chinese, or both (combined).
+    """
+    cfg = get_sel_unit_config(unit_num)
+    if not cfg:
+        return ''
+    if language == 'eng':
+        return cfg.get('name_eng', '')
+    if language == 'chi':
+        return cfg.get('name_chi', '')
+    return f"{cfg.get('name_eng', '')} / {cfg.get('name_chi', '')}".strip(' /')
+
+
+async def sel_unit_intro_message(unit_num: int):
+    """進入心流SEL 單元時顯示的雙語介紹卡片。
+    Bilingual intro card shown when the user enters a Flow SEL unit.
+
+    內容：
+      - 該單元的圖片（若存在）
+      - 該單元的中英對照名稱
+      - 說明文字：「Please answer the following questions in English based on your
+        experience when playing the '{eng_name}' board game.」
+        以及對應的「請依照你在玩「{chi_name}」桌遊時的情形，試著用英文回答以下問題」
+        英文在前、中文在後（依使用者要求）。
+
+    Card content:
+      - Unit image (if available)
+      - Bilingual unit name (English / Traditional Chinese)
+      - Bilingual instruction line, English first then Traditional Chinese,
+        per the user's requested ordering.
+    """
+    cfg = get_sel_unit_config(unit_num)
+    if not cfg:
+        # 防呆：未知單元編號時退回純文字提示。
+        # Safety fallback: unknown unit number returns a plain text notice.
+        return TextMessage(text=f"Unknown SEL unit / 未知的心流SEL 單元: {unit_num}")
+
+    name_eng = cfg.get('name_eng', '')
+    name_chi = cfg.get('name_chi', '')
+    image_path = cfg.get('image', '')
+
+    # 中英對照說明文字（英文在前、中文在後）。
+    # Bilingual instruction text (English first, Traditional Chinese second).
+    intro_eng = (
+        f"Please answer the following questions in English based on your experience "
+        f"when playing the \"{name_eng}\" board game."
+    )
+    intro_chi = (
+        f"請依照你在玩「{name_chi}」桌遊時的情形，試著用英文回答以下問題。"
+    )
+
+    body_contents = [
+        FlexText(
+            text=f"Flow SEL Unit {unit_num}",
+            wrap=True,
+            weight='bold',
+            size='md',
+            color='#888888',
+            align='center',
+        ),
+        FlexText(
+            text=name_eng if name_eng else f"Unit {unit_num}",
+            wrap=True,
+            weight='bold',
+            size='xl',
+            align='center',
+            color='#001174',
+        ),
+        FlexText(
+            text=name_chi if name_chi else '',
+            wrap=True,
+            weight='bold',
+            size='lg',
+            align='center',
+            color='#001174',
+        ),
+        FlexSeparator(margin='md'),
+        FlexText(
+            text=intro_eng,
+            wrap=True,
+            size='md',
+            color='#333333',
+            margin='md',
+        ),
+        FlexText(
+            text=intro_chi,
+            wrap=True,
+            size='md',
+            color='#5b5b5b',
+            margin='md',
+        ),
+        FlexText(
+            text="Tap a question button below to begin.\n點擊下方題目按鈕開始作答。",
+            wrap=True,
+            size='sm',
+            color='#888888',
+            align='center',
+            margin='lg',
+        ),
+    ]
+
+    bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=body_contents,
+        ),
+    )
+
+    # 若有圖片路徑則加入 hero 區。
+    # Add hero image when an image path is configured.
+    if image_path:
+        # image_path 可能是相對於網站根目錄的路徑（以 / 開頭），也可能是檔名。
+        # The image_path may be either a root-relative path (leading "/") or a bare filename.
+        if image_path.startswith('http://') or image_path.startswith('https://'):
+            full_url = image_path
+        elif image_path.startswith('/'):
+            full_url = f"{URL}{image_path}"
+        else:
+            full_url = f"{URL}/templates/sel/{image_path}"
+        bubble.hero = FlexImage(
+            url=full_url,
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='cover',
+        )
+
+    return FlexMessage(
+        altText=f"Flow SEL Unit {unit_num}: {name_eng}",
+        contents=bubble,
     )
 
 
@@ -2179,8 +2598,31 @@ async def game_story_message() -> FlexMessage:
             "三位傑出的人物隨時準備好協助你破解案件。"
         )
     
+    # ===== [Change 1] Map image: displayed above the story text.
+    # The image is placed in the bubble hero so it always appears at the top.
+    # Path: templates/map/map.jpg (served via the static files route).
+    # To disable this image, set MAP_IMAGE_ENABLED to False.
+    # ===== 地圖圖片：顯示於故事背景文字上方。
+    # 圖片放在 bubble hero 使其永遠出現在最上方。
+    # 路徑：templates/map/map.jpg（透過靜態檔案路由提供）。
+    # 若要停用此圖片，請將 MAP_IMAGE_ENABLED 設為 False。
+    MAP_IMAGE_ENABLED = True
+    MAP_IMAGE_PATH = '/templates/map/map.jpg'
+
+    hero_image = (
+        FlexImage(
+            url=f'{URL}{MAP_IMAGE_PATH}',
+            size='full',
+            aspect_ratio='20:13',
+            aspect_mode='fit',
+        )
+        if MAP_IMAGE_ENABLED
+        else None
+    )
+
     bubble = FlexBubble(
         size='giga',
+        hero=hero_image,
         body=FlexBox(
             layout='vertical',
             spacing='lg',
@@ -2218,7 +2660,7 @@ async def game_story_message() -> FlexMessage:
             ]
         )
     )
-    
+
     msg = FlexMessage(
         altText='Story / 故事背景',
         contents=bubble
@@ -2996,14 +3438,57 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         color = '#00aa00' if answered == total_q else '#5b5b5b'
         body_contents.append(
             FlexText(
-                text=f'Exercise {i}: {answered}/{total_q}',
+                text=f'Exercise {i} / 練習{i}: {answered}/{total_q}',
                 wrap=True,
                 size='md',
                 color=color,
                 margin='lg',
             )
         )
-    
+
+    # ===== [Change 2] Flow SEL / 心流SEL progress =====
+    # [新增 (SEL 多單元)] 心流SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
+    # 進度顯示時，分別列出每個單元已作答題數。
+    #
+    # The Flow SEL section now consists of six independent units (sel1..sel6),
+    # each with 5 questions. Show per-unit progress instead of a single combined line.
+    SEL_QUESTION_COUNT = 5
+    SEL_UNITS = [
+        ('sel1', 'Monopoly / 地產大亨'),
+        ('sel2', 'The Game of Life / 生命之旅'),
+        ('sel3', 'FLIP / 換言一新'),
+        ('sel4', 'Balancing Tower / 驚險塔'),
+        ('sel5', 'Piranha Plant / 食人花'),
+        ('sel6', 'Seven!'),
+    ]
+    body_contents.append(
+        FlexText(
+            text='Flow SEL / 心流SEL',
+            wrap=True,
+            size='md',
+            weight='bold',
+            color='#1a1a2e',
+            margin='lg',
+        )
+    )
+    for sel_cat, sel_label in SEL_UNITS:
+        unit_answered = 0
+        for q_idx in range(SEL_QUESTION_COUNT):
+            history = getHistory(user_id, f'{sel_cat}-{q_idx}')
+            if history and len(history) > 0:
+                unit_answered += 1
+        unit_color = '#00aa00' if unit_answered == SEL_QUESTION_COUNT else '#5b5b5b'
+        body_contents.append(
+            FlexText(
+                text=f'  - {sel_label}: {unit_answered}/{SEL_QUESTION_COUNT}',
+                wrap=True,
+                size='sm',
+                color=unit_color,
+                margin='sm',
+            )
+        )
+    # ===== [End Change 2] =====
+
     return FlexMessage(
         altText='Other Progress / 其他進度',
         contents=FlexBubble(
@@ -3158,14 +3643,14 @@ async def posttest_progress_message(user_id: str) -> FlexMessage:
 # ========== [END] Game Message Functions ==========
 
 CHI_HINT = [
-    'Please enter your class number\n請依照指示輸入你的課程編號\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
+    'Please enter your class number\n請依照指示輸入你的課程編號\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to go back.\n接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to go back.\n接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
     'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to go back.\n接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
 ]
 
 ENG_HINT =[
-    'Enter your class number\n1 for Board Game Design(4-12)\n2 for Board Game Design(4-34)\n3 for English Culture(5-12)\n4 for English Culture(5-34)\n5 for Others',
+    'Enter your class number\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
     'Next, what is you name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
@@ -3207,7 +3692,12 @@ async def handle_rich_menu(user_id):
     """
     _SWITCH_CONTROLLED = {
         'pretest', 'posttest', 'rag_test',
-        'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'
+        'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat',
+        # [新增 (SEL 多單元)] 將六個 SEL 單元納入即時開關監控，
+        # 與 handlers.py 的 _SWITCH_CONTROLLED 同步，確保管理員關閉後立即驅離使用者。
+        # Include the six SEL units so admin disable actions evict users immediately,
+        # matching the _SWITCH_CONTROLLED set in handlers.py.
+        'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6',
     }
 
     user_state = get_user_state(user_id)
@@ -3604,110 +4094,301 @@ async def game_npc_text_card_message(
 
 # ========== [END] NPC 語音輸出相關訊息 ==========
 
-def _preflight_rich_menu_local_assets(configs: dict) -> None:
-    """在刪除 LINE 上既有選單之前，先確認本機圖檔齊全，避免清線後重建卡在一半。"""
-    missing: list[tuple[str, str]] = []
-    for menu_name, cfg in configs.get('rich_menus', {}).items():
-        image_file = cfg.get('file')
-        if not image_file:
-            continue
-        image_path = os.path.join('./templates/richmenu', image_file)
-        if not os.path.isfile(image_path):
-            missing.append((menu_name, image_path))
-    if missing:
-        detail = '; '.join(f'{n} -> {p}' for n, p in missing)
-        raise FileNotFoundError(
-            f'Rich menu 圖檔缺失，請補齊後再啟動（避免已刪除 LINE 選單卻無法重建）: {detail}'
-        )
+# ========== [新增] LINE 速率限制處理 (Rate-limit handling helpers) ==========
+# 啟動時批次重建 rich menu 容易在短時間內超過 LINE 的速率限制（HTTP 429）。
+# 以下兩個常數可控制節流行為，必要時可調大。
+#
+# Bulk rebuilding rich menus at startup easily exceeds LINE's burst rate limit (HTTP 429).
+# The two constants below control throttling; raise them if you still hit 429.
+RICH_MENU_API_DELAY = 0.6          # 每個 rich menu 操作之間的最小間隔 (秒)
+                                   # Minimum delay between each rich menu API operation (seconds).
+RICH_MENU_RATE_LIMIT_MAX_RETRY = 6  # 遇到 429 時的最大重試次數 (採用指數退避)
+                                   # Max retries on 429 (with exponential backoff).
 
 
-async def _create_one_rich_menu_with_retries(
-    menu_name: str,
-    config_data: dict,
-    target_default: str,
-    *,
-    per_attempt_retries: int = 3,
-    delay_sec: float = 0.5,
-) -> bool:
-    rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
-    last_err: Exception | None = None
-    for attempt in range(1, per_attempt_retries + 1):
+async def _call_with_rate_limit_retry(coro_func, *args, op_desc: str = "LINE API",
+                                       max_retries: int = RICH_MENU_RATE_LIMIT_MAX_RETRY,
+                                       base_delay: float = 2.0,
+                                       **kwargs):
+    """以指數退避方式重試會被速率限制的 LINE API 呼叫。
+    Retry a rate-limited LINE API coroutine with exponential backoff.
+
+    Args:
+        coro_func: 要呼叫的 async 函式（不要先 await，這裡會代為 await）。
+                   The async function to call (do NOT pre-await it).
+        op_desc:   描述用字串，會在日誌中印出。
+                   Human-readable description for logging.
+        max_retries: 最大重試次數。Max attempts.
+        base_delay:  指數退避基底秒數。Base seconds for exponential backoff.
+
+    Returns:
+        被呼叫函式的回傳值；若多次重試後仍失敗，原樣拋出最後一次的 ApiException。
+        The wrapped coroutine's return value, or re-raises the final ApiException
+        if all retries are exhausted.
+    """
+    last_exc = None
+    for attempt in range(max_retries):
         try:
-            builder = build_rich_menu_from_config(menu_name, config_data)
-            rich_menu_id = await rich_menu_manager.create_rich_menu(builder)
-            image_file = config_data.get('file')
-            if image_file:
-                image_path = os.path.join('./templates/richmenu', image_file)
-                await rich_menu_manager.upload_rich_menu_image(rich_menu_id, image_path)
-            if menu_name == target_default:
-                await rich_menu_manager.set_default_rich_menu(rich_menu_id)
-            set_rich_menu_id(rich_menu_id, menu_name)
-            print(f'Rich Menu {menu_name} created with ID: {rich_menu_id}')
-            return True
-        except Exception as e:
-            last_err = e
-            print(f'[WARN] Rich menu {menu_name} attempt {attempt}/{per_attempt_retries} failed: {e}')
-            if attempt < per_attempt_retries:
-                await asyncio.sleep(delay_sec * attempt)
-    print(f'[ERROR] Rich menu {menu_name} failed after {per_attempt_retries} attempts. Last error: {last_err}')
-    import traceback
-    traceback.print_exc()
-    return False
+            return await coro_func(*args, **kwargs)
+        except ApiException as e:
+            last_exc = e
+            # 僅在 429 才重試，其餘錯誤直接拋出。
+            # Only retry on 429; bubble up everything else immediately.
+            if getattr(e, 'status', None) != 429:
+                raise
+            if attempt >= max_retries - 1:
+                break
+            wait = base_delay * (2 ** attempt)
+            print(
+                f"[WARN] 429 rate-limited on {op_desc} (attempt {attempt + 1}/{max_retries}); "
+                f"waiting {wait:.1f}s before retry."
+            )
+            await asyncio.sleep(wait)
+    # 重試耗盡，拋出最後一次的例外。
+    # Retries exhausted; raise the last captured exception.
+    raise last_exc
 
 
-async def create_rich_menu():
-    configs = load_rich_menu_configs()
-    _preflight_rich_menu_local_assets(configs)
+async def create_rich_menu(force_rebuild: bool = None):
+    """建立或同步 rich menu 到 LINE 平台。
+    Provision rich menus on the LINE platform.
 
+    執行策略 / Strategy
+    ------------------
+    預設採用「智能重用 (smart reuse)」模式：
+      1. 讀取 LINE 上現有的所有 rich menu，建立「menu 名稱 → ID」對照表。
+      2. 對 rich_menu.json 裡的每個 menu：
+           - 若名稱已存在於 LINE，直接重用該 ID（不打任何建立 / 上傳 API），
+             僅在需要時把它設為預設 menu。
+           - 若不存在，才執行建立 → 上傳圖片 → （視情況）設為預設。
+      3. 若該 menu 是預設 menu，無論重用或新建都會呼叫 set_default。
+      4. 此模式下不會主動刪除任何既有 menu（避免燒掉 LINE 的 burst 配額）；
+         若 LINE 上有多餘的舊 menu 需要清理，請透過 LINE Official Account Manager
+         手動刪除（LINE 文件指出該介面的刪除不受 API 速率限制）。
+
+    若需要強制全部重建（例如改了按鈕的 action type、或要清掉舊版殘留），
+    在 docker-compose / 環境變數中設定 RICH_MENU_FORCE_REBUILD=1 即可。
+    此時會走「先刪光全部 → 再依序重建」的舊邏輯，並完整套用 429 退避重試。
+
+    Default mode is *smart reuse*: existing menus on LINE are matched by name and
+    their IDs are reused with zero API calls. Missing menus are created
+    individually. No existing menus are deleted, which avoids the LINE burst
+    rate-limit cascade. Set RICH_MENU_FORCE_REBUILD=1 in the environment to fall
+    back to the original force-delete-and-rebuild behaviour (with retries).
+    """
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
+    configs = load_rich_menu_configs()
 
-    # 每次伺服器啟動時，強制刪除並重建 LINE 平台上所有 rich menu。
-    # 這確保按鈕一律使用 PostbackAction（由伺服器決定是否跳轉），
-    # 而非 RichMenuSwitchAction（由 LINE 用戶端直接跳轉，繞過伺服器 enable 判斷）。
-    # 若舊版部署曾使用 RichMenuSwitchAction，舊選單會殘留在 LINE 伺服器上，
-    # 導致即使後台關閉某區塊，用戶端仍能直接跳轉。強制重建可徹底清除此問題。
-    #
-    # Force-delete and rebuild ALL rich menus on every server startup.
-    # This guarantees every button uses PostbackAction (server decides the switch)
-    # rather than RichMenuSwitchAction (client switches directly, bypassing enable checks).
-    # If a previous deployment used RichMenuSwitchAction, stale menus would linger on
-    # LINE's servers; a forced rebuild eliminates those completely.
-    response = await rich_menu_manager.get_all_rich_menus()
-    if response:
-        print(f'Deleting {len(response)} existing rich menu(s) for fresh rebuild...')
-        for r in response:
-            try:
-                await rich_menu_manager.delete_rich_menu(r.rich_menu_id)
-            except Exception as _del_err:
-                print(f'[WARN] Could not delete rich menu {r.rich_menu_id}: {_del_err}')
-    clear_rich_menu_id()
+    # [更新] 強制重建開關現在優先取自呼叫者傳入的參數；若未指定，再讀取環境變數。
+    # 這讓管理員指令 /refresh_all_menus 可以在不修改環境變數的情況下觸發強制重建。
+    # The force_rebuild flag now prefers the explicit argument; falls back to the
+    # environment variable when not provided. This lets the /refresh_all_menus admin
+    # command trigger a force rebuild without having to mutate process environment.
+    if force_rebuild is None:
+        force_rebuild = os.environ.get('RICH_MENU_FORCE_REBUILD', '').lower() in ('1', 'true', 'yes')
 
-    # Decide default menu based on RAG mode
+    # 讀取 LINE 上目前存在的所有 rich menu。
+    # Inventory the rich menus already present on the LINE platform.
+    try:
+        existing_menus = await rich_menu_manager.get_all_rich_menus()
+    except Exception as _list_err:
+        print(f"[WARN] Could not list existing rich menus: {_list_err}")
+        existing_menus = []
+
+    # 建立「menu 名稱 → rich_menu_id」對照表，重複名稱以最後一個為準。
+    # Build a name→id map of existing menus (later duplicates win).
+    existing_by_name = {}
+    for m in (existing_menus or []):
+        name = getattr(m, 'name', None)
+        rid = getattr(m, 'rich_menu_id', None)
+        if name and rid:
+            existing_by_name[name] = rid
+
+    desired_names = set(configs.get('rich_menus', {}).keys())
     target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
 
-    rich_menus = configs['rich_menus']
-    expected_names = set(rich_menus.keys())
-
-    for menu_name, config_data in rich_menus.items():
-        await _create_one_rich_menu_with_retries(menu_name, config_data, target_default)
-        await asyncio.sleep(0.5)
-
-    # 第二輪：只重試仍未註冊成功的選單（常見於網路瞬斷、TLS 或 API 限流）
-    extra_passes = 2
-    for p in range(extra_passes):
-        missing = expected_names - set(config.get('rich_menu_ids', {}).keys())
-        if not missing:
-            break
-        print(f'[INFO] Rich menu rebuild pass {p + 2}/{1 + extra_passes}: retrying {len(missing)} missing menu(s)...')
-        for menu_name in sorted(missing):
-            await _create_one_rich_menu_with_retries(menu_name, rich_menus[menu_name], target_default)
-            await asyncio.sleep(0.5)
-
-    still_missing = expected_names - set(config.get('rich_menu_ids', {}).keys())
-    if still_missing:
-        raise RuntimeError(
-            'Rich menu 未全部註冊成功，config 中的 rich_menu_ids 不完整，請檢查網路、圖檔與 LINE API。'
-            f' 缺少: {sorted(still_missing)}'
+    if force_rebuild:
+        # ===== 強制重建模式 =====
+        # Force-rebuild mode: delete every existing menu, then recreate from configs.
+        # 每個刪除呼叫之間皆 sleep 並走 429 重試，避免一次打爆 burst quota。
+        if existing_menus:
+            print(f"[RICH_MENU] Force rebuild: deleting {len(existing_menus)} existing rich menu(s)...")
+            for r in existing_menus:
+                try:
+                    await _call_with_rate_limit_retry(
+                        rich_menu_manager.delete_rich_menu,
+                        r.rich_menu_id,
+                        op_desc=f"delete_rich_menu({r.rich_menu_id})",
+                    )
+                except Exception as _del_err:
+                    print(f"[WARN] Could not delete rich menu {r.rich_menu_id}: {_del_err}")
+                await asyncio.sleep(RICH_MENU_API_DELAY)
+        clear_rich_menu_id()
+        existing_by_name = {}  # 已全部刪除，重置對照表 / map is now empty
+    else:
+        # ===== 智能重用模式 (預設) =====
+        # Smart reuse (default): preserve existing menus and reuse their IDs by name.
+        # 由於僅根據名稱比對，若你修改了 rich_menu.json 中某個 menu 的版面或按鈕動作，
+        # 該 menu 在 LINE 上仍然是舊內容；此時請改用 RICH_MENU_FORCE_REBUILD=1 重啟一次。
+        # Reuse is name-only; if you change a menu's layout or actions in rich_menu.json,
+        # run once with RICH_MENU_FORCE_REBUILD=1 to refresh.
+        reused = sum(1 for n in desired_names if n in existing_by_name)
+        missing = len(desired_names) - reused
+        leftover = len(set(existing_by_name.keys()) - desired_names)
+        print(
+            f"[RICH_MENU] Smart reuse: {reused} reusable / {missing} to create / "
+            f"{leftover} leftover on LINE (not deleted)."
         )
+        # 清空本地 ID 快取後重新填入，確保 rich_menu_ids 與 LINE 上實際狀況同步。
+        # Clear the local ID cache and refill it so rich_menu_ids stays in sync with LINE.
+        clear_rich_menu_id()
+
+    for menu_name, config_data in configs['rich_menus'].items():
+        rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
+        try:
+            if (not force_rebuild) and menu_name in existing_by_name:
+                # 重用既有 menu：不打建立 / 上傳 API，僅將 ID 寫回本地 config。
+                # Reuse path: don't call create/upload; just record the existing ID.
+                rich_menu_id = existing_by_name[menu_name]
+                if menu_name == target_default:
+                    # 預設 menu 仍需設定一次，確保預設指向當前版本（這支 API 很輕，沒問題）。
+                    # The default menu setter must still run so the default points to the
+                    # reused menu (this endpoint is light and won't hit the burst limit).
+                    await _call_with_rate_limit_retry(
+                        rich_menu_manager.set_default_rich_menu,
+                        rich_menu_id,
+                        op_desc=f"set_default_rich_menu({menu_name})",
+                    )
+                set_rich_menu_id(rich_menu_id, menu_name)
+                print(f"Rich Menu {menu_name} reused: {rich_menu_id}")
+            else:
+                # 建立新 menu：建立 → 上傳圖片 → （視情況）設為預設。
+                # Create path: create → upload image → (optionally) set as default.
+                builder = build_rich_menu_from_config(menu_name, config_data)
+                rich_menu_id = await _call_with_rate_limit_retry(
+                    rich_menu_manager.create_rich_menu,
+                    builder,
+                    op_desc=f"create_rich_menu({menu_name})",
+                )
+                image_file = config_data.get("file")
+                if image_file:
+                    image_path = os.path.join("./templates/richmenu", image_file)
+                    await _call_with_rate_limit_retry(
+                        rich_menu_manager.upload_rich_menu_image,
+                        rich_menu_id, image_path,
+                        op_desc=f"upload_rich_menu_image({menu_name})",
+                    )
+                if menu_name == target_default:
+                    await _call_with_rate_limit_retry(
+                        rich_menu_manager.set_default_rich_menu,
+                        rich_menu_id,
+                        op_desc=f"set_default_rich_menu({menu_name})",
+                    )
+                set_rich_menu_id(rich_menu_id, menu_name)
+                print(f"Rich Menu {menu_name} created with ID: {rich_menu_id}")
+        except Exception as e:
+            print(f"[ERROR] Failed to process rich menu {menu_name}: {e}")
+            import traceback
+            traceback.print_exc()
+        # 每個 menu 之間固定 sleep，避免任何高密度 API 呼叫觸發 LINE 的 burst 限制。
+        # Sleep between menus to avoid bursty API patterns even in reuse mode.
+        await asyncio.sleep(RICH_MENU_API_DELAY)
 
     await save_config()
+
+# ========== [新增] 重建單一 rich menu (Refresh a single rich menu) ==========
+# 配合管理員指令 /refresh_menu <name> 使用。
+# 當 rich_menu.json 沒改、但某張選單的圖片檔案內容換掉時，智能重用模式因為
+# 「名稱仍存在於 LINE」會直接重用，不會自動上傳新圖片；此函式提供「精準刪除
+# 並重建單一 menu」的能力，讓圖片更新可以在不打斷其他選單的情況下生效。
+#
+# Companion helper for the /refresh_menu <name> admin command. Smart reuse keeps
+# an existing LINE menu when its name matches, so simply replacing an image file
+# on disk does NOT propagate to LINE. This helper deletes any LINE-side menu(s)
+# with the given name and re-creates exactly that one, leaving every other menu
+# untouched.
+async def refresh_single_rich_menu(menu_name: str):
+    """刪除並重建指定名稱的單一 rich menu。
+    Delete and rebuild a single rich menu identified by name.
+
+    Returns:
+        tuple[bool, str]: (success, human-readable status message in bilingual form).
+    """
+    configs = load_rich_menu_configs()
+    if menu_name not in configs.get('rich_menus', {}):
+        return (
+            False,
+            f"找不到名為 '{menu_name}' 的選單設定，請檢查 rich_menu.json。\n"
+            f"Menu '{menu_name}' is not defined in rich_menu.json."
+        )
+
+    # 列出 LINE 上所有現有 menu，刪除所有同名項目（包含因失敗部署殘留的副本）。
+    # List every menu on LINE and delete all entries sharing the target name
+    # (including stale duplicates from past failed deployments).
+    deleted_count = 0
+    try:
+        existing_menus = await rich_menu_manager.get_all_rich_menus()
+    except Exception as e:
+        return (
+            False,
+            f"無法讀取 LINE 上的現有選單清單：{e}\n"
+            f"Could not list existing rich menus on LINE: {e}"
+        )
+
+    for m in (existing_menus or []):
+        if getattr(m, 'name', None) == menu_name:
+            try:
+                await _call_with_rate_limit_retry(
+                    rich_menu_manager.delete_rich_menu,
+                    m.rich_menu_id,
+                    op_desc=f"delete_rich_menu({m.rich_menu_id})",
+                )
+                deleted_count += 1
+            except Exception as e:
+                print(f"[WARN] Could not delete rich menu {m.rich_menu_id}: {e}")
+            await asyncio.sleep(RICH_MENU_API_DELAY)
+
+    # 重新建立該 menu，並上傳對應的圖片。
+    # Recreate the menu and upload its image.
+    config_data = configs['rich_menus'][menu_name]
+    rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
+    try:
+        builder = build_rich_menu_from_config(menu_name, config_data)
+        rich_menu_id = await _call_with_rate_limit_retry(
+            rich_menu_manager.create_rich_menu,
+            builder,
+            op_desc=f"create_rich_menu({menu_name})",
+        )
+        image_file = config_data.get("file")
+        if image_file:
+            image_path = os.path.join("./templates/richmenu", image_file)
+            await _call_with_rate_limit_retry(
+                rich_menu_manager.upload_rich_menu_image,
+                rich_menu_id, image_path,
+                op_desc=f"upload_rich_menu_image({menu_name})",
+            )
+        # 若這支恰好是預設 menu，必須再設一次預設（因為舊 ID 已被刪除）。
+        # If this happens to be the default menu, re-set the default since the
+        # previous default ID was just deleted.
+        target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
+        if menu_name == target_default:
+            await _call_with_rate_limit_retry(
+                rich_menu_manager.set_default_rich_menu,
+                rich_menu_id,
+                op_desc=f"set_default_rich_menu({menu_name})",
+            )
+        set_rich_menu_id(rich_menu_id, menu_name)
+        await save_config()
+        return (
+            True,
+            f"已重建選單『{menu_name}』(刪除 {deleted_count} 個舊版本)\n新 ID: {rich_menu_id}\n\n"
+            f"Rebuilt menu '{menu_name}' (deleted {deleted_count} stale version(s)).\nNew ID: {rich_menu_id}"
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return (
+            False,
+            f"重建『{menu_name}』失敗：{e}\n"
+            f"Failed to rebuild '{menu_name}': {e}"
+        )

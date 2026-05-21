@@ -31,6 +31,13 @@ from utils.message_utils import (
     new_test_question_message,
     # NPC voice response messages (item 4)
     game_npc_voice_response_messages, game_npc_text_card_message,
+    # [新增] Chat 主題功能與 SEL 評分指示
+    # New additions: chat topic helpers and SEL evaluation instruction
+    SEL_SYSTEM_INSTRUCTION, get_chat_topic_system_prompt,
+    chat_welcome_message, chat_topic_intro_message,
+    # [新增 (SEL 多單元)] SEL 單元介紹卡片
+    # SEL multi-unit intro card
+    sel_unit_intro_message,
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
@@ -180,6 +187,79 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
         )
         return transcript_obj.text.strip()
 
+# 儲存尚未完成綁定的使用者資料暫存，key 為 user_id，value 為已填寫的資料列表
+# Temporary store for users in the middle of the account binding flow
+user_data_enter = {}
+
+
+# ========== [新增] 心流SEL 類別判別小工具 (SEL category helper) ==========
+# 涵蓋舊的單一 'sel' 類別與新的多單元 'sel1'..'sel6'，作為評分路由的統一判斷點。
+# Covers both the legacy single 'sel' category and the new multi-unit 'sel1'..'sel6';
+# used as the unified routing predicate for SEL-specific evaluation.
+_SEL_CATEGORIES = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
+
+
+def _is_sel_category(category) -> bool:
+    """判斷給定類別是否為心流SEL系列（單一 'sel' 或六個單元 'sel1'..'sel6'）。
+    Determine whether a given category belongs to the Flow SEL family
+    (the legacy 'sel' or any of the six units 'sel1'..'sel6').
+    """
+    if not category:
+        return False
+    return category in _SEL_CATEGORIES
+
+
+async def handle_follow(event) -> None:
+    """處理使用者首次加入（或封鎖後重新加入）機器人好友的事件。
+    Handle the FollowEvent triggered when a user adds (or re-adds after blocking) the bot as a friend.
+
+    修正說明：
+      原本的同意聲明僅由 check_user_login 觸發，而 check_user_login 需要使用者先主動
+      發送訊息才會執行。若 Greeting message 為純文字（無按鈕），新使用者加入後不會有任何
+      事件打到 check_user_login，導致同意聲明完全不出現。
+      本函式直接攔截 FollowEvent，在使用者加入的瞬間主動推送同意聲明，
+      不再依賴使用者主動發送訊息。
+
+    Fix:
+      The consent notice was previously only shown inside check_user_login, which requires
+      the user to send a message first. With a plain-text Greeting Message (no buttons),
+      new users trigger no events, so check_user_login is never reached and the notice never
+      appears. This function intercepts FollowEvent and proactively pushes the consent notice
+      the moment the user adds the bot, without relying on the user sending any message.
+
+    正確流程 / Correct onboarding flow:
+      1. 使用者加入好友 -> LINE 平台送出 Greeting Message (由 LINE Manager 設定)
+         User adds bot -> LINE platform sends Greeting Message (configured in LINE Manager)
+      2. FollowEvent 觸發 -> 本函式立即推送「語音資料與AI處理同意聲明」
+         FollowEvent fires -> this function immediately sends the voice data consent notice
+      3. 使用者點擊「我同意 / I agree」-> handle_postback 處理 consent -> 進入帳號綁定
+         User taps "I agree" -> handle_postback handles consent -> account binding starts
+      4. 使用者點擊「我不同意 / I disagree」-> 顯示拒絕授權卡片
+         User taps "I disagree" -> consent declined card is shown
+
+    重新綁定流程 / Re-binding flow (after /unlink, without leaving the chat):
+      - 使用者使用 /unlink 解除綁定後仍在聊天室，不會再次觸發 FollowEvent
+      - 此時使用者發送任意訊息 -> handle_text_message -> check_user_login 顯示同意聲明
+      - After /unlink, the user stays in chat so FollowEvent does not fire again.
+      - Any message they send goes through check_user_login which shows the notice.
+    """
+    user_id = event.source.user_id
+
+    # 若使用者已完成綁定（封鎖後重新加入的老使用者），直接略過
+    # If the user is already bound (returning user who re-followed after blocking), skip
+    if hasData(user_id):
+        return
+
+    # 若使用者已在進行帳號綁定流程中，直接略過，避免中斷進行中的流程
+    # If the user is already in the middle of the binding flow, skip
+    if user_id in user_data_enter:
+        return
+
+    # 推送同意聲明卡片
+    # Push the consent notice card immediately
+    await send_message(event, _build_privacy_notice_message())
+
+
 async def handle_text_message(event):
     message: str = event.message.text.strip()
     user_id = event.source.user_id
@@ -189,20 +269,215 @@ async def handle_text_message(event):
     if not await check_user_login(event, message):
         return
 
-    if message.startswith('/unlink') or message.startswith('/解除綁定'):
-        delData(user_id)
-        await send_text_message(event, "已解除綁定！\nUnlinked!")
-    elif message.startswith('/magic') or message.startswith('/魔法'):
-        await send_text_message(event, "你已變成管理員\nMagic!")
-        await addAdmin(user_id)
-        await save_config()
-    elif is_fallback_guide_enabled() and hasData(user_id):
+    # ===== [新增] 所有「/」開頭的訊息都交由 slash 指令分派器處理，不再 fall through 到 AI =====
+    # Any message starting with "/" is routed through the slash-command dispatcher and
+    # never falls through to the fallback guide AI. This guarantees that mistyped or
+    # not-yet-implemented commands receive a clear "unknown command" reply rather than
+    # an unrelated AI answer. Adding a new command only requires appending an entry to
+    # the _SLASH_COMMANDS table near the bottom of this file.
+    if message.startswith('/'):
+        await _dispatch_slash_command(event, user_id, message)
+        return
+
+    if is_fallback_guide_enabled() and hasData(user_id):
         # [修改 1] Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
         # Service4/5: respond to any non-command text message with the guide AI.
         await show_loading(user_id, secs=15)
         await handle_fallback_guide(event, user_id, message)
 
-user_data_enter = {}
+
+# ============================================================================
+# Slash command dispatcher
+# ============================================================================
+# 設計目標 / Design goals
+#   1. 任何以「/」開頭的訊息都會被攔截，不會交給 AI fallback guide 處理（避免
+#      AI 機器人對「/unmagic」這類指令回覆「我只能回答課程相關問題」這類無關訊息）。
+#   2. 用「最長別名優先」策略比對，未來若有 /something 與 /something_else 共存
+#      也不會誤判（雖然目前 /magic vs /unmagic 因字頭不同其實沒有衝突問題）。
+#   3. 新增指令時只需要：寫一個 async handler，然後在 _SLASH_COMMANDS 加一行。
+#
+#   1. Any message starting with "/" is intercepted by this dispatcher and is
+#      NEVER sent to the fallback guide AI. This avoids the AI replying to typos
+#      or unknown commands with unrelated answers.
+#   2. Longest-alias-first matching prevents future commands sharing a prefix
+#      from shadowing each other.
+#   3. Adding a new command = write an async handler + add one row to
+#      _SLASH_COMMANDS at the bottom of this section.
+
+
+async def _cmd_unlink(event, user_id, _message):
+    """指令：/unlink — 解除帳號綁定"""
+    delData(user_id)
+    await send_text_message(event, "已解除綁定！\nUnlinked!")
+
+
+async def _cmd_magic(event, user_id, _message):
+    """指令：/magic — 讓自己成為管理員"""
+    await send_text_message(event, "你已變成管理員\nMagic!")
+    await addAdmin(user_id)
+    await save_config()
+
+
+async def _cmd_unmagic(event, user_id, _message):
+    """指令：/unmagic — 暫時移除自己的管理員身分，方便以學生視角測試"""
+    if not isAdmin(user_id):
+        await send_text_message(
+            event,
+            "你目前不是管理員，無需解除。\nYou are not currently an admin; nothing to remove."
+        )
+        return
+    await removeAdmin(user_id)
+    await save_config()
+    # 切回預設主選單，方便立即以學生身分操作；切換失敗不影響權限變更。
+    # Switch the user back to the default main menu for immediate student-view
+    # testing; a switch failure does not affect the permission change.
+    try:
+        _default_menu_alias = 'menu_game' if config.get('rag_mode', False) else 'menu'
+        _default_menu_id = get_rich_menu_id(_default_menu_alias)
+        if _default_menu_id:
+            await rich_menu_manager.link_rich_menu_to_user(user_id, _default_menu_id)
+    except Exception as _e:
+        print(f"[WARN] Failed to switch rich menu after /unmagic: {_e}")
+    await send_text_message(
+        event,
+        "已移除管理員身分，現在以一般學生身分運作；輸入 /magic 可隨時恢復管理員。\n"
+        "Admin status removed. You are now in regular student mode; type /magic anytime to regain admin."
+    )
+
+
+async def _cmd_refresh_menu(event, user_id, message):
+    """指令：/refresh_menu <name> — 管理員專用，重建單一 rich menu（用於更換圖片）"""
+    if not isAdmin(user_id):
+        await send_text_message(event, "無權限！僅管理員可使用此指令。\nNo permission. Admins only.")
+        return
+    parts = message.split(maxsplit=1)
+    if len(parts) < 2 or not parts[1].strip():
+        await send_text_message(
+            event,
+            "用法：/refresh_menu <選單名稱>\n例如：/refresh_menu sel1\n\n"
+            "Usage: /refresh_menu <menu_name>\nExample: /refresh_menu sel1"
+        )
+        return
+    target_name = parts[1].strip()
+    # Lazy import to avoid top-level cycles.
+    from utils.message_utils import refresh_single_rich_menu
+    await send_text_message(
+        event,
+        f"開始重建選單「{target_name}」，請稍候…\nRefreshing menu '{target_name}', please wait..."
+    )
+    ok, info = await refresh_single_rich_menu(target_name)
+    await send_text_message(event, info)
+
+
+async def _cmd_refresh_all_menus(event, user_id, _message):
+    """指令：/refresh_all_menus — 管理員專用，強制重建全部 rich menu"""
+    if not isAdmin(user_id):
+        await send_text_message(event, "無權限！僅管理員可使用此指令。\nNo permission. Admins only.")
+        return
+    await send_text_message(
+        event,
+        "開始強制重建所有 rich menu，依選單數量約需 30-60 秒…\n"
+        "Force rebuilding all rich menus, this takes ~30-60 seconds..."
+    )
+    from utils.message_utils import create_rich_menu as _rebuild_all
+    try:
+        await _rebuild_all(force_rebuild=True)
+        await send_text_message(event, "全部 rich menu 已重建完成。\nAll rich menus rebuilt successfully.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        await send_text_message(event, f"重建過程發生錯誤：{e}\nRebuild error: {e}")
+
+
+async def _cmd_help(event, user_id, _message):
+    """指令：/help — 列出可用指令"""
+    is_user_admin = isAdmin(user_id)
+    lines = ["可用指令 / Available commands:", ""]
+    for aliases, _handler, desc_zh, desc_en, admin_only in _SLASH_COMMANDS:
+        if admin_only and not is_user_admin:
+            continue
+        alias_str = " 或 ".join(aliases)
+        suffix = " [admin]" if admin_only else ""
+        lines.append(f"{alias_str}{suffix}")
+        lines.append(f"  {desc_zh}")
+        lines.append(f"  {desc_en}")
+        lines.append("")
+    await send_text_message(event, "\n".join(lines).rstrip())
+
+
+# ----------------------------------------------------------------------------
+# Slash 指令登錄表 (Slash command registry)
+# 每筆: (別名 tuple, handler, 中文說明, 英文說明, 是否管理員專用)
+# Each row: (aliases_tuple, handler, zh_desc, en_desc, admin_only)
+# 加入新指令 = 上面寫個 _cmd_xxx，這裡加一行。
+# To add a new command: write _cmd_xxx above, then append one row here.
+# ----------------------------------------------------------------------------
+_SLASH_COMMANDS = (
+    (('/unlink', '/解除綁定'), _cmd_unlink,
+     "解除帳號綁定",
+     "Unbind your account",
+     False),
+    (('/magic', '/魔法'), _cmd_magic,
+     "讓自己成為管理員",
+     "Grant yourself admin status",
+     False),
+    (('/unmagic', '/解除魔法'), _cmd_unmagic,
+     "移除自己的管理員身分（用於以學生視角測試）",
+     "Remove your own admin status (useful for testing as a student)",
+     False),
+    (('/refresh_menu', '/重建選單'), _cmd_refresh_menu,
+     "管理員專用：刪除並重建單一 rich menu，用於更換圖片或修正單一選單",
+     "Admin only: delete and rebuild a single rich menu (useful after image updates)",
+     True),
+    (('/refresh_all_menus', '/全部重建選單'), _cmd_refresh_all_menus,
+     "管理員專用：強制重建全部 rich menu（耗時較長）",
+     "Admin only: force-rebuild every rich menu (takes longer)",
+     True),
+    (('/help', '/幫助'), _cmd_help,
+     "顯示本指令清單",
+     "Show this command list",
+     False),
+)
+
+
+async def _dispatch_slash_command(event, user_id, message: str):
+    """將「/」開頭的訊息分派至對應 handler；未知指令給出明確錯誤訊息。
+    Dispatch a slash-prefixed message to the matching handler; emit a clear error
+    for unknown commands.
+
+    匹配規則：別名長度由長到短排序，要求訊息完全等於別名，或別名後緊接一個空白
+    （後者用於支援帶參數的指令，例如 /refresh_menu sel1）。
+    Matching: aliases are sorted longest-first; the message must equal the alias
+    exactly OR start with `alias + ' '` (the latter supports commands with args
+    such as /refresh_menu sel1).
+    """
+    pairs = []
+    for aliases, handler, _zh, _en, _admin in _SLASH_COMMANDS:
+        for alias in aliases:
+            pairs.append((alias, handler))
+    pairs.sort(key=lambda x: -len(x[0]))
+
+    for alias, handler in pairs:
+        if message == alias or message.startswith(alias + ' '):
+            try:
+                await handler(event, user_id, message)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                await send_text_message(
+                    event,
+                    f"指令執行錯誤：{e}\nCommand execution error: {e}"
+                )
+            return
+
+    # 未知 / 字頭指令：明確回應，不要落入 AI fallback。
+    # Unknown slash command: explicit reply, do NOT fall through to the AI.
+    cmd_token = message.split(maxsplit=1)[0] if message else '/'
+    await send_text_message(
+        event,
+        f"未知的指令：{cmd_token}\n輸入 /help 查看可用指令清單。\n\n"
+        f"Unknown command: {cmd_token}\nType /help to see all available commands."
+    )
 
 def _build_privacy_notice_message():
     from linebot.v3.messaging import (
@@ -554,6 +829,17 @@ async def handle_audio_message(event):
             print('No text found in audio')
             return
         
+        # [新增] 心流SEL（'sel' 或多單元的 'sel1'..'sel6'）使用獨立的評分系統提示詞，
+        # 著重於句子完整性、論述結構、用詞精準度；其餘練習維持原本的 SYSTEM_INSTRUCTION。
+        # The Flow SEL section ('sel' or its multi-unit variants 'sel1'..'sel6') uses a dedicated
+        # evaluation prompt that focuses on sentence completeness, discourse structure, and word
+        # precision. All other exercises keep using SYSTEM_INSTRUCTION.
+        _system_prompt_for_audio = (
+            SEL_SYSTEM_INSTRUCTION
+            if _is_sel_category(category)
+            else SYSTEM_INSTRUCTION
+        )
+
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
             response_format=SpeechAssessment,
@@ -562,7 +848,7 @@ async def handle_audio_message(event):
             messages=[
                 {
                     "role": "system",
-                    "content": SYSTEM_INSTRUCTION,
+                    "content": _system_prompt_for_audio,
                 },
                 {
                     "role": "user",
@@ -701,6 +987,10 @@ async def handle_npc_chat(event, user_id, user_state):
                 "persona": "A helpful guide.",
                 "file": "narrator.md"
             }
+        
+        # [修正] 補上 NPC 對話用的 history_key，原本在後續 Phase 2 評估呼叫中被引用但未定義。
+        # Define history_key here; it was referenced by the Phase 2 evaluation task but never set.
+        history_key = f'{theme_id}-npc-{npc_idx}'
         
         # Get RAG context
         rag_path = os.path.join("category", "rag_docs", theme_id, npc_info["file"])
@@ -1201,15 +1491,25 @@ async def send_audio_request(event, history, text, secs):
     
     user_id = event.source.user_id
     user = getUser(user_id)
+    user_state = get_user_state(user_id)
     if not history:
         history = ChatHistory()
     
     history.questions.append(text)
     
-    messages = [
-        {
-            "role": "system",
-            "content": f"""You are a friendly and helpful AI English-speaking coach for college students who are non-native speakers in Taiwan. 
+    # [新增] 根據使用者目前所選的 chat 主題（user_state.sub）附加主題專屬提示詞。
+    # 若使用者尚未選擇主題（sub < 0），則回傳空字串，AI 走一般對話模式。
+    # 僅在 service4/5 (rag_mode) 啟用主題感知，避免改變 service1/2/3 的原始行為。
+    #
+    # Append topic-specific prompt fragment based on the user's selected chat topic
+    # (user_state.sub). If no topic is selected, the fragment is an empty string and the
+    # AI behaves in generic conversation mode. Topic awareness is gated to service4/5
+    # (rag_mode) to preserve the original behavior of service1/2/3.
+    _topic_prompt = ""
+    if config.get('rag_mode', False) and user_state is not None:
+        _topic_prompt = get_chat_topic_system_prompt(user_state.sub)
+
+    base_prompt = f"""You are a friendly and helpful AI English-speaking coach for college students who are non-native speakers in Taiwan. 
             Their names are {user.name}.
             Your job is to engage in natural, supportive conversations that help them practice speaking.
 
@@ -1221,7 +1521,14 @@ async def send_audio_request(event, history, text, secs):
             Keep responses under 60 words unless explaining something complex. Do not use bullet points, markdown, or formatted text - just natural conversational language.
 
             If asked about topics you don't know, just say you're not sure. Don't mention being an AI assistant.
-            """,
+            """
+    if _topic_prompt:
+        base_prompt = base_prompt + "\n\n" + _topic_prompt
+
+    messages = [
+        {
+            "role": "system",
+            "content": base_prompt,
         }
     ]
     
@@ -1302,6 +1609,24 @@ async def handle_postback(event):
     if action == 'chat':
         if vars.get('summary'):
             await handle_chat_summary(event)
+        elif 'sub' in vars:
+            # [新增] 使用者點擊 chat rich menu 中的主題按鈕（旅遊 / 運動 / 面試 / 英語技巧）。
+            # 將該主題索引存入 user_state.sub，後續 send_audio_request 會依此調整 AI 系統提示詞。
+            # User picked a chat topic button (Travel / Sports / Interview / English Skills).
+            # Save the topic index into user_state.sub so the subsequent AI system prompt
+            # can be tailored in send_audio_request.
+            try:
+                sub = int(vars.get('sub'))
+            except (TypeError, ValueError):
+                sub = -1
+            if not isEnabled('chat') and not isAdmin(user_id):
+                await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
+                return
+            user_state.category = 'chat'
+            user_state.sub = sub
+            # 傳送中英對照的主題確認訊息（英文在前、中文在後）。
+            # Send the bilingual topic confirmation message (English first, Chinese second).
+            await send_message(event, await chat_topic_intro_message(sub))
         else:
             history = getChatHistory(user_id)
             if history and len(history.answers) > 0:
@@ -1366,10 +1691,21 @@ async def handle_postback(event):
             await send_text_message(event, '無權限!\nNo permission!')
             return
         
+        # [新增] 保存切換前所在的類別，供後續邏輯判斷使用（例如：判斷是否該補送 chat 進入提示）。
+        # Capture the category the user was on BEFORE the switch, used by downstream logic
+        # (e.g. deciding whether to send the chat welcome card).
+        previous_category = user_state.category
+
         # RAG mode menu switch logic
         is_rag = config.get('rag_mode', False)
         if alias == 'menu':
-            if is_rag:
+            # [新增] service4/5 (rag_mode=true) 中，若使用者目前位於 chat 區塊，
+            # 「menu」按鈕應回到 menu_other，而非主選單 menu_game。
+            # In service4/5 (rag_mode=true), when the user is currently on the chat menu,
+            # the "menu" button should return to menu_other rather than the top menu_game.
+            if is_rag and previous_category == 'chat':
+                alias = 'menu_other'
+            elif is_rag:
                 alias = 'menu_game'
         elif alias == 'menu_game':
             if not is_rag:
@@ -1383,7 +1719,17 @@ async def handle_postback(event):
         # Admins can still manage settings via game_admin/admin menus; to access a closed section,
         # enable it first from the admin panel.
         _switch_enabled_cat = get_enabled_category_for_alias(alias)
-        _SWITCH_CONTROLLED = {'pretest', 'posttest', 'rag_test', 'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat'}
+        # [Change 2] 'sel' (Flow SEL / 心流SEL) added here so the enable/disable
+        # gate applies to it just like the standard exercises.
+        # 新增 'sel' 使其與一般練習相同，受到開啟/關閉開關控制。
+        # [新增 (SEL 多單元)] 加入 sel1..sel6 共六個單元，使每一單元可由後台獨立開關控制。
+        # Added sel1..sel6 (six SEL units), each independently toggleable from the admin panel.
+        _SWITCH_CONTROLLED = {
+            'pretest', 'posttest', 'rag_test',
+            'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6',
+            'chat', 'sel',
+            'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6',
+        }
         if alias not in ['menu_other'] and _switch_enabled_cat in _SWITCH_CONTROLLED and not isEnabled(_switch_enabled_cat):
             await send_text_message(event, "此區塊尚未開放作答或使用，請等待老師開啟。\nThis section is not yet open for answering or use. Please wait for your teacher to enable it.")
             # 若 LINE 平台已先執行了選單跳轉（RichMenuSwitchAction），立刻將使用者拉回預設主選單，
@@ -1419,13 +1765,81 @@ async def handle_postback(event):
         # Auto popup menu
         # pretest/posttest family: the rich menu itself IS the navigation UI, no auto-popup needed.
         _NO_POPUP_PREFIXES = ('pretest', 'posttest')
+        # [新增] 進入 chat 區時主動發送中英對照歡迎訊息，但若使用者從語音設定（audio/sex/accent）
+        # 或已在 chat 內返回，則略過，避免重複打擾。
+        # When entering the chat section, proactively send the bilingual welcome message,
+        # but skip it when the user is bouncing back from audio settings or is already on chat,
+        # to avoid repeated notices.
+        if alias == 'chat' and is_rag and previous_category not in ('chat', 'audio', 'sex', 'accent'):
+            await send_message(event, await chat_welcome_message())
+            return
+        # [新增 (SEL 多單元)] 進入單一 SEL 單元 (sel1..sel6) 時，主動發送該單元的介紹卡片，
+        # 取代原本針對有題目類別會自動彈出的題目輪播。
+        # When entering a single SEL unit (sel1..sel6), send the unit intro card instead of the
+        # default question carousel that would otherwise auto-pop for categories with questions.
+        if alias in ('sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'):
+            try:
+                unit_num = int(alias.replace('sel', ''))
+            except ValueError:
+                unit_num = 1
+            user_state.sub = -1
+            await send_message(event, await sel_unit_intro_message(unit_num))
+            return
         if any(alias.startswith(p) for p in _NO_POPUP_PREFIXES):
             pass
-        elif question_manager.has_question(user_state.category) and alias not in ['chat', 'admin', 'game_admin']:
+        elif alias in ('chat', 'admin', 'game_admin', 'sel', 'sel-2'):
+            # chat 與 sel 系列大廳頁面（unit selection）不自動彈題目；交由其他邏輯處理。
+            # chat and SEL lobby pages (unit selection) do not auto-pop a question carousel.
+            pass
+        elif question_manager.has_question(user_state.category):
             await send_message(event, await carousel_message(user_id, user_state.category, 0))
 
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
+
+    # ===== [新增 (SEL 多單元)] 心流SEL 單元選擇 =====
+    # 使用者在 'sel' / 'sel-2' rich menu 點擊單元按鈕後觸發。
+    # 將使用者切到該單元的 rich menu (sel1..sel6) 並送出該單元的介紹卡片。
+    # User taps a unit button in the 'sel' / 'sel-2' rich menu; switch them to the
+    # individual unit menu (sel1..sel6) and show that unit's bilingual intro card.
+
+    elif action == 'sel_unit':
+        try:
+            unit_num = int(vars.get('unit', 1))
+        except (TypeError, ValueError):
+            unit_num = 1
+        if unit_num < 1 or unit_num > 6:
+            await send_text_message(event, "未知的 SEL 單元。\nUnknown SEL unit.")
+            return
+
+        unit_category = f'sel{unit_num}'
+        # 每個單元獨立開關控制；管理員不受此限制（與其他類別一致）。
+        # Per-unit enable gate; admins bypass (consistent with other categories).
+        if not isEnabled(unit_category) and not isAdmin(user_id):
+            await send_text_message(event, "該單元尚未開放，請等待老師開啟。\nThis unit is not yet open. Please wait for your teacher to enable it.")
+            return
+
+        # 切換至該單元的 rich menu。若該 rich menu 尚未註冊，提示管理員處理。
+        # Switch the user to that unit's rich menu. If the rich menu has not been
+        # registered yet, prompt the admin to reload.
+        rich_menu_id = get_rich_menu_id(unit_category)
+        if rich_menu_id:
+            try:
+                await rich_menu_manager.link_rich_menu_to_user(user_id, rich_menu_id)
+            except Exception as _link_err:
+                print(f"[WARN] Failed to link SEL unit rich menu: {_link_err}")
+        else:
+            await send_text_message(
+                event,
+                f"Menu '{unit_category}' is not registered. Please ask admin to reload.\n"
+                f"Menu '{unit_category}' 尚未註冊，請通知管理員重新載入。"
+            )
+            return
+
+        user_state.category = unit_category
+        user_state.sub = -1
+        user_state.in_npc_chat = False
+        await send_message(event, await sel_unit_intro_message(unit_num))
 
     # ===== new_test 題目作答 (pretest1 / posttest1) — 由 rich menu 按鈕觸發 =====
 
