@@ -756,7 +756,7 @@
         },
         "sel": {
             "file": "boardGameTheme_1.jpg",
-            "chat_bar_text": "Flow SEL",
+            "chat_bar_text": "SEL",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "Monopoly", "data": "action=sel_unit&unit=1" },
@@ -769,7 +769,7 @@
         },
         "sel-2": {
             "file": "boardGameTheme_2.jpg",
-            "chat_bar_text": "Flow SEL",
+            "chat_bar_text": "SEL",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "Tower", "data": "action=sel_unit&unit=4" },

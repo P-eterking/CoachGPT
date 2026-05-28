@@ -72,7 +72,33 @@ DEFAULT_CONFIG = {
     #      'game_structure_image': 'structure.jpg'
     #   2. 完整路徑 (full URL path from site root):
     #      'game_structure_image': '/templates/structure.jpg'
-    'game_structure_image': '/templates/structure.jpg'
+    'game_structure_image': '/templates/structure.jpg',
+    # ========== [新增] 三項評分系統與卡片功能的開關 ==========
+    # 三個獨立的 config flag，可由管理員從後台單獨開關以利 A/B 比較或回滾。
+    # 預設皆為 True（啟用最新的改善行為），若要回到舊行為可在 config.json 設為 false。
+    #
+    # Three independent config flags to enable/disable the new features individually.
+    # All default to True (latest improved behaviour); set to false in config.json
+    # to revert to the legacy behaviour for A/B testing or rollback.
+    #
+    # (1) enable_level_card_image: 控制情境解謎模式 Topic-Level 卡片是否顯示頂部圖片。
+    #     圖片以命名規則自動對應到 /templates/level_img/theme{X}_level{Y}_img.jpg。
+    #     Toggle for showing the hero image on game Topic-Level intro cards.
+    'enable_level_card_image': True,
+    # (2) fix_standard_newlines: 修正 audio 評分時 assessment_standard 的 chr(10) 壓平 bug。
+    #     設為 True 時保留十級分級結構的換行，讓 AI 可清楚識別每個分數區隔；
+    #     設為 False 則維持原本 .replace(chr(10), '') 的舊行為。
+    #     Toggle the chr(10) flattening bug fix for the assessment_standard text;
+    #     True preserves newlines (recommended), False keeps the legacy flattening.
+    'fix_standard_newlines': True,
+    # (3) use_tiered_standard_for_sel: SEL 系列題目的 <standard> 是否要展開為 few-shot 區塊。
+    #     設為 True 時，SEL audio 評分會把 assessment_standard 解析為十級結構後，
+    #     格式化為「Score X examples:」few-shot 區塊（與情境解謎遊戲一致）；
+    #     設為 False 時 SEL 走與一般練習相同的純字串路徑。
+    #     For SEL questions, whether to expand <standard> into a few-shot block;
+    #     True formats it as "Score X examples:" (recommended for SEL),
+    #     False uses the same plain-string path as general exercises.
+    'use_tiered_standard_for_sel': True
 }
 
 # 設定檔案
@@ -166,8 +192,8 @@ def get_enabled_category_for_alias(alias: str) -> str:
     }
     if alias in _GAME_ALIASES or alias.startswith('game_theme'):
         return 'rag_test'
-    # [新增 (SEL 多單元)] 心流SEL 單元選擇大廳的子頁面（sel-2）統一回到 sel 主開關。
-    # The Flow SEL unit-selection lobby sub-pages (sel-2) map to the master 'sel' gate.
+    # [新增 (SEL 多單元)] SEL 單元選擇大廳的子頁面（sel-2）統一回到 sel 主開關。
+    # The SEL unit-selection lobby sub-pages (sel-2) map to the master 'sel' gate.
     # 個別單元（sel1..sel6）本身就是各自的啟用類別，原樣回傳。
     # Individual units (sel1..sel6) are their own enabled categories and are returned as-is.
     if alias == 'sel-2':
@@ -303,16 +329,16 @@ FEATURE_DISPLAY_NAMES = {
     'ex4': '練習四',
     'ex5': '練習五',
     'ex6': '練習六',
-    # [Change 2] 心流SEL / Flow SEL
-    'sel': '心流SEL',
+    # [Change 2] SEL
+    'sel': 'SEL',
     # [新增 (SEL 多單元)] 六個 SEL 子單元，方便後台管理員啟用/停用訊息顯示出對應名稱。
     # The six SEL sub-units, so admin enable/disable messages show the correct name.
-    'sel1': '心流SEL-地產大亨',
-    'sel2': '心流SEL-生命之旅',
-    'sel3': '心流SEL-換言一新',
-    'sel4': '心流SEL-驚險塔',
-    'sel5': '心流SEL-食人花',
-    'sel6': '心流SEL-Seven!',
+    'sel1': 'SEL-地產大亨',
+    'sel2': 'SEL-生命之旅',
+    'sel3': 'SEL-換言一新',
+    'sel4': 'SEL-驚險塔',
+    'sel5': 'SEL-食人花',
+    'sel6': 'SEL-Seven!',
 }
 
 def get_feature_display_name(alias: str) -> str:
@@ -591,6 +617,53 @@ def get_theme_display_number(theme_id: str) -> str:
     if theme_id and theme_id.startswith('theme'):
         return theme_id.replace('theme', '')
     return theme_id if theme_id else '?'
+
+def is_level_card_image_enabled() -> bool:
+    """是否啟用情境解謎模式 Topic-Level 卡片頂部圖片。
+    Whether to render the hero image on game Topic-Level intro cards."""
+    return config.get('enable_level_card_image', True)
+
+
+def is_standard_newlines_fix_enabled() -> bool:
+    """是否啟用 assessment_standard 換行符保留修正 (修正 chr(10) bug)。
+    Whether to preserve newlines in assessment_standard (the chr(10) bug fix)."""
+    return config.get('fix_standard_newlines', True)
+
+
+def is_tiered_standard_for_sel_enabled() -> bool:
+    """是否將 SEL 的 <standard> 展開為 few-shot 區塊。
+    Whether to expand SEL <standard> into a few-shot example block."""
+    return config.get('use_tiered_standard_for_sel', True)
+
+
+def get_level_card_image_path(theme_id: str, level_idx: int) -> Optional[str]:
+    """取得 Topic-Level 卡片頂部圖片的網站相對路徑。
+    Get the site-relative path for the Topic-Level hero image.
+
+    命名規則: /templates/level_img/theme{X}_level{Y}_img.jpg
+      X = theme 顯示編號 (theme1 -> 1, theme2 -> 2, ...)
+      Y = 1-based 關卡編號 (level_idx + 1)
+
+    Naming convention: /templates/level_img/theme{X}_level{Y}_img.jpg
+      X = display theme number, Y = 1-based level number.
+
+    Args:
+        theme_id: 主題識別碼 (例如 'theme1')。Theme identifier.
+        level_idx: 0-based 關卡索引。 0-based level index.
+
+    Returns:
+        站點相對路徑字串 (不含 domain)；若 theme_id 或 level_idx 無效則回傳 None。
+        Site-relative path string (without the domain); None on invalid input.
+    """
+    if not theme_id:
+        return None
+    if level_idx is None or level_idx < 0:
+        return None
+    theme_num = get_theme_display_number(theme_id)
+    if theme_num == '?':
+        return None
+    level_num = level_idx + 1  # 0-indexed -> 1-indexed
+    return f'/templates/level_img/theme{theme_num}_level{level_num}_img.jpg'
 
 def get_game_prologue(theme_id: str) -> str:
     """取得遊戲主題的前情提要"""
@@ -1206,7 +1279,7 @@ async def load_config():
                 await file.write(json.dumps(config, indent=4))
         print("Config created successfully.")
 
-    # ===== [新增] 心流SEL 多單元相容遷移 (Flow SEL multi-unit compatibility migration) =====
+    # ===== [新增] SEL 多單元相容遷移 (SEL multi-unit compatibility migration) =====
     # 舊版本只有單一 'sel' 類別；新版本拆分為 sel1..sel6 並由後台個別控制開關。
     # 若 config 仍處於「'sel' 啟用、但 sel1..sel6 完全未列入 enabled」的舊狀態，
     # 視為「使用者尚未針對新版本做設定」，自動將 6 個單元加入 enabled 清單，

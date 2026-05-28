@@ -136,6 +136,83 @@ def build_reference_answers_section(
     else:
         return "No reference answers provided."
 
+def _parse_tiered_assessment_standard(raw: str):
+    if not raw:
+        return None
+    tiered = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if '\t' not in line:
+            return None
+        parts = line.split('\t', 1)
+        try:
+            score_level = int(parts[0].strip())
+        except ValueError:
+            return None
+        examples = [ex.strip() for ex in parts[1].split('|') if ex.strip()]
+        tiered[score_level] = examples
+    return tiered if tiered else None
+
+def build_standard_section_for_audio(
+    assessment_standard: str,
+    is_sel: bool = False
+) -> str:
+    """
+    產生 audio 評分 user message 中的 <standard>...</standard> 區段。
+    Build the <standard>...</standard> XML section for the audio assessment user message.
+
+    Args:
+        assessment_standard: 題目的 assessment_standard 原始字串（可能是十級格式）。
+                              Raw assessment_standard string for the question (possibly tiered).
+        is_sel: 是否為SEL 系列題目；SEL 採取展開十級為 few-shot 的格式以強化辨識度。
+                Whether the question is from the SEL family; SEL uses an expanded
+                few-shot block for stronger AI parsing.
+
+    Returns:
+        若 assessment_standard 為空則回傳空字串；否則回傳完整 <standard>...</standard> 段落。
+        Empty string if assessment_standard is empty; otherwise the full XML section.
+    """
+    if not assessment_standard:
+        return ""
+
+    # 動態載入 config flags，避免循環引用。
+    # Imported lazily to avoid circular imports with file_utils.
+    try:
+        from utils.file_utils import (
+            is_standard_newlines_fix_enabled,
+            is_tiered_standard_for_sel_enabled,
+        )
+        fix_newlines = is_standard_newlines_fix_enabled()
+        use_tiered_for_sel = is_tiered_standard_for_sel_enabled()
+    except Exception:
+        # Fallback：若無法載入 config，套用安全的預設值。
+        # Fallback to safe defaults if config helpers are unavailable.
+        fix_newlines = True
+        use_tiered_for_sel = True
+
+    # SEL 區塊：嘗試以十級結構展開為 few-shot 區塊。
+    # SEL: try to expand tiered structure into a few-shot block.
+    if is_sel and use_tiered_for_sel:
+        tiered = _parse_tiered_assessment_standard(assessment_standard)
+        if tiered:
+            section = build_reference_answers_section(tiered_reference_answers=tiered)
+            return f"<standard>\n{section}</standard>"
+
+    # 一般練習與 fallback：根據 config flag 決定是否保留換行。
+    # General exercises and fallback: respect config flag to preserve newlines.
+    if fix_newlines:
+        # 修正 chr(10) bug：保留換行，僅去除首尾空白。
+        # Bug fix: preserve newlines, only strip outer whitespace.
+        cleaned = assessment_standard.strip()
+    else:
+        # 維持舊行為（chr(10) 移除）以提供回滾選項。
+        # Legacy behaviour (chr(10) stripped) kept as a rollback option.
+        cleaned = assessment_standard.replace(chr(10), '').strip()
+
+    return f"<standard>{cleaned}</standard>"
+
 SYSTEM_INSTRUCTION = f"""
         You are a professional English speaking assessment assistant, skilled at providing improvement suggestions and improved text based on Taiwanese non-native speaker college students' responses.
         
@@ -222,25 +299,39 @@ SYSTEM_INSTRUCTION = f"""
         The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
     """
 
-# ========== 心流SEL 評分系統指示 (Flow SEL evaluation system instruction) ==========
-# 心流SEL 區塊是讓使用者分享個人經驗與心情，沒有固定答案。
+# ========== SEL 評分系統指示 (SEL evaluation system instruction) ==========
+# SEL 區塊是讓使用者分享個人經驗與心情，沒有固定答案。
 # 評分重點：句子表達完整性、論述結構、用詞精準度。
 # 評分標準維持與練習區塊相同的 10 級制（與 exercises 一致），但採取「寬鬆但具鑑別度」的策略，
 # 避免因要求固定答案而過度嚴苛。
-#
-# The Flow SEL section invites users to share personal experiences and feelings; there is no fixed answer.
-# Scoring focus: sentence completeness, argument structure, word precision.
-# The 10-point scale is preserved (same framework as the exercises section) but the grading is
-# intentionally more lenient while still discriminating between expression quality levels.
 SEL_SYSTEM_INSTRUCTION = f"""
         You are a supportive English speaking assessment assistant for Taiwanese non-native speaker college students.
-        You are evaluating responses in the "Flow SEL" section, where students share their personal experiences,
+        You are evaluating responses in the "SEL (Social Emotional Learning)" section, where students share their personal experiences,
         feelings, opinions, and reflections in English. There is NO fixed correct answer.
 
         userAnswer represents the user's spoken response
         question represents the open-ended prompt that invites personal sharing
-        standard represents any optional guidance (it is informational only; do NOT treat it as a required answer)
+        standard represents the TIERED REFERENCE ANSWERS designed specifically for THIS question (10 score
+                 levels with example sentences from level 10 down to level 1). When standard is provided,
+                 it is the PRIMARY linguistic-complexity anchor for grading: an answer whose linguistic
+                 quality matches the level-N examples should receive around N points. The CONTENT of the
+                 standard examples (specific strategies, topics, or experiences they describe) is for
+                 calibration only - the student is NOT required to match the standard's specific topic
+                 or strategy in any way.
         maxScore represents the maximum score
+
+        REFERENCE PRIORITY (CRITICAL - read carefully):
+        1. When <standard> is provided in the user message, treat its score-level examples as the
+           PRIMARY anchors for grading. They are specifically designed for the question being asked
+           and reflect realistic student output at each level for this exact prompt.
+        2. The 10-POINT SCALE descriptions and built-in example sentences below are SECONDARY anchors.
+           Use them only to support your judgement (a) when <standard> is missing, or (b) when an
+           edge case in the student's answer is not clearly covered by the <standard> examples.
+        3. NEVER compare the CONTENT of the student's answer to the CONTENT of either reference set.
+           Both references are ONLY for calibrating LINGUISTIC EXPRESSION QUALITY (sentence
+           completeness, discourse structure, word precision, grammar). A sincere on-topic answer
+           that uses a completely different personal strategy, opinion, or experience from the
+           examples is fully acceptable and must NOT be down-scored for content divergence.
 
         EVALUATION FOCUS (in order of importance):
         1. Sentence Completeness: Did the student speak in complete English sentences (subject + verb + object),
@@ -255,41 +346,135 @@ SEL_SYSTEM_INSTRUCTION = f"""
         - Do NOT require any specific information, vocabulary, or "correct answer". Any sincere, on-topic
           personal response is acceptable.
         - Do NOT down-grade for cultural background, lifestyle choices, or personal preferences.
+        - Do NOT down-grade simply because the student's answer differs in topic, strategy, or example
+          from the <standard> examples or the built-in anchor examples.
 
         GRADING STYLE: Be lenient but still discriminating. Reward genuine effort to express thoughts in
         complete English. The grade should reflect language expression quality, not the content of the answer.
 
-        10-POINT SCALE (for personal-expression responses):
-        10 - Outstanding Expresser: Uses complete, varied English sentences to present a clear, well-structured
-             personal response (e.g. topic + supporting detail/example + closing). Word choice is precise and
-             natural, with very few or no grammar issues. Awarding full marks is appropriate when the response
-             is fluent and well-organized; do not withhold 10 just because the answer is short, as long as it
-             is complete, structured, and precise.
-        9  - Very Strong Expresser: Mostly complete and well-structured sentences with rich, accurate wording.
-             Only occasional minor errors that do not impede understanding.
-        8  - Strong Expresser: Complete sentences with a clear main idea and at least one supporting detail.
-             Word choice is mostly precise; minor grammar issues may appear but the response remains coherent.
-        7  - Solid Expresser: Generally complete sentences and a recognisable structure (e.g. topic + reason or
-             example), with some grammar or word-choice imperfections that do not block understanding.
-        6  - Adequate Expresser: At least one complete sentence with a relevant idea, though structure is
-             simple or partially developed. Wording may be repetitive or imprecise, but the overall message
-             is understandable.
-        5  - Emerging Expresser: Mostly short or simple sentences, limited development of the idea, some
-             grammar or word-form errors. The personal point is still discernible.
-        4  - Limited Expresser: Fragmented or partially formed sentences; the response gestures toward an idea
-             but lacks clear structure or precision.
-        3  - Very Limited Expresser: Mostly phrases or isolated words, with little sentence structure. The
-             student tries but the message is hard to follow.
-        2  - Minimal Expression: Single words or memorised fragments only; communication is mostly broken.
-        1  - No Effective Expression: The student does not respond meaningfully, is silent, or speaks
-             unrelated content / nonsense.
+        10-POINT SCALE (SECONDARY linguistic anchors for personal-expression responses):
+        The examples below are BUILT-IN linguistic anchors that illustrate the typical sentence
+        completeness, discourse structure, word precision, and grammar quality at each score level.
+        They are SECONDARY to the <standard> examples from the user message (the JSON-defined
+        per-question reference). Use these only as fallback or supplementary calibration.
+        The example sentences are intentionally drawn from common SEL-style topics (emotions,
+        social experiences, personal reflection) - they are NOT topic templates the student must follow.
+        Each level below covers the same six dimensions in the same order so the AI can rate
+        consistently across attempts: (a) sentence completeness, (b) discourse structure /
+        development, (c) word precision and range, (d) grammar quality, (e) when this score is
+        appropriate, (f) a concrete sample answer that illustrates this level.
+
+        10 - Outstanding Expresser: Speaks in complete, varied English sentences with confident control
+             of both simple and slightly more complex structures. Presents a clear, well-organized
+             personal response that includes a topic statement, at least one developed supporting
+             detail or specific example, and often a brief closing thought. Word choice is precise,
+             natural, and well-suited to the topic; vocabulary range is noticeably above the basic
+             level. Grammar is essentially clean - at most very minor slips that do not affect meaning.
+             Award 10 whenever the response is fluent, well-organized, and linguistically precise - do
+             NOT withhold full marks just because the answer is short, as long as it is complete,
+             structured, and precisely worded. Example: "I felt really nervous before my class
+             presentation, but I took a few deep breaths and reminded myself that I had prepared
+             carefully. Focusing on the friendly faces in the audience helped me calm down and
+             deliver my points clearly."
+
+        9  - Very Strong Expresser: Speaks in mostly complete sentences and uses a mix of simple and
+             slightly more complex structures (uses connectors such as "because", "when", "although"
+             correctly). The personal idea is well developed with at least one clear supporting
+             detail or specific example; the structure is logical even if a closing thought is
+             missing. Word choice is rich, accurate, and varied; word forms are generally correct.
+             Grammar has only occasional minor errors (article use, tense slips, plural endings) that
+             do not impede understanding. Award 9 when the response feels natural and well-organized
+             but lacks the final polish, fluency, or closing that would push it to 10. Example:
+             "When I feel stressed about exams, I usually call my best friend and talk about how I
+             feel. Hearing her perspective helps me see the problem more clearly and feel less alone."
+
+        8  - Strong Expresser: Speaks in complete sentences (subject + verb + object) with one or two
+             connectors; sentences may lean simple but they are structurally intact. A clear main idea
+             is backed up by at least one concrete supporting detail, reason, or example; the
+             structure is straightforward and easy to follow on first listen. Word choice is mostly
+             precise and appropriate to the topic; word forms are generally correct. Minor grammar
+             issues (subject-verb agreement, tense consistency, plurals, articles) appear here and
+             there but do not obstruct meaning. Award 8 when the student presents a clear personal
+             point with one specific example or reason, in on-topic and largely accurate language.
+             Example: "I feel anxious when I meet new classmates, so I try to smile and ask them
+             about their hobbies. This helps me start a friendly conversation."
+
+        7  - Solid Expresser: Most sentences are complete; one or two may be slightly fragmented or
+             run-on but the meaning is still clear on first listen. A recognisable structure is
+             present (topic + reason, or topic + example), though the supporting detail may be brief,
+             generic, or only loosely tied to the main idea. Word choice serves the meaning but is
+             often repetitive, basic, or occasionally inaccurate; vocabulary range is limited.
+             Several grammar or word-form errors appear (missing articles, wrong tense, dropped
+             auxiliary verbs), yet the overall message remains understandable. Award 7 when the
+             response is coherent and on-topic with a clear point and at least a brief reason or
+             example, despite noticeable surface-level errors. Example: "I feel sad when I argue
+             with my friend. I usually write a message to say sorry. Then I feel better and we
+             can talk again."
+
+        6  - Adequate Expresser: Produces at least one complete sentence, usually mixed with shorter
+             or simpler utterances; the longest sentence has subject + verb at minimum. A single
+             relevant idea reaches the listener, but the structure is plain - typically just a
+             statement with little or no elaboration, and no real supporting example. Wording is
+             repetitive, vague, or imprecise, yet the listener can still recover the intended
+             meaning without much effort. Multiple grammar or word-form issues are present (missing
+             -s endings, missing articles, inconsistent tense) without breaking the overall message.
+             Award 6 when the personal point is communicated in at least one complete sentence, even
+             if the response is short, undeveloped, or noticeably limited in language. Example:
+             "I feel happy when I talk with friends. We share things and help each other."
+
+        5  - Emerging Expresser: A mix of short, simple sentences and incomplete fragments; many
+             utterances are missing a verb, an object, or a clear subject. A personal point is
+             detectable but it does not develop beyond a single short statement; there is no real
+             supporting detail or follow-up. Vocabulary range is limited and noticeably basic;
+             word-form and word-choice errors are common (using a noun where a verb is needed, or
+             the wrong part of speech). Frequent grammar errors occasionally make the meaning
+             unclear, but the listener can still recover the gist with some effort. Award 5 when the
+             personal idea is discernible but the linguistic output is clearly limited,
+             underdeveloped, and halting. Example: "I happy with friend. We talk many thing. I
+             no lonely."
+
+        4  - Limited Expresser: Output is mostly partial sentences and phrases; very few or no
+             complete sentences appear. The response gestures toward an idea, but the listener has
+             to do significant work to piece it together, and there is no real organizational
+             structure beyond a loose sequence of fragments. Word choice is very limited, frequently
+             imprecise or incorrect, and word forms are often wrong (e.g. confusing noun and verb
+             forms). Pervasive grammar errors obstruct meaning in several places. Award 4 when the
+             student is clearly trying and stays on topic, but the language output is mostly
+             fragmentary and hard to follow without context. Example: "Sad sometime. Talk friend.
+             Then happy."
+
+        3  - Very Limited Expresser: Output is mostly isolated phrases or single words; sentence-
+             level structure barely exists, and what little structure there is feels accidental
+             rather than intended. There is no real organization - just a few topical keywords
+             strung together, often with long pauses, restarts, or hesitations. Vocabulary is
+             minimal and often inaccurate or misapplied to the situation; the student may repeat
+             the same word several times in lieu of building a sentence. Extensive grammar errors
+             throughout; the listener can only guess at the intended meaning. Award 3 when the
+             student produces some on-topic English but is clearly unable to form full sentences.
+             Example: "Friend. Good. Happy."
+
+        2  - Minimal Expression: No sentences are produced; only one or two isolated words or
+             memorised fragments. No structural output to assess; the response is essentially a
+             topic-related keyword rather than communication. Word choice is reduced to one or two
+             terms that are topically related but carry almost no information about the student's
+             actual experience or opinion. Grammar cannot really be assessed because there is not
+             enough structure to evaluate. Award 2 when the student signals topic-awareness with a
+             tiny linguistic response but nothing more - not even a phrase. Example: "Friend.
+             Happy."
+
+        1  - No Effective Expression: The student does not respond meaningfully - silence, an
+             unrelated "I don't know" with no follow-up, off-topic content, or nonsense. There is
+             no usable sentence structure, no on-topic vocabulary, and no recoverable personal
+             idea. Grammar is not assessable because there is no substantive English output to
+             evaluate. Award 1 ONLY when the response provides nothing the assessor can evaluate
+             as personal expression in English. Important: do NOT use 1 for short-but-on-topic
+             answers - those should start at 5 or 6 based on completeness.
 
         Tips for being lenient yet discriminating:
         - When the student speaks complete sentences with a clear personal point and reasonable word choice,
           start the score at 8 and adjust up or down from there.
         - Short responses can still earn 8-10 if they are complete sentences with precise wording and a
-          clear, well-organized idea (e.g. "I love hiking because it clears my mind and lets me reconnect
-          with nature.").
+          clear, well-organized idea.
         - Do NOT lower the score because the content is "ordinary" — content is not graded here.
 
         Perform the task step by step:
@@ -939,8 +1124,8 @@ async def chat_topic_intro_message(sub: int):
     return TextMessage(text=text)
 
 
-# ========== [新增 (SEL 多單元)] 心流SEL 六個單元的設定與單元介紹卡片 ==========
-# Flow SEL six-unit configuration and the unit intro card builder.
+# ========== [新增 (SEL 多單元)] SEL 六個單元的設定與單元介紹卡片 ==========
+# SEL six-unit configuration and the unit intro card builder.
 #
 # 設計：每一個 SEL 單元在進入時都會先顯示一張卡片，卡片包含該單元的圖片與雙語說明，
 # 使用者了解該單元的桌遊背景後，才從 rich menu 中選擇題目作答。
@@ -1007,8 +1192,8 @@ def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
 
 
 async def sel_unit_intro_message(unit_num: int):
-    """進入心流SEL 單元時顯示的雙語介紹卡片。
-    Bilingual intro card shown when the user enters a Flow SEL unit.
+    """進入SEL 單元時顯示的雙語介紹卡片。
+    Bilingual intro card shown when the user enters a SEL unit.
 
     內容：
       - 該單元的圖片（若存在）
@@ -1028,7 +1213,7 @@ async def sel_unit_intro_message(unit_num: int):
     if not cfg:
         # 防呆：未知單元編號時退回純文字提示。
         # Safety fallback: unknown unit number returns a plain text notice.
-        return TextMessage(text=f"Unknown SEL unit / 未知的心流SEL 單元: {unit_num}")
+        return TextMessage(text=f"Unknown SEL unit / 未知的 SEL 單元: {unit_num}")
 
     name_eng = cfg.get('name_eng', '')
     name_chi = cfg.get('name_chi', '')
@@ -1046,7 +1231,7 @@ async def sel_unit_intro_message(unit_num: int):
 
     body_contents = [
         FlexText(
-            text=f"Flow SEL Unit {unit_num}",
+            text=f"SEL Unit {unit_num}",
             wrap=True,
             weight='bold',
             size='md',
@@ -1122,7 +1307,7 @@ async def sel_unit_intro_message(unit_num: int):
         )
 
     return FlexMessage(
-        altText=f"Flow SEL Unit {unit_num}: {name_eng}",
+        altText=f"SEL Unit {unit_num}: {name_eng}",
         contents=bubble,
     )
 
@@ -1600,6 +1785,22 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
             ]
         )
     )
+    
+    try:
+        from utils.file_utils import is_level_card_image_enabled, get_level_card_image_path
+        if is_level_card_image_enabled():
+            level_image_path = get_level_card_image_path(theme_id, level_idx)
+            if level_image_path:
+                level_bubble.hero = FlexImage(
+                    url=f'{URL}{level_image_path}',
+                    size='full',
+                    aspect_ratio='20:13',
+                    aspect_mode='cover',
+                )
+    except Exception as _img_err:
+        # 圖片載入失敗不應阻擋主流程，僅警告。
+        # Hero image resolution failure must not block the main flow.
+        print(f"[WARN] game_level_intro_message: hero image lookup failed: {_img_err}")
     
     messages.append(FlexMessage(
         altText=f'Level {level_idx + 1}',
@@ -2511,7 +2712,7 @@ async def game_rules_instruction_message() -> FlexMessage:
         "asking NPC characters about case details to solve a series of riddles. "
         "Each of the three NPCs knows different information -- if you cannot find the answer, "
         "try asking a different character! "
-        "There are 3 themes in total, each with 5 levels, and each level has 3 small puzzles. "
+        "There are 3 topics in total, each with 5 levels, and each level has 3 small puzzles. "
         "Don't be intimidated by the number of questions -- the game will provide sufficient "
         "clues and guidance to help you progress. Enjoy the game!"
     )
@@ -3446,11 +3647,11 @@ async def other_progress_message(user_id: str) -> FlexMessage:
             )
         )
 
-    # ===== [Change 2] Flow SEL / 心流SEL progress =====
-    # [新增 (SEL 多單元)] 心流SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
+    # ===== [Change 2] SEL progress =====
+    # [新增 (SEL 多單元)] SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
     # 進度顯示時，分別列出每個單元已作答題數。
     #
-    # The Flow SEL section now consists of six independent units (sel1..sel6),
+    # The SEL section now consists of six independent units (sel1..sel6),
     # each with 5 questions. Show per-unit progress instead of a single combined line.
     SEL_QUESTION_COUNT = 5
     SEL_UNITS = [
@@ -3463,7 +3664,7 @@ async def other_progress_message(user_id: str) -> FlexMessage:
     ]
     body_contents.append(
         FlexText(
-            text='Flow SEL / 心流SEL',
+            text='SEL',
             wrap=True,
             size='md',
             weight='bold',

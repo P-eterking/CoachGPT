@@ -25,6 +25,11 @@ from utils.message_utils import (
     game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
     build_reference_answers_section,
+    # [新增] 用於 audio 評分的 <standard> 區段建構輔助函式
+    # 修正 chr(10) 壓平 bug 並對 SEL 套用十級 few-shot 格式
+    # Helper for building the <standard> section in audio assessment;
+    # fixes the chr(10) flattening bug and applies tiered few-shot formatting for SEL.
+    build_standard_section_for_audio,
     # Question card with image for service4 game_answer action
     game_answer_card_message,
     # new_test single question card (pretest1 / posttest1)
@@ -192,7 +197,7 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
 user_data_enter = {}
 
 
-# ========== [新增] 心流SEL 類別判別小工具 (SEL category helper) ==========
+# ========== [新增] SEL 類別判別小工具 (SEL category helper) ==========
 # 涵蓋舊的單一 'sel' 類別與新的多單元 'sel1'..'sel6'，作為評分路由的統一判斷點。
 # Covers both the legacy single 'sel' category and the new multi-unit 'sel1'..'sel6';
 # used as the unified routing predicate for SEL-specific evaluation.
@@ -200,8 +205,8 @@ _SEL_CATEGORIES = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
 
 
 def _is_sel_category(category) -> bool:
-    """判斷給定類別是否為心流SEL系列（單一 'sel' 或六個單元 'sel1'..'sel6'）。
-    Determine whether a given category belongs to the Flow SEL family
+    """判斷給定類別是否為SEL系列（單一 'sel' 或六個單元 'sel1'..'sel6'）。
+    Determine whether a given category belongs to the SEL family
     (the legacy 'sel' or any of the six units 'sel1'..'sel6').
     """
     if not category:
@@ -751,6 +756,10 @@ async def handle_audio_message(event):
                 print('No text found in audio (pretest1/posttest1)')
                 return
 
+            standard_section_pp = build_standard_section_for_audio(
+                question.assessment_standard, is_sel=False
+            )
+
             completion = await client.beta.chat.completions.parse(
                 model="gpt-4o",
                 response_format=SpeechAssessment,
@@ -764,7 +773,7 @@ async def handle_audio_message(event):
                     {
                         "role": "user",
                         "content": f"<question>{question.text}</question>"
-                                   f"{'<standard>' + question.assessment_standard.replace(chr(10), '').strip() + '</standard>' if question.assessment_standard else ''}"
+                                   f"{standard_section_pp}"
                                    f"<userAnswer>{text}</userAnswer>",
                     }
                 ],
@@ -829,15 +838,20 @@ async def handle_audio_message(event):
             print('No text found in audio')
             return
         
-        # [新增] 心流SEL（'sel' 或多單元的 'sel1'..'sel6'）使用獨立的評分系統提示詞，
+        # [新增] SEL（'sel' 或多單元的 'sel1'..'sel6'）使用獨立的評分系統提示詞，
         # 著重於句子完整性、論述結構、用詞精準度；其餘練習維持原本的 SYSTEM_INSTRUCTION。
-        # The Flow SEL section ('sel' or its multi-unit variants 'sel1'..'sel6') uses a dedicated
+        # The SEL section ('sel' or its multi-unit variants 'sel1'..'sel6') uses a dedicated
         # evaluation prompt that focuses on sentence completeness, discourse structure, and word
         # precision. All other exercises keep using SYSTEM_INSTRUCTION.
+        _is_sel = _is_sel_category(category)
         _system_prompt_for_audio = (
             SEL_SYSTEM_INSTRUCTION
-            if _is_sel_category(category)
+            if _is_sel
             else SYSTEM_INSTRUCTION
+        )
+
+        standard_section = build_standard_section_for_audio(
+            question.assessment_standard, is_sel=_is_sel
         )
 
         completion = await client.beta.chat.completions.parse(
@@ -853,7 +867,7 @@ async def handle_audio_message(event):
                 {
                     "role": "user",
                     "content": f"<question>{question.text}</question>" \
-                               f"{'<standard>'+question.assessment_standard.replace(chr(10),'').strip()+'</standard>' if question.assessment_standard else ''}" \
+                               f"{standard_section}" \
                                f"<userAnswer>{text}</userAnswer>" \
                                f"{f'<maxScore>{question.max_score}</maxScore>' if question.max_score else ''}",
                 }
@@ -1710,20 +1724,8 @@ async def handle_postback(event):
         elif alias == 'menu_game':
             if not is_rag:
                 alias = 'menu'
-        
-        # Check enabled status using alias resolution (covers sub-aliases like pretest1, pretest1-2, etc.)
-        # 注意：此處刻意不豁免管理員，確保管理員測試時也能驗證開關效果（與原始 service1/2/3 行為一致）。
-        # 管理員仍可透過 game_admin / admin 選單進行設定；如需進入已關閉的區塊，請先將該區塊設為開啟。
-        # Note: admin bypass is intentionally omitted here so admins can verify the enable/disable
-        # behaviour from the user's perspective, matching the original service1/2/3 design.
-        # Admins can still manage settings via game_admin/admin menus; to access a closed section,
-        # enable it first from the admin panel.
+
         _switch_enabled_cat = get_enabled_category_for_alias(alias)
-        # [Change 2] 'sel' (Flow SEL / 心流SEL) added here so the enable/disable
-        # gate applies to it just like the standard exercises.
-        # 新增 'sel' 使其與一般練習相同，受到開啟/關閉開關控制。
-        # [新增 (SEL 多單元)] 加入 sel1..sel6 共六個單元，使每一單元可由後台獨立開關控制。
-        # Added sel1..sel6 (six SEL units), each independently toggleable from the admin panel.
         _SWITCH_CONTROLLED = {
             'pretest', 'posttest', 'rag_test',
             'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6',
@@ -1797,7 +1799,7 @@ async def handle_postback(event):
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
 
-    # ===== [新增 (SEL 多單元)] 心流SEL 單元選擇 =====
+    # ===== [新增 (SEL 多單元)] SEL 單元選擇 =====
     # 使用者在 'sel' / 'sel-2' rich menu 點擊單元按鈕後觸發。
     # 將使用者切到該單元的 rich menu (sel1..sel6) 並送出該單元的介紹卡片。
     # User taps a unit button in the 'sel' / 'sel-2' rich menu; switch them to the
