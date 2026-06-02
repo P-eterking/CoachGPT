@@ -38,7 +38,11 @@ from utils.message_utils import (
     game_npc_voice_response_messages, game_npc_text_card_message,
     # [新增] Chat 主題功能與 SEL 評分指示
     # New additions: chat topic helpers and SEL evaluation instruction
-    SEL_SYSTEM_INSTRUCTION, get_chat_topic_system_prompt,
+    # [新增] SEL 提示詞 builder（依作答語言）與 SEL 作答語言選擇卡片
+    # SEL prompt builder (language-aware) and the SEL language-selection card
+    SEL_SYSTEM_INSTRUCTION, build_sel_system_instruction,
+    sel_language_select_message,
+    get_chat_topic_system_prompt,
     chat_welcome_message, chat_topic_intro_message,
     # [新增 (SEL 多單元)] SEL 單元介紹卡片
     # SEL multi-unit intro card
@@ -59,6 +63,10 @@ from utils.file_utils import (
     get_npc_chat_memory, append_npc_chat_memory,
     increment_show_text_count, get_show_text_count,
     is_fallback_guide_enabled, load_guide_content,
+    # [新增] 逐題模式開關、SEL 語言選擇開關、跨關卡未作答題目查找
+    # one-by-one mode switch, SEL language-selection switch, first-never-answered finder
+    is_one_by_one, is_sel_language_selection_enabled,
+    get_first_never_answered_question_global,
 )
 import tempfile
 import time
@@ -67,7 +75,7 @@ from pydub import AudioSegment
 from io import BytesIO
 import os
 
-# ========== 引導型客服機器人系統提示詞 (修改 1) ==========
+# ========== 引導型客服機器人系統提示詞 ==========
 # 作為文件載入失敗時的備援，直接嵌入核心指引。
 # Embedded as fallback in case the guide file cannot be loaded.
 _FALLBACK_GUIDE_SYSTEM_PROMPT_CORE = """
@@ -285,7 +293,7 @@ async def handle_text_message(event):
         return
 
     if is_fallback_guide_enabled() and hasData(user_id):
-        # [修改 1] Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
+        #Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
         # Service4/5: respond to any non-command text message with the guide AI.
         await show_loading(user_id, secs=15)
         await handle_fallback_guide(event, user_id, message)
@@ -796,7 +804,7 @@ async def handle_audio_message(event):
         # ===== end pretest1 / posttest1 =====
 
         if not category or not question_manager.has_question(category):
-            # [修改 1] Service4/5：對無法識別類別的語音訊息，轉錄後由引導型客服機器人回應。
+            # Service4/5：對無法識別類別的語音訊息，轉錄後由引導型客服機器人回應。
             # Service4/5: transcribe unmatched audio and pass to guide AI.
             if is_fallback_guide_enabled():
                 try:
@@ -821,13 +829,25 @@ async def handle_audio_message(event):
             return
         
         question = question_manager.get_question(category, sub)
-        
+
+        # SEL 作答語言判斷（提前到轉錄之前，因為轉錄語言需依此決定）。
+        # 'chi' = 用中文作答（中文轉錄、全中文回饋、不評英文文法、不給建議回答）。
+        # 'eng' = 用英文作答（英文轉錄、中英對照回饋）。未選擇預設為中文。
+        # Determine the SEL answering language up front (transcription language depends on it).
+        _is_sel = _is_sel_category(category)
+        _sel_language = None
+        if _is_sel:
+            _sel_language = getattr(user_state, 'sel_language', None) or 'chi'
+        # SEL 中文模式以中文轉錄；其餘（含英文 SEL 與一般練習）維持英文轉錄。
+        # Chinese SEL mode transcribes in Chinese; everything else stays in English.
+        _transcribe_lang = 'zh' if (_is_sel and _sel_language == 'chi') else 'en'
+
         try:
             message_content = await get_audio_content(event)
             if not message_content:
                 await send_text_message(event, "無法獲取音訊內容，請稍後再試。\nUnable to get audio content, please try again later.")
                 return
-            text = await transcribe_audio(message_content, language="en")
+            text = await transcribe_audio(message_content, language=_transcribe_lang)
         except Exception as e:
             await send_text_message(event, "文字轉錄發生錯誤，請稍後再試。\nAn error occurred, please try again later.")
             print(e)
@@ -838,21 +858,45 @@ async def handle_audio_message(event):
             print('No text found in audio')
             return
         
-        # [新增] SEL（'sel' 或多單元的 'sel1'..'sel6'）使用獨立的評分系統提示詞，
-        # 著重於句子完整性、論述結構、用詞精準度；其餘練習維持原本的 SYSTEM_INSTRUCTION。
-        # The SEL section ('sel' or its multi-unit variants 'sel1'..'sel6') uses a dedicated
-        # evaluation prompt that focuses on sentence completeness, discourse structure, and word
-        # precision. All other exercises keep using SYSTEM_INSTRUCTION.
-        _is_sel = _is_sel_category(category)
-        _system_prompt_for_audio = (
-            SEL_SYSTEM_INSTRUCTION
-            if _is_sel
-            else SYSTEM_INSTRUCTION
-        )
+        # SEL（'sel' 或多單元 'sel1'..'sel6'）改用以 SEL 五大核心能力為主軸的評分提示詞，
+        # 並依作答語言（中 / 英）選擇對應版本；其餘練習維持原本的 SYSTEM_INSTRUCTION。
+        # SEL now uses an SEL-competency-based evaluation prompt selected by answering language;
+        # all other exercises keep using SYSTEM_INSTRUCTION.
+        if _is_sel:
+            _system_prompt_for_audio = build_sel_system_instruction(_sel_language)
+        else:
+            _system_prompt_for_audio = SYSTEM_INSTRUCTION
 
-        standard_section = build_standard_section_for_audio(
-            question.assessment_standard, is_sel=_is_sel
-        )
+        # SEL 中文作答模式不附上 <standard>（題庫的十級參考答案為英文，對中文作答不適用）。
+        # 其餘情況維持原本行為（SEL 英文模式仍展開十級 few-shot；一般練習照舊）。
+        # In SEL Chinese mode, skip the <standard> section (the tiered English references do not
+        # apply to Chinese answers). Otherwise keep the original behaviour.
+        if _is_sel and _sel_language == 'chi':
+            standard_section = ""
+        else:
+            standard_section = build_standard_section_for_audio(
+                question.assessment_standard, is_sel=_is_sel
+            )
+
+        # [新增] SEL：帶入該生「同一題」先前每一次的作答紀錄，讓 AI 將歷次回答視為同一段
+        # 持續完善的答案來合併評分，避免引導後的片段式補充因脫離題目脈絡而被低估，
+        # 使最終分數能忠實反映學生對該題的實際表達內容。
+        # 此處在 updateHistory 之前讀取，因此只包含本次之前的歷史，不含當前作答。
+        # For SEL, feed the student's previous attempts on THIS SAME question so the AI can treat
+        # all attempts as one evolving answer and score the combined expression. Read before
+        # updateHistory, so it contains only prior attempts (not the current one).
+        previous_attempts_section = ""
+        if _is_sel:
+            _prev = getHistory(user_id, f'{category}-{sub}') or []
+            _prev_lines = [
+                f"  Attempt {i + 1}: {a.transcript}"
+                for i, a in enumerate(_prev)
+                if getattr(a, 'transcript', '')
+            ]
+            if _prev_lines:
+                previous_attempts_section = (
+                    "<previousAttempts>\n" + "\n".join(_prev_lines) + "\n</previousAttempts>"
+                )
 
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o",
@@ -868,6 +912,7 @@ async def handle_audio_message(event):
                     "role": "user",
                     "content": f"<question>{question.text}</question>" \
                                f"{standard_section}" \
+                               f"{previous_attempts_section}" \
                                f"<userAnswer>{text}</userAnswer>" \
                                f"{f'<maxScore>{question.max_score}</maxScore>' if question.max_score else ''}",
                 }
@@ -877,14 +922,23 @@ async def handle_audio_message(event):
         assessment = completion.choices[0].message.parsed
         assessment.transcript = text
         assessment.timestamp = time.time()
+
+        # SEL 一律不提供「建議回答」(better_ans)，避免框架住學生回應；
+        # 中文作答模式同時清空英文回饋，確保只給中文回饋。
+        # SEL never provides a "suggested answer" (better_ans); in Chinese mode also clear the
+        # English feedback so only Chinese feedback is shown.
+        if _is_sel:
+            assessment.better_ans = ""
+            if _sel_language == 'chi':
+                assessment.eng_suggestion = ""
         
         history_key = f'{category}-{sub}'
         updateHistory(user_id, history_key, assessment)
         
         if should_show_feedback(category):
-            await send_message(event, await result_message(assessment, category, sub, show_feedback=True))
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=True, sel_language=_sel_language))
         else:
-            await send_message(event, await result_message(assessment, category, sub, show_feedback=False))
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=False, sel_language=_sel_language))
         
         # Save user data
         await save_user_data()
@@ -1014,7 +1068,7 @@ async def handle_npc_chat(event, user_id, user_state):
         context_content = await get_rag_context_v2(rag_path, query=text)
         
         # Get chat history
-        # [修改 2] 使用即時記憶快取取代 SpeechAssessment 歷史，解決 Phase 2 非同步儲存的競態問題。
+        # 使用即時記憶快取取代 SpeechAssessment 歷史，解決 Phase 2 非同步儲存的競態問題。
         # 快取在 Phase 1 回覆生成後立即更新，確保下一輪對話能正確看到本輪的內容。
         # Use in-memory cache instead of persisted history to avoid Phase 2 async race condition.
         # Cache is updated immediately after Phase 1 reply so next turn sees current conversation.
@@ -1042,7 +1096,7 @@ async def handle_npc_chat(event, user_id, user_state):
             quick_completion.choices[0].message.content
         )
 
-        # [修改 2] 立即將本輪對話存入即時記憶快取，使下一輪 Phase 1 能看到本輪內容。
+        # 立即將本輪對話存入即時記憶快取，使下一輪 Phase 1 能看到本輪內容。
         # Immediately save this turn to in-memory cache so the next Phase 1 sees it.
         append_npc_chat_memory(user_id, theme_id, npc_idx, text, quick_res.npc_reply)
 
@@ -1355,7 +1409,11 @@ async def handle_game_answer(event, user_id, user_state):
         ))
         
         # If new level unlocked, send notification
-        if unlocked:
+        # 僅在逐關解鎖模式 (one_by_one=True) 顯示解鎖通知；
+        # 開放模式下所有關卡本就開放，顯示解鎖訊息會造成誤解，故略過。
+        # Only show the unlock notice in sequential mode; in open mode all levels are already
+        # available, so the unlock message would be misleading and is skipped.
+        if unlocked and is_one_by_one():
             await send_text_message(event, "恭喜！已解鎖下一關！\nCongratulations! Next level unlocked!")
         
         # Save user data
@@ -1668,7 +1726,11 @@ async def handle_postback(event):
             await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
         user_state.sub = sub
-        await send_message(event, await question_message(user_id, user_state.category, sub, show_feedback=should_show_feedback(user_state.category)))
+        # SEL 題目卡片依使用者選擇的作答語言（中 / 英）顯示；
+        # 非 SEL 類別 sel_language 傳 None，行為完全不變。
+        # SEL question cards render in the chosen answering language; non-SEL passes None.
+        _record_sel_lang = getattr(user_state, 'sel_language', None) if _is_sel_category(user_state.category) else None
+        await send_message(event, await question_message(user_id, user_state.category, sub, show_feedback=should_show_feedback(user_state.category), sel_language=_record_sel_lang))
     elif action == 'carousel':
         page = int(vars.get('page', 0))
         _carousel_cat = get_enabled_category_for_alias(user_state.category)
@@ -1785,7 +1847,10 @@ async def handle_postback(event):
             except ValueError:
                 unit_num = 1
             user_state.sub = -1
-            await send_message(event, await sel_unit_intro_message(unit_num))
+            # 依使用者已選的作答語言顯示介紹卡（未選擇預設中文）。
+            # Show the intro card in the chosen answering language (defaults to Chinese).
+            _sel_lang = getattr(user_state, 'sel_language', None) or 'chi'
+            await send_message(event, await sel_unit_intro_message(unit_num, language=_sel_lang))
             return
         if any(alias.startswith(p) for p in _NO_POPUP_PREFIXES):
             pass
@@ -1841,7 +1906,48 @@ async def handle_postback(event):
         user_state.category = unit_category
         user_state.sub = -1
         user_state.in_npc_chat = False
-        await send_message(event, await sel_unit_intro_message(unit_num))
+
+        # 進入 SEL 單元時，若開啟語言選擇功能，先以卡片詢問要用中文或英文作答；
+        # 重設本次的作答語言，待使用者點選後再以對應語言顯示介紹卡與題目。
+        # 若功能關閉，預設以中文作答並直接顯示介紹卡。
+        # On entering a SEL unit, if language selection is enabled, show the language-choice
+        # card first (resetting the per-entry language). If disabled, default to Chinese and
+        # show the intro card directly.
+        if is_sel_language_selection_enabled():
+            user_state.sel_language = None
+            await send_message(event, await sel_language_select_message(unit_num))
+        else:
+            user_state.sel_language = 'chi'
+            await send_message(event, await sel_unit_intro_message(unit_num, language='chi'))
+
+    # ===== [新增 1] SEL 作答語言選擇 (Chinese / English) =====
+    # 使用者在語言選擇卡片點選「用中文 / 用英文作答」後觸發。
+    # 將選擇存入 user_state.sel_language，並以對應語言顯示該單元的介紹卡片。
+    # Triggered when the user taps a language button on the SEL language-selection card.
+    # Stores the choice in user_state.sel_language and shows the unit intro card in that language.
+
+    elif action == 'sel_lang':
+        lang = vars.get('lang', 'chi')
+        lang = 'eng' if lang == 'eng' else 'chi'
+        try:
+            unit_num = int(vars.get('unit', 1))
+        except (TypeError, ValueError):
+            unit_num = 1
+        if unit_num < 1 or unit_num > 6:
+            unit_num = 1
+
+        unit_category = f'sel{unit_num}'
+        # 與 sel_unit 一致的開關保護；管理員 bypass。
+        # Same enable gate as sel_unit; admins bypass.
+        if not isEnabled(unit_category) and not isAdmin(user_id):
+            await send_text_message(event, "該單元尚未開放，請等待老師開啟。\nThis unit is not yet open. Please wait for your teacher to enable it.")
+            return
+
+        user_state.category = unit_category
+        user_state.sub = -1
+        user_state.in_npc_chat = False
+        user_state.sel_language = lang
+        await send_message(event, await sel_unit_intro_message(unit_num, language=lang))
 
     # ===== new_test 題目作答 (pretest1 / posttest1) — 由 rich menu 按鈕觸發 =====
 
@@ -1881,7 +1987,7 @@ async def handle_postback(event):
         if not last_info:
             await send_text_message(event, "找不到最近的 NPC 回覆。\nNo recent NPC reply found.")
             return
-        # [修改 4] 當語音輸出功能開啟時，記錄使用者使用「顯示文字」的次數，以供研究分析。
+        # 當語音輸出功能開啟時，記錄使用者使用「顯示文字」的次數，以供研究分析。
         # Track 'Show Text' usage when npc_voice_output is enabled, for research analysis.
         if config.get('npc_voice_output', False):
             new_count = increment_show_text_count(user_id)
@@ -2175,18 +2281,22 @@ async def handle_postback(event):
         )
     
     elif action == 'game_next_answer':
-        # Jump to the next unanswered question across all levels
+        # 選單「作答」按鈕：跳到最前面（關卡較低、題號較低）尚未作答任何一次的題目，
+        # 鼓勵學生把每一題都至少作答一次。若所有題目皆已作答過，回報已全部作答。
+        # The menu "Answer" button jumps to the earliest question never answered yet
+        # (lowest level, lowest question). If every question has been answered at least once,
+        # report that all questions have been attempted.
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
             await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
             return
         
-        # Find the next unanswered question globally
-        level_idx, question_idx = get_next_unanswered_question_global(user_id, theme_id)
+        # Find the earliest never-answered question across all levels
+        level_idx, question_idx = get_first_never_answered_question_global(user_id, theme_id)
         
         if level_idx == -1 and question_idx == -1:
-            # All questions completed
-            await send_text_message(event, "所有題目皆已作答完畢！\nAll questions have been answered!")
+            # Every question has already been answered at least once
+            await send_text_message(event, "所有題目都已經作答過囉！你仍可從關卡選單挑選任一題再次挑戰。\nYou have already answered every question at least once! You can still pick any question from the level menu to try again.")
             return
         
         # Update user state

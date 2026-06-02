@@ -33,7 +33,37 @@ DEFAULT_CONFIG = {
     'levels_per_theme': 5,
     'questions_per_level': 3,
     'max_score_per_question': 10,
-    'min_score_to_pass': 6,
+    # 情境解謎遊戲的最低通過分數預設由 6 調降為 3，降低學生作答門檻。
+    # 所有判斷及格 / 解鎖 / 描述文字皆透過 get_min_score_to_pass() 動態讀取此值，
+    # 因此日後只要更動此數字（或在 config.json 覆寫），相關描述會自動連動更新。
+    #
+    # [Change 4] Default minimum passing score for the puzzle game lowered from 6 to 3.
+    # Every pass/unlock check and every description string reads this through
+    # get_min_score_to_pass(), so changing this number (or overriding it in config.json)
+    # automatically updates all related wording.
+    'min_score_to_pass': 3,
+    # [新增 5] 逐題作答模式開關 (one-by-one answering mode).
+    #   True  = 維持原本「逐關解鎖、逐題作答」的設計（需通過目前題目才往下）。
+    #   False = 開放所有關卡與題目自由作答，以提高學生作答率；相關描述會自動調整。
+    # 預設為 True 以維持與舊版機器人（service1/2/3 不受影響）相同的行為。
+    #
+    # [Addition 5] One-by-one answering mode switch.
+    #   True  = keep the original sequential design (unlock level by level, answer
+    #           question by question; you must pass the current question to proceed).
+    #   False = open every level and question for free answering to raise the answer
+    #           rate; related wording adjusts automatically.
+    # Defaults to True so existing behaviour is preserved.
+    'one_by_one': True,
+    # [新增 1] SEL 作答語言選擇卡片開關 (SEL language-selection card switch).
+    #   True  = 進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
+    #   False = 不詢問，直接沿用預設（中文）進入單元。
+    # 此開關僅影響 SEL 區塊（service4/5），不影響舊的 service1/2/3。
+    #
+    # [Addition 1] Whether to show the language-selection card when entering a SEL unit.
+    #   True  = ask the student (Chinese vs English) with a card first.
+    #   False = skip the card and enter the unit using the default language (Chinese).
+    # Only affects the SEL section (service4/5); service1/2/3 are unaffected.
+    'sel_language_selection_enabled': True,
     # 遊戲大廳介紹媒體設定 (Game lobby intro media config)
     # 管理員可修改這些欄位來更新遊戲大廳頁面的內容
     # Admins may edit these fields to update game lobby intro content
@@ -117,7 +147,7 @@ _new_test_loaded: bool = False
 # 記錄每位使用者最近一次 NPC 回覆，用於「顯示文字 / Show Text」功能
 _last_npc_replies: Dict[str, Dict] = {}
 
-# ========== NPC 對話即時記憶快取 (修改 2：解決 NPC 無記憶問題) ==========
+# ========== NPC 對話即時記憶快取 ==========
 # 在 Phase 1 回覆生成後立即寫入，避免等待 Phase 2 非同步儲存的競態問題。
 # Written immediately after Phase 1 reply to avoid race conditions with async Phase 2.
 _npc_chat_memory: Dict[str, List[dict]] = {}
@@ -364,8 +394,26 @@ def get_max_score_per_question() -> int:
     return config.get('max_score_per_question', 10)
 
 def get_min_score_to_pass() -> int:
-    """取得及格分數"""
-    return config.get('min_score_to_pass', 6)
+    """取得及格分數 (動態讀取 config，預設 3 分)。
+    Get the passing score (read dynamically from config, default 3)."""
+    return config.get('min_score_to_pass', 3)
+
+def is_one_by_one() -> bool:
+    """[新增 5] 是否採用逐題作答 / 逐關解鎖模式。
+    True 維持原本逐關解鎖設計；False 開放所有關卡題目自由作答。
+    預設 True，向後相容舊版設計。
+
+    Whether the sequential one-by-one (unlock level by level) mode is active.
+    True keeps the original sequential design; False opens everything for free
+    answering. Defaults to True for backward compatibility.
+    """
+    return config.get('one_by_one', True)
+
+def is_sel_language_selection_enabled() -> bool:
+    """[新增 1] 進入 SEL 單元時是否先以卡片詢問作答語言（中文 / 英文）。
+    Whether to show the SEL language-selection card when entering a SEL unit.
+    """
+    return config.get('sel_language_selection_enabled', True)
 
 def load_game_theme_config(theme_id: str) -> Optional[GameThemeConfig]:
     """從JSON檔案載入遊戲主題配置"""
@@ -477,7 +525,7 @@ def get_last_npc_reply(user_id: str) -> dict:
     """
     return _last_npc_replies.get(user_id)
 
-# ========== NPC 對話即時記憶快取功能 (修改 2) ==========
+# ========== NPC 對話即時記憶快取功能 ==========
 
 def get_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int, npc_name: str) -> str:
     """
@@ -544,7 +592,7 @@ def append_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int,
     _npc_chat_memory[mem_key] = _npc_chat_memory[mem_key][-5:]
 
 
-# ========== 「顯示文字」使用次數追蹤功能 (修改 4) ==========
+# ========== 「顯示文字」使用次數追蹤功能 ==========
 
 def increment_show_text_count(user_id: str) -> int:
     """
@@ -574,7 +622,7 @@ def get_show_text_count(user_id: str) -> int:
     return getattr(user, 'show_text_count', 0)
 
 
-# ========== 引導型客服文件載入 (修改 1：fallback guide) ==========
+# ========== 引導型客服文件載入==========
 
 def load_guide_content(guide_path: str = 'category/chatbot_guide.md') -> str:
     """
@@ -972,6 +1020,60 @@ def is_all_questions_completed(user_id: str, theme_id: str) -> bool:
     level_idx, q_idx = get_next_unanswered_question_global(user_id, theme_id)
     return level_idx == -1 and q_idx == -1
 
+def get_first_never_answered_question_global(user_id: str, theme_id: str) -> tuple:
+    """
+    [新增 5] 取得整個主題中「最前面（關卡較低、題號較低）尚未作答任何一次」的題目。
+    與 get_next_unanswered_question_global 不同：本函式只看「是否曾經作答過」，
+    不看分數是否及格。若某題已作答過（即使未通過），仍視為已作答而略過。
+    回傳 (level_idx, question_idx)；若所有題目皆至少作答過一次，回傳 (-1, -1)。
+
+    用於 one_by_one=False（開放全部題目）時，選單「作答」按鈕的跳題邏輯：
+    跳到最前面那一題從未被作答過的題目，以鼓勵學生把每一題都至少作答一次。
+
+    Get the earliest (lowest level, lowest question index) question in the theme that
+    has NEVER been answered. Unlike get_next_unanswered_question_global, this only checks
+    whether an attempt exists at all, regardless of whether it passed. A question that was
+    attempted (even if it failed) counts as answered and is skipped.
+    Returns (level_idx, question_idx), or (-1, -1) if every question was answered at least once.
+    """
+    theme_config = load_game_theme_config(theme_id)
+    if not theme_config:
+        return (-1, -1)
+
+    levels_count = len(theme_config.levels)
+    user = user_data.get(user_id)
+
+    for level_idx in range(levels_count):
+        level_info = theme_config.get_level(level_idx)
+        if not level_info:
+            continue
+
+        actual_questions = len(level_info.questions)
+
+        for q_idx in range(actual_questions):
+            # 沒有任何遊戲分數紀錄 -> 此題從未作答
+            # No game score record at all -> this question was never answered
+            if not user or not user.game_scores:
+                return (level_idx, q_idx)
+            if theme_id not in user.game_scores.themes:
+                return (level_idx, q_idx)
+            theme = user.game_scores.themes[theme_id]
+            if level_idx not in theme.levels:
+                return (level_idx, q_idx)
+            level = theme.levels[level_idx]
+            # 題目不在已作答清單中 -> 從未作答
+            # Question not present in the answered map -> never attempted
+            if q_idx not in level.questions:
+                return (level_idx, q_idx)
+            # 已存在但嘗試次數為 0 的極端情況也視為未作答
+            # Edge case: present but with zero attempts also counts as never answered
+            if level.questions[q_idx].attempts <= 0:
+                return (level_idx, q_idx)
+
+    # 所有題目皆至少作答過一次
+    # Every question has been answered at least once
+    return (-1, -1)
+
 # ========== 提示使用次數追蹤功能 (新增) ==========
 
 def increment_hint_count(user_id: str, theme_id: str, level_idx: int, question_idx: int) -> int:
@@ -1355,7 +1457,7 @@ async def load_user_data():
                 value['question_history'] = {}
             if 'game_scores' not in value:
                 value['game_scores'] = {'themes': {}}
-            # [修改 4] 確保 show_text_count 欄位存在於舊資料中 (向後相容)
+            # 確保 show_text_count 欄位存在於舊資料中 (向後相容)
             # Ensure show_text_count field exists for backward compatibility
             if 'show_text_count' not in value:
                 value['show_text_count'] = 0

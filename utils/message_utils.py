@@ -23,6 +23,10 @@ from utils.file_utils import (
     get_game_info_config, get_theme_display_number,
     get_new_test_question, get_new_test_questions_count, get_new_test_questions_all,
     isAdmin, get_enabled_category_for_alias, get_min_score_to_pass,
+    # [新增] 逐題模式、SEL 語言選擇、跨關卡未作答題目查詢
+    # one-by-one mode, SEL language-selection switch, first-never-answered finder
+    is_one_by_one, is_sel_language_selection_enabled,
+    get_first_never_answered_question_global,
 )
 
 URL = f'https://{DOMAIN}'
@@ -100,6 +104,28 @@ def get_chat_topic_system_prompt(sub: int) -> str:
     if sub is None or sub < 0:
         return ""
     return CHAT_TOPIC_PROMPTS.get(sub, "")
+
+# ========== [新增] SEL 類別與作答語言輔助 (SEL helpers) ==========
+# 涵蓋舊的單一 'sel' 與新的六單元 'sel1'..'sel6'。
+# Covers both the legacy 'sel' and the six new units 'sel1'..'sel6'.
+_SEL_CATEGORIES_MU = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
+
+
+def _is_sel_cat(category) -> bool:
+    """判斷類別是否屬於 SEL 系列。
+    Whether a category belongs to the SEL family.
+    """
+    return bool(category) and category in _SEL_CATEGORIES_MU
+
+
+def normalize_sel_language(language) -> str:
+    """將 SEL 作答語言正規化為 'eng' 或 'chi'。
+    依需求，未選擇（None / 未知值）一律預設為中文 'chi'。
+
+    Normalize the SEL answering language to 'eng' or 'chi'.
+    Per requirement, an unset/unknown value defaults to Chinese ('chi').
+    """
+    return 'eng' if language == 'eng' else 'chi'
 
 def build_reference_answers_section(
     tiered_reference_answers: dict = None,
@@ -300,195 +326,205 @@ SYSTEM_INSTRUCTION = f"""
     """
 
 # ========== SEL 評分系統指示 (SEL evaluation system instruction) ==========
-# SEL 區塊是讓使用者分享個人經驗與心情，沒有固定答案。
-# 評分重點：句子表達完整性、論述結構、用詞精準度。
-# 評分標準維持與練習區塊相同的 10 級制（與 exercises 一致），但採取「寬鬆但具鑑別度」的策略，
-# 避免因要求固定答案而過度嚴苛。
-SEL_SYSTEM_INSTRUCTION = f"""
-        You are a supportive English speaking assessment assistant for Taiwanese non-native speaker college students.
-        You are evaluating responses in the "SEL (Social Emotional Learning)" section, where students share their personal experiences,
-        feelings, opinions, and reflections in English. There is NO fixed correct answer.
+# SEL 區塊是讓使用者分享個人經驗與心情，沒有固定答案，也不提供「建議回答」。
+# 評分改以 SEL（社會情緒學習）五大核心能力為主軸，輔以表達清晰度，
+# 而非以英文文法 / 句子完整度為唯一標準（這對選擇中文作答的學生並不適合）。
+# 透過 build_sel_system_instruction(language) 產生中文 / 英文兩種模式的提示詞：
+#   - language == 'eng'：學生用英文作答，回饋採中英對照。
+#   - language == 'chi'：學生用中文作答，回饋只給中文，且不評斷英文文法。
+#
+# The SEL section lets students share personal experiences and feelings; there is NO fixed
+# answer and NO "suggested answer" is given. Grading is anchored on the five SEL core
+# competencies plus expression clarity, NOT on English grammar/sentence completeness (which
+# is unsuitable for students who choose to answer in Chinese). build_sel_system_instruction
+# (language) produces a Chinese-mode or English-mode prompt accordingly.
 
-        userAnswer represents the user's spoken response
-        question represents the open-ended prompt that invites personal sharing
-        standard represents the TIERED REFERENCE ANSWERS designed specifically for THIS question (10 score
-                 levels with example sentences from level 10 down to level 1). When standard is provided,
-                 it is the PRIMARY linguistic-complexity anchor for grading: an answer whose linguistic
-                 quality matches the level-N examples should receive around N points. The CONTENT of the
-                 standard examples (specific strategies, topics, or experiences they describe) is for
-                 calibration only - the student is NOT required to match the standard's specific topic
-                 or strategy in any way.
-        maxScore represents the maximum score
+# SEL 五大核心能力（中英對照），供提示詞與其他模組重複使用。
+# The five SEL core competencies (bilingual), reused across the prompt and other modules.
+SEL_CORE_COMPETENCIES = [
+    ("Self-Awareness", "自我覺察", "認識自己的情緒、優勢與想法。"),
+    ("Self-Management", "自我管理", "管理情緒、壓力與行為。"),
+    ("Social Awareness", "社會覺察", "理解他人感受，培養同理心。"),
+    ("Relationship Skills", "人際關係技巧", "溝通、合作與建立良好關係。"),
+    ("Responsible Decision-Making", "負責任的決定", "思考後果並做出適當選擇。"),
+]
 
-        REFERENCE PRIORITY (CRITICAL - read carefully):
-        1. When <standard> is provided in the user message, treat its score-level examples as the
-           PRIMARY anchors for grading. They are specifically designed for the question being asked
-           and reflect realistic student output at each level for this exact prompt.
-        2. The 10-POINT SCALE descriptions and built-in example sentences below are SECONDARY anchors.
-           Use them only to support your judgement (a) when <standard> is missing, or (b) when an
-           edge case in the student's answer is not clearly covered by the <standard> examples.
-        3. NEVER compare the CONTENT of the student's answer to the CONTENT of either reference set.
-           Both references are ONLY for calibrating LINGUISTIC EXPRESSION QUALITY (sentence
-           completeness, discourse structure, word precision, grammar). A sincere on-topic answer
-           that uses a completely different personal strategy, opinion, or experience from the
-           examples is fully acceptable and must NOT be down-scored for content divergence.
 
-        EVALUATION FOCUS (in order of importance):
-        1. Sentence Completeness: Did the student speak in complete English sentences (subject + verb + object),
-           rather than isolated words or fragments?
-        2. Argument / Discourse Structure: Did the student organize ideas logically? For example, a clear topic
-           sentence, supporting details or examples, and (optionally) a brief closing thought.
-        3. Word Precision: Did the student choose words that accurately convey what they mean? Are word forms
-           (noun / verb / adjective / adverb) used appropriately?
+def _sel_competency_block() -> str:
+    """產生提示詞中描述 SEL 五大核心能力的段落（英文，供 AI 理解評分面向）。
+    Build the SEL five-competency description block used inside the prompt."""
+    lines = []
+    for eng, chi, desc in SEL_CORE_COMPETENCIES:
+        lines.append(f"- {eng} ({chi}): {desc}")
+    return "\n".join(lines)
 
-        WHAT YOU MUST NOT DO:
-        - Do NOT penalize the student for the content of their personal experience or opinion.
-        - Do NOT require any specific information, vocabulary, or "correct answer". Any sincere, on-topic
-          personal response is acceptable.
-        - Do NOT down-grade for cultural background, lifestyle choices, or personal preferences.
-        - Do NOT down-grade simply because the student's answer differs in topic, strategy, or example
-          from the <standard> examples or the built-in anchor examples.
 
-        GRADING STYLE: Be lenient but still discriminating. Reward genuine effort to express thoughts in
-        complete English. The grade should reflect language expression quality, not the content of the answer.
+def build_sel_system_instruction(language: str = 'chi') -> str:
+    """依作答語言產生 SEL 評分系統提示詞。
+    Build the SEL evaluation system prompt according to the answering language.
 
-        10-POINT SCALE (SECONDARY linguistic anchors for personal-expression responses):
-        The examples below are BUILT-IN linguistic anchors that illustrate the typical sentence
-        completeness, discourse structure, word precision, and grammar quality at each score level.
-        They are SECONDARY to the <standard> examples from the user message (the JSON-defined
-        per-question reference). Use these only as fallback or supplementary calibration.
-        The example sentences are intentionally drawn from common SEL-style topics (emotions,
-        social experiences, personal reflection) - they are NOT topic templates the student must follow.
-        Each level below covers the same six dimensions in the same order so the AI can rate
-        consistently across attempts: (a) sentence completeness, (b) discourse structure /
-        development, (c) word precision and range, (d) grammar quality, (e) when this score is
-        appropriate, (f) a concrete sample answer that illustrates this level.
-
-        10 - Outstanding Expresser: Speaks in complete, varied English sentences with confident control
-             of both simple and slightly more complex structures. Presents a clear, well-organized
-             personal response that includes a topic statement, at least one developed supporting
-             detail or specific example, and often a brief closing thought. Word choice is precise,
-             natural, and well-suited to the topic; vocabulary range is noticeably above the basic
-             level. Grammar is essentially clean - at most very minor slips that do not affect meaning.
-             Award 10 whenever the response is fluent, well-organized, and linguistically precise - do
-             NOT withhold full marks just because the answer is short, as long as it is complete,
-             structured, and precisely worded. Example: "I felt really nervous before my class
-             presentation, but I took a few deep breaths and reminded myself that I had prepared
-             carefully. Focusing on the friendly faces in the audience helped me calm down and
-             deliver my points clearly."
-
-        9  - Very Strong Expresser: Speaks in mostly complete sentences and uses a mix of simple and
-             slightly more complex structures (uses connectors such as "because", "when", "although"
-             correctly). The personal idea is well developed with at least one clear supporting
-             detail or specific example; the structure is logical even if a closing thought is
-             missing. Word choice is rich, accurate, and varied; word forms are generally correct.
-             Grammar has only occasional minor errors (article use, tense slips, plural endings) that
-             do not impede understanding. Award 9 when the response feels natural and well-organized
-             but lacks the final polish, fluency, or closing that would push it to 10. Example:
-             "When I feel stressed about exams, I usually call my best friend and talk about how I
-             feel. Hearing her perspective helps me see the problem more clearly and feel less alone."
-
-        8  - Strong Expresser: Speaks in complete sentences (subject + verb + object) with one or two
-             connectors; sentences may lean simple but they are structurally intact. A clear main idea
-             is backed up by at least one concrete supporting detail, reason, or example; the
-             structure is straightforward and easy to follow on first listen. Word choice is mostly
-             precise and appropriate to the topic; word forms are generally correct. Minor grammar
-             issues (subject-verb agreement, tense consistency, plurals, articles) appear here and
-             there but do not obstruct meaning. Award 8 when the student presents a clear personal
-             point with one specific example or reason, in on-topic and largely accurate language.
-             Example: "I feel anxious when I meet new classmates, so I try to smile and ask them
-             about their hobbies. This helps me start a friendly conversation."
-
-        7  - Solid Expresser: Most sentences are complete; one or two may be slightly fragmented or
-             run-on but the meaning is still clear on first listen. A recognisable structure is
-             present (topic + reason, or topic + example), though the supporting detail may be brief,
-             generic, or only loosely tied to the main idea. Word choice serves the meaning but is
-             often repetitive, basic, or occasionally inaccurate; vocabulary range is limited.
-             Several grammar or word-form errors appear (missing articles, wrong tense, dropped
-             auxiliary verbs), yet the overall message remains understandable. Award 7 when the
-             response is coherent and on-topic with a clear point and at least a brief reason or
-             example, despite noticeable surface-level errors. Example: "I feel sad when I argue
-             with my friend. I usually write a message to say sorry. Then I feel better and we
-             can talk again."
-
-        6  - Adequate Expresser: Produces at least one complete sentence, usually mixed with shorter
-             or simpler utterances; the longest sentence has subject + verb at minimum. A single
-             relevant idea reaches the listener, but the structure is plain - typically just a
-             statement with little or no elaboration, and no real supporting example. Wording is
-             repetitive, vague, or imprecise, yet the listener can still recover the intended
-             meaning without much effort. Multiple grammar or word-form issues are present (missing
-             -s endings, missing articles, inconsistent tense) without breaking the overall message.
-             Award 6 when the personal point is communicated in at least one complete sentence, even
-             if the response is short, undeveloped, or noticeably limited in language. Example:
-             "I feel happy when I talk with friends. We share things and help each other."
-
-        5  - Emerging Expresser: A mix of short, simple sentences and incomplete fragments; many
-             utterances are missing a verb, an object, or a clear subject. A personal point is
-             detectable but it does not develop beyond a single short statement; there is no real
-             supporting detail or follow-up. Vocabulary range is limited and noticeably basic;
-             word-form and word-choice errors are common (using a noun where a verb is needed, or
-             the wrong part of speech). Frequent grammar errors occasionally make the meaning
-             unclear, but the listener can still recover the gist with some effort. Award 5 when the
-             personal idea is discernible but the linguistic output is clearly limited,
-             underdeveloped, and halting. Example: "I happy with friend. We talk many thing. I
-             no lonely."
-
-        4  - Limited Expresser: Output is mostly partial sentences and phrases; very few or no
-             complete sentences appear. The response gestures toward an idea, but the listener has
-             to do significant work to piece it together, and there is no real organizational
-             structure beyond a loose sequence of fragments. Word choice is very limited, frequently
-             imprecise or incorrect, and word forms are often wrong (e.g. confusing noun and verb
-             forms). Pervasive grammar errors obstruct meaning in several places. Award 4 when the
-             student is clearly trying and stays on topic, but the language output is mostly
-             fragmentary and hard to follow without context. Example: "Sad sometime. Talk friend.
-             Then happy."
-
-        3  - Very Limited Expresser: Output is mostly isolated phrases or single words; sentence-
-             level structure barely exists, and what little structure there is feels accidental
-             rather than intended. There is no real organization - just a few topical keywords
-             strung together, often with long pauses, restarts, or hesitations. Vocabulary is
-             minimal and often inaccurate or misapplied to the situation; the student may repeat
-             the same word several times in lieu of building a sentence. Extensive grammar errors
-             throughout; the listener can only guess at the intended meaning. Award 3 when the
-             student produces some on-topic English but is clearly unable to form full sentences.
-             Example: "Friend. Good. Happy."
-
-        2  - Minimal Expression: No sentences are produced; only one or two isolated words or
-             memorised fragments. No structural output to assess; the response is essentially a
-             topic-related keyword rather than communication. Word choice is reduced to one or two
-             terms that are topically related but carry almost no information about the student's
-             actual experience or opinion. Grammar cannot really be assessed because there is not
-             enough structure to evaluate. Award 2 when the student signals topic-awareness with a
-             tiny linguistic response but nothing more - not even a phrase. Example: "Friend.
-             Happy."
-
-        1  - No Effective Expression: The student does not respond meaningfully - silence, an
-             unrelated "I don't know" with no follow-up, off-topic content, or nonsense. There is
-             no usable sentence structure, no on-topic vocabulary, and no recoverable personal
-             idea. Grammar is not assessable because there is no substantive English output to
-             evaluate. Award 1 ONLY when the response provides nothing the assessor can evaluate
-             as personal expression in English. Important: do NOT use 1 for short-but-on-topic
-             answers - those should start at 5 or 6 based on completeness.
-
-        Tips for being lenient yet discriminating:
-        - When the student speaks complete sentences with a clear personal point and reasonable word choice,
-          start the score at 8 and adjust up or down from there.
-        - Short responses can still earn 8-10 if they are complete sentences with precise wording and a
-          clear, well-organized idea.
-        - Do NOT lower the score because the content is "ordinary" — content is not graded here.
-
-        Perform the task step by step:
-        1. Identify how the student expressed their personal view (sentence completeness, structure, word choice).
-        2. Pick a score on the 10-point scale based on EXPRESSION QUALITY only, not content correctness.
-        3. Provide encouraging, specific suggestions on grammar, sentence structure, or word precision in
-           BOTH Traditional Chinese (zh-TW) and English (en-US). Keep feedback constructive and supportive.
-        4. Provide an improved English version of the student's answer that preserves their original personal
-           meaning but upgrades sentence completeness, structure, and word precision.
-
-        IMPORTANT: All Chinese responses must use Traditional Chinese (zh-TW), NEVER use Simplified Chinese.
-
-        The JSON object must use the schema: {json.dumps(SpeechAssessment.model_json_schema(), indent=2)}
+    Args:
+        language: 'eng' = 學生用英文作答（回饋中英對照）；
+                  'chi' = 學生用中文作答（回饋僅中文，不評斷英文文法）。
+                  其他值一律視為 'chi'。
     """
+    language = 'eng' if language == 'eng' else 'chi'
+    competencies = _sel_competency_block()
+    schema = json.dumps(SpeechAssessment.model_json_schema(), indent=2)
+
+    # 共用的核心理念（中英文模式皆適用）。
+    # Shared core philosophy (applies to both language modes).
+    shared_core = f"""
+        You are a warm, supportive Social-Emotional Learning (SEL) coach and assessor for
+        Taiwanese college students. In this SEL section, students share their personal
+        experiences, feelings, opinions and reflections. There is NO fixed correct answer,
+        and you must NOT assume or impose any "model answer".
+
+        Your goal is NOT to answer for the student, but to UNDERSTAND them and help them
+        express themselves more clearly, so they can improve their interpersonal
+        communication. Treat every sincere answer with empathy and respect.
+
+        userAnswer = the student's CURRENT spoken response (transcribed).
+        question   = the open-ended SEL prompt that invites personal sharing.
+        previousAttempts = the SAME student's earlier answers to THIS SAME question, in order
+                 (oldest first). This may be empty on the first attempt.
+
+        ==== SEL FIVE CORE COMPETENCIES (use these as your primary evaluation lens) ====
+        {competencies}
+
+        ==== HOW TO EVALUATE (no fixed answer; do NOT grade on a "correct" content) ====
+        Assess, with empathy, the degree to which the student:
+        1. Notices and names their own emotion (Self-Awareness).
+        2. Describes the situation and how they managed/expressed the feeling (Self-Management).
+        3. Shows awareness of others' feelings or perspectives where relevant (Social Awareness).
+        4. Communicates in a way that builds understanding rather than blame (Relationship Skills).
+        5. Reflects on consequences or what they could do (Responsible Decision-Making).
+        Also consider EXPRESSION CLARITY: is the idea organised and clear enough for a listener
+        to understand the student's feeling and situation?
+
+        ==== CONTINUITY ACROSS ATTEMPTS (CRITICAL - read carefully) ====
+        After your guidance, a student often sends a SHORT follow-up that only adds or refines one
+        part of what they already said. Judged in isolation, that follow-up can look fragmentary or
+        seem only weakly related to the question, which would unfairly lower the score.
+        To make the FINAL score faithfully reflect the student's actual answer to this question:
+        - Treat previousAttempts and the current userAnswer as ONE evolving answer to the same
+          question. Mentally COMBINE them into the student's fullest, clearest expression of this
+          question so far.
+        - Score that COMBINED expression. NEVER down-score a short on-topic follow-up just because,
+          on its own, it is brief or appears less related to the question — the earlier attempts
+          already established the relevance and content.
+        - The latest score should be at least as high as what the combined expression deserves; a
+          sincere refinement must not make the score go DOWN versus what the student had already
+          expressed.
+        - Only treat an answer as off-topic/irrelevant if NEITHER the current answer NOR any previous
+          attempt addresses the question.
+
+        ==== 10-LEVEL SCORING RUBRIC (lenient but discriminating; each level is distinct) ====
+        Pick the SINGLE level whose description best matches the student's COMBINED expression for
+        this question. The levels assess SEL awareness + expression clarity ONLY - never content
+        "correctness", personal choices, or (in Chinese mode) English grammar.
+
+        10 - Insightful & well-rounded: Clearly names a specific emotion, vividly describes the
+             situation and what triggered it, AND adds genuine depth - empathy or awareness of
+             others' perspectives, and/or a constructive way to respond or a thoughtful reflection
+             on what they learned or would do next. Expression is clear, organised and easy to
+             follow. Strong across several SEL competencies.
+        9  - Strong: Names a clear emotion with solid context and at least one added dimension
+             (empathy, a constructive response, or reflection on consequences). Well organised and
+             easy to follow; only a little more depth or a closing thought would reach a 10.
+        8  - Good: Names a feeling and gives a clear reason or situation, with some self-awareness or
+             awareness of others. The point is clear and understandable; could be lifted by a concrete
+             example, a constructive next step, or more emotional nuance.
+        7  - Solid: States a feeling and a basic reason or piece of context, clearly on-topic. The
+             idea comes across, though it stays fairly general or brief and shows limited empathy,
+             reflection, or emotional detail.
+        6  - Adequate: Conveys a feeling and a little context, but is mostly a plain statement with
+             little nuance, example, or reflection. Still understandable without effort.
+        5  - Emerging: Names a feeling or a reaction with very little context; the personal point is
+             detectable but undeveloped - essentially one short on-topic statement with no follow-up.
+        4  - Limited: Very brief or vague - mostly just an emotion label (e.g. "I'm sad" / "他很煩" /
+             "我覺得很煩") with almost no situation, reason, or reflection. Sincere and on-topic, but
+             minimal self-awareness and expression.
+        3  - Very limited: Fragmentary - only a keyword or a single short phrase; the personal point
+             is barely discernible. On-topic in spirit but very little usable expression of feeling
+             or situation.
+        2  - Minimal: Only an isolated word or phrase that is loosely related to the topic, carrying
+             almost no information about the student's actual feeling, situation, or view.
+        1  - No effective expression: Off-topic, no real personal sharing, silence, "I don't know"
+             with nothing more, or nonsense - nothing can be assessed as personal expression, and no
+             previous attempt addressed the question either.
+
+        Calibration tips (lenient yet discriminating):
+        - A SHORT but complete and clear personal share (emotion + a little context) can still earn
+          7-8; do NOT withhold higher scores merely because the answer is short.
+        - Any sincere, on-topic personal response should sit at 4 or above; reserve 1-3 for
+          fragments/keywords or off-topic/no-response cases.
+        - Do NOT lower the score because the content is "ordinary" or because of the student's
+          personal choices - judge awareness, clarity, and reflection only.
+
+        ==== FEEDBACK STYLE (guide, do not prescribe an answer) ====
+        Give warm, specific, growth-oriented feedback that helps the student SEE how to express
+        themselves more clearly and communicate better. You may:
+        - When the answer is short or lacks emotional vocabulary, gently respond to the CONTENT and
+          invite them to say more: what happened, how they felt in that moment, and how they would
+          like others to treat them.
+        - Encourage Non-Violent Communication (NVC): describe the trigger + the feeling, instead of
+          judging the other person. For example, if a student says they find someone "annoying",
+          guide them toward "When he keeps interrupting me, I feel a bit uncomfortable."
+        - When a student only states one feeling (e.g. "I'm sad"), invite them to explore underlying
+          feelings - for instance feeling disrespected, treated unfairly, or misunderstood - and to
+          describe what they wish had happened.
+        - IMPORTANT - to avoid fragmented follow-ups: when you ask the student to improve, ALWAYS
+          invite them to say their WHOLE answer again in one complete piece (restate everything in a
+          single full response), rather than only adding the missing part. Make this explicit, e.g.
+          "Next time, try saying your whole answer again in one go, including this part."
+        DO NOT provide a "suggested answer" or rewrite their answer for them. Offer direction and
+        questions, never a script to copy. (The "better_ans" field MUST be an empty string.)
+    """
+
+    if language == 'eng':
+        mode_specific = """
+        ==== LANGUAGE MODE: ENGLISH ====
+        The student answered in English. Provide feedback in BOTH English (eng_suggestion) and
+        Traditional Chinese (chi_suggestion). You may also note, briefly and kindly, any English
+        wording that obscures the meaning, but emotional awareness, clarity and reflection are the
+        priority — do not turn this into a strict grammar test.
+
+        Output rules:
+        - "chi_suggestion": warm SEL-oriented feedback in Traditional Chinese (zh-TW).
+        - "eng_suggestion": the same guidance in natural English.
+        - "score": integer 1-10 per the guidance above.
+        - "transcript": leave as the student's answer (the caller will fill it).
+        - "better_ans": MUST be an empty string "" (never provide a suggested answer).
+        """
+    else:
+        mode_specific = """
+        ==== LANGUAGE MODE: CHINESE ====
+        The student answered in Traditional Chinese. Evaluate the CHINESE response on the SEL
+        competencies and expression clarity ONLY. Do NOT assess English grammar or vocabulary and
+        do NOT ask them to answer in English. All feedback must be in Traditional Chinese.
+
+        Output rules:
+        - "chi_suggestion": warm, specific SEL-oriented feedback in Traditional Chinese (zh-TW).
+        - "eng_suggestion": MUST be an empty string "" (Chinese mode gives no English feedback).
+        - "score": integer 1-10 per the guidance above (judging the Chinese answer).
+        - "transcript": leave as the student's answer (the caller will fill it).
+        - "better_ans": MUST be an empty string "" (never provide a suggested answer).
+        """
+
+    closing = f"""
+        IMPORTANT: All Chinese responses MUST use Traditional Chinese (zh-TW), NEVER Simplified Chinese.
+
+        The JSON object must use the schema: {schema}
+    """
+
+    return shared_core + mode_specific + closing
+
+
+# 向後相容：保留 SEL_SYSTEM_INSTRUCTION 名稱（英文模式預設），供既有 import 使用。
+# Backward compatibility: keep the SEL_SYSTEM_INSTRUCTION name (English-mode default)
+# for existing imports; new code should call build_sel_system_instruction(language).
+SEL_SYSTEM_INSTRUCTION = build_sel_system_instruction('eng')
 
 # NPC Chat System Instructions - Includes language detection and relevance scoring
 # NPC Quick Response Prompt (for immediate display, 3-5 sec)
@@ -891,10 +927,17 @@ async def progress_message(user_id):
     )
 
 
-async def question_message(user_id, category, sub, show_feedback: bool = True):
+async def question_message(user_id, category, sub, show_feedback: bool = True, sel_language: str = None):
     question = question_manager.get_question(category, sub)
     history = getHistory(user_id, f'{category}-{sub}')
-    
+
+    # [新增 1] SEL 中文作答模式：字卡與說明改為全中文，移除英文內容。
+    # 非 SEL 類別（ex1..ex6、pretest 等）行為完全不變，確保 service1/2/3 相容。
+    # SEL Chinese-answer mode: render the card/instruction entirely in Chinese.
+    # Non-SEL categories are untouched, preserving service1/2/3 behaviour.
+    _sel = _is_sel_cat(category)
+    _chi_mode = _sel and normalize_sel_language(sel_language) == 'chi'
+
     contents = []
     
     # Question text bubble
@@ -979,6 +1022,20 @@ async def question_message(user_id, category, sub, show_feedback: bool = True):
         contents.append(history_bubble)
     
     # Instructions bubble
+    # [新增 1] SEL 中文模式顯示全中文說明「試著用中文回答以下問題」；
+    # 其餘維持原本中英對照說明（含 service1/2/3 與 SEL 英文模式）。
+    if _chi_mode:
+        _instruction_text = (
+            '試著用中文回答以下問題！\n'
+            '請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。'
+        )
+    else:
+        _instruction_text = (
+            '請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。'
+            '為了獲得高分請盡量用完整句子作答！\n'
+            'To answer, please tap the microphone icon near the text keyboard to record '
+            'and send a voice message. For a higher score, please try to answer in complete sentences!'
+        )
     instruction_bubble = FlexBubble(
         size='mega',
         body=FlexBox(
@@ -988,7 +1045,7 @@ async def question_message(user_id, category, sub, show_feedback: bool = True):
             spacing='md',
             contents=[
                 FlexText(
-                    text='請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。為了獲得高分請盡量用完整句子作答！\nTo answer, please tap the microphone icon near the text keyboard to record and send a voice message. For a higher score, please try to answer in complete sentences!',
+                    text=_instruction_text,
                     wrap=True,
                     size='lg',
                     align='center',
@@ -1191,24 +1248,21 @@ def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
     return f"{cfg.get('name_eng', '')} / {cfg.get('name_chi', '')}".strip(' /')
 
 
-async def sel_unit_intro_message(unit_num: int):
-    """進入SEL 單元時顯示的雙語介紹卡片。
-    Bilingual intro card shown when the user enters a SEL unit.
+async def sel_unit_intro_message(unit_num: int, language: str = 'eng'):
+    """進入 SEL 單元時顯示的介紹卡片（依作答語言調整）。
+    Intro card shown when the user enters a SEL unit (adapts to answering language).
 
-    內容：
-      - 該單元的圖片（若存在）
-      - 該單元的中英對照名稱
-      - 說明文字：「Please answer the following questions in English based on your
-        experience when playing the '{eng_name}' board game.」
-        以及對應的「請依照你在玩「{chi_name}」桌遊時的情形，試著用英文回答以下問題」
-        英文在前、中文在後（依使用者要求）。
+      - language == 'eng'：維持原本中英對照設計（英文在前、中文在後），鼓勵用英文作答。
+      - language == 'chi'：全中文卡片，移除英文內容，說明文字為「試著用中文回答以下問題」。
 
     Card content:
       - Unit image (if available)
-      - Bilingual unit name (English / Traditional Chinese)
-      - Bilingual instruction line, English first then Traditional Chinese,
-        per the user's requested ordering.
+      - Unit name (bilingual in English mode; Chinese-only in Chinese mode)
+      - Instruction line:
+          * English mode: bilingual (English first, then Chinese).
+          * Chinese mode: Chinese only ("試著用中文回答以下問題").
     """
+    language = normalize_sel_language(language)
     cfg = get_sel_unit_config(unit_num)
     if not cfg:
         # 防呆：未知單元編號時退回純文字提示。
@@ -1219,65 +1273,103 @@ async def sel_unit_intro_message(unit_num: int):
     name_chi = cfg.get('name_chi', '')
     image_path = cfg.get('image', '')
 
-    # 中英對照說明文字（英文在前、中文在後）。
-    # Bilingual instruction text (English first, Traditional Chinese second).
-    intro_eng = (
-        f"Please answer the following questions in English based on your experience "
-        f"when playing the \"{name_eng}\" board game."
-    )
-    intro_chi = (
-        f"請依照你在玩「{name_chi}」桌遊時的情形，試著用英文回答以下問題。"
-    )
-
-    body_contents = [
-        FlexText(
-            text=f"SEL Unit {unit_num}",
-            wrap=True,
-            weight='bold',
-            size='md',
-            color='#888888',
-            align='center',
-        ),
-        FlexText(
-            text=name_eng if name_eng else f"Unit {unit_num}",
-            wrap=True,
-            weight='bold',
-            size='xl',
-            align='center',
-            color='#001174',
-        ),
-        FlexText(
-            text=name_chi if name_chi else '',
-            wrap=True,
-            weight='bold',
-            size='lg',
-            align='center',
-            color='#001174',
-        ),
-        FlexSeparator(margin='md'),
-        FlexText(
-            text=intro_eng,
-            wrap=True,
-            size='md',
-            color='#333333',
-            margin='md',
-        ),
-        FlexText(
-            text=intro_chi,
-            wrap=True,
-            size='md',
-            color='#5b5b5b',
-            margin='md',
-        ),
-        FlexText(
-            text="Tap a question button below to begin.\n點擊下方題目按鈕開始作答。",
-            wrap=True,
-            size='sm',
-            color='#888888',
-            align='center',
-            margin='lg',
-        ),
-    ]
+    if language == 'chi':
+        # ===== 中文作答模式：全中文卡片 =====
+        intro_chi = (
+            f"請依照你在玩「{name_chi}」桌遊時的情形，試著用中文回答以下問題。"
+        )
+        body_contents = [
+            FlexText(
+                text=f"SEL 單元 {unit_num}",
+                wrap=True,
+                weight='bold',
+                size='md',
+                color='#888888',
+                align='center',
+            ),
+            FlexText(
+                text=name_chi if name_chi else f"單元 {unit_num}",
+                wrap=True,
+                weight='bold',
+                size='xl',
+                align='center',
+                color='#001174',
+            ),
+            FlexSeparator(margin='md'),
+            FlexText(
+                text=intro_chi,
+                wrap=True,
+                size='md',
+                color='#333333',
+                margin='md',
+            ),
+            FlexText(
+                text="點擊下方題目按鈕開始作答。",
+                wrap=True,
+                size='sm',
+                color='#888888',
+                align='center',
+                margin='lg',
+            ),
+        ]
+    else:
+        # ===== 英文作答模式：維持原本中英對照設計 =====
+        intro_eng = (
+            f"Please answer the following questions in English based on your experience "
+            f"when playing the \"{name_eng}\" board game."
+        )
+        intro_chi = (
+            f"請依照你在玩「{name_chi}」桌遊時的情形，試著用英文回答以下問題。"
+        )
+        body_contents = [
+            FlexText(
+                text=f"SEL Unit {unit_num}",
+                wrap=True,
+                weight='bold',
+                size='md',
+                color='#888888',
+                align='center',
+            ),
+            FlexText(
+                text=name_eng if name_eng else f"Unit {unit_num}",
+                wrap=True,
+                weight='bold',
+                size='xl',
+                align='center',
+                color='#001174',
+            ),
+            FlexText(
+                text=name_chi if name_chi else '',
+                wrap=True,
+                weight='bold',
+                size='lg',
+                align='center',
+                color='#001174',
+            ),
+            FlexSeparator(margin='md'),
+            FlexText(
+                text=intro_eng,
+                wrap=True,
+                size='md',
+                color='#333333',
+                margin='md',
+            ),
+            FlexText(
+                text=intro_chi,
+                wrap=True,
+                size='md',
+                color='#5b5b5b',
+                margin='md',
+            ),
+            FlexText(
+                text="Tap a question button below to begin.\n點擊下方題目按鈕開始作答。",
+                wrap=True,
+                size='sm',
+                color='#888888',
+                align='center',
+                margin='lg',
+            ),
+        ]
 
     bubble = FlexBubble(
         size='mega',
@@ -1312,14 +1404,113 @@ async def sel_unit_intro_message(unit_num: int):
     )
 
 
+async def sel_language_select_message(unit_num: int):
+    """[新增 1] 進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
+    Language-selection card shown when entering a SEL unit: ask the student whether to
+    answer in Chinese or English.
+
+    - 「用英文作答 / Answer in English」-> postback action=sel_lang&lang=eng&unit=N
+    - 「用中文作答 / Answer in Chinese」 -> postback action=sel_lang&lang=chi&unit=N
+    下方以鼓勵文字邀請學生嘗試用英文作答。
+    A short encouragement to try English is shown below the buttons.
+    """
+    name_eng = get_sel_unit_name(unit_num, 'eng')
+    name_chi = get_sel_unit_name(unit_num, 'chi')
+    title_eng = name_eng if name_eng else f"Unit {unit_num}"
+
+    bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='md',
+            contents=[
+                FlexText(
+                    text=f"SEL Unit {unit_num}",
+                    wrap=True,
+                    weight='bold',
+                    size='md',
+                    color='#888888',
+                    align='center',
+                ),
+                FlexText(
+                    text=f"{title_eng}\n{name_chi}".strip(),
+                    wrap=True,
+                    weight='bold',
+                    size='xl',
+                    align='center',
+                    color='#001174',
+                ),
+                FlexSeparator(margin='md'),
+                FlexText(
+                    text="How would you like to answer?\n請問你想用哪一種語言作答？",
+                    wrap=True,
+                    weight='bold',
+                    size='md',
+                    align='center',
+                    color='#333333',
+                    margin='md',
+                ),
+                FlexText(
+                    text=(
+                        "Tip: Answering in English is great practice and helps you improve faster!\n"
+                        "小提醒：用英文作答能多練習英語、進步更快，鼓勵你挑戰看看！"
+                    ),
+                    wrap=True,
+                    size='sm',
+                    color='#888888',
+                    align='center',
+                    margin='md',
+                ),
+            ]
+        ),
+        footer=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=[
+                FlexButton(
+                    style='primary',
+                    color='#00aa00',
+                    action=PostbackAction(
+                        label='Answer in English / 用英文作答',
+                        data=f'action=sel_lang&lang=eng&unit={unit_num}'
+                    ),
+                ),
+                FlexButton(
+                    style='primary',
+                    color='#0066cc',
+                    action=PostbackAction(
+                        label='Answer in Chinese / 用中文作答',
+                        data=f'action=sel_lang&lang=chi&unit={unit_num}'
+                    ),
+                ),
+            ]
+        )
+    )
+
+    return FlexMessage(
+        altText=f"SEL Unit {unit_num} - Choose answering language / 選擇作答語言",
+        contents=bubble,
+    )
+
+
 async def result_message(assessment: SpeechAssessment, category: str, sub: int,
-                         show_feedback: bool = None):
+                         show_feedback: bool = None, sel_language: str = None):
     """顯示作答結果。score 卡片永遠顯示；feedback 卡片由 show_feedback 控制。
     若 show_feedback 為 None，退而使用全域 display_feedback 設定。
+
+    SEL 類別特例：
+      - 不顯示「建議回答 / Suggested Answer」卡片（避免框架住學生的回應）。
+      - sel_language == 'chi' 時不顯示英文回饋卡片（中文作答只給中文回饋）。
+    其他類別行為完全不變，維持 service1/2/3 相容。
+
     Show assessment result. Score card always renders; feedback cards are
     controlled by show_feedback. Falls back to global display_feedback when None.
+    SEL special-casing: never show the "Suggested Answer" card; in Chinese mode,
+    omit the English feedback card. Other categories are unchanged.
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
+    _sel = _is_sel_cat(category)
+    _chi_only = _sel and normalize_sel_language(sel_language) == 'chi'
     bubbles = []
     
     # Score bubble
@@ -1360,7 +1551,7 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
     
     if display_feedback:
         # English feedback
-        if assessment.eng_suggestion:
+        if assessment.eng_suggestion and not _chi_only:
             eng_bubble = FlexBubble(
                 size='mega',
                 body=FlexBox(
@@ -1410,7 +1601,8 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
             bubbles.append(chi_bubble)
         
         # Better answer
-        if assessment.better_ans:
+        # SEL 類別不顯示「建議回答」，避免框架住學生的回應；其餘類別維持原行為。
+        if assessment.better_ans and not _sel:
             better_bubble = FlexBubble(
                 size='mega',
                 body=FlexBox(
@@ -1831,7 +2023,7 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     """
     from utils.file_utils import (
         is_level_all_questions_passed, get_next_unpassed_question,
-        get_min_score_to_pass
+        get_min_score_to_pass, is_one_by_one
     )
     
     level_info = get_game_level_info(theme_id, level_idx)
@@ -1859,8 +2051,14 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     all_passed = is_level_all_questions_passed(user_id, theme_id, level_idx)
     min_score = get_min_score_to_pass()
     
-    # If all passed or force show, display all questions for free selection
-    if all_passed or force_show_all:
+    # one_by_one=False（開放模式）時，整關所有題目都同時開放自由作答，
+    # 因此一律走「顯示全部題目」分支，不再僅顯示目前未通過的單一題目。
+    # In open mode (one_by_one=False), every question in the level is available at once,
+    # so always take the "show all questions" branch instead of showing only the current one.
+    show_all = all_passed or force_show_all or (not is_one_by_one())
+    
+    # If all passed or force show (or open mode), display all questions for free selection
+    if show_all:
         for q_idx, question in enumerate(questions):
             # Check if user has answered this question
             best_score = get_user_question_score(user_id, theme_id, level_idx, q_idx)
@@ -2193,10 +2391,12 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     Score card always renders; feedback cards are controlled by show_feedback.
     Falls back to global display_feedback when show_feedback is None.
 
-    Button logic:
-    - Score < 6: Show "Try Again" + "Improvement Hint"
-    - Score 6-9: Show "Try Again" + "Improvement Hint" + "Next Question"
-    - Score = 10: Show only "Next Question"
+    Button logic (passing threshold = min_score_to_pass, read from config):
+    - Below threshold: Show "Try Again" + "Improvement Hint"
+    - At/above threshold (not perfect): "Try Again" + "Improvement Hint" + "Next Question"
+    - Perfect score (10): Show only "Next Question"
+    In open mode (one_by_one=False) the "Next Question" button points to the next
+    unanswered question across all levels and is always offered when one exists.
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
@@ -2224,7 +2424,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
         ),
     ]
     
-    # [修改 3] 當分數未達最低通過分數時，在卡片中顯示最低通過分數規則，避免學生感到疑惑。
+    # 當分數未達最低通過分數時，在卡片中顯示最低通過分數規則，避免學生感到疑惑。
     # Show minimum passing score rule when score is below threshold, so students understand why they cannot proceed.
     _min_score = get_min_score_to_pass()
     if score < _min_score:
@@ -2360,15 +2560,17 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     )
     
     # Quick reply buttons - based on score decide which buttons to show
-    # Score < 6: "Try Again" + "Improvement Hint"
-    # Score 6-9: "Try Again" + "Improvement Hint" + "Next Question"
-    # Score = 10: Only "Next Question"
-    from utils.file_utils import is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level
+    # Threshold = min_score_to_pass (from config). Perfect (10) only shows "Next".
+    from utils.file_utils import (
+        is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level,
+        is_one_by_one, get_next_unanswered_question_global, get_theme_display_number
+    )
     min_score = get_min_score_to_pass()
     is_passed = score >= min_score
     is_perfect = score == 10
     all_level_passed = is_level_all_questions_passed(user_id, theme_id, level_idx)
     questions_per_level_count = get_questions_per_level()
+    _open_mode = not is_one_by_one()
     
     quick_reply_items = []
     
@@ -2390,24 +2592,48 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             ))
         )
     
-    # If passed current question (score >= 6), show next question button
-    if is_passed:
-        next_q_idx = get_next_unpassed_question(user_id, theme_id, level_idx)
-        if next_q_idx >= 0 and next_q_idx < questions_per_level_count:
+    if _open_mode:
+        # 開放模式：「下一題」跳到跨關卡的下一個未通過題目，且一律提供（不需先通過本題）。
+        # Open mode: "Next" jumps to the next unpassed question across all levels and is
+        # always offered, regardless of whether the current question was passed.
+        nxt_level, nxt_q = get_next_unanswered_question_global(user_id, theme_id)
+        if nxt_level >= 0 and nxt_q >= 0:
+            t_num = get_theme_display_number(theme_id)
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
-                    label=f'Next (Q{next_q_idx + 1})',
-                    data=f'action=game_answer&theme={theme_id}&level={level_idx}&question={next_q_idx}'
+                    label=f'Next (Q{nxt_level + 1}-{nxt_q + 1})',
+                    data=f'action=game_answer&theme={theme_id}&level={nxt_level}&question={nxt_q}'
                 ))
             )
-        elif all_level_passed:
-            # Level all passed
+        else:
+            # 全部題目皆已通過：提供回關卡選單的入口。
+            # All questions passed: offer a way back to the level menu.
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
-                    label='Level Completed!',
+                    label='All Done / 全部完成',
                     data=f'action=game_levels&theme={theme_id}'
                 ))
             )
+    else:
+        # 逐題模式：通過本題後才顯示「下一題」(同一關內的下一個未通過題目)。
+        # Sequential mode: only show "Next" after passing the current question.
+        if is_passed:
+            next_q_idx = get_next_unpassed_question(user_id, theme_id, level_idx)
+            if next_q_idx >= 0 and next_q_idx < questions_per_level_count:
+                quick_reply_items.append(
+                    QuickReplyItem(action=PostbackAction(
+                        label=f'Next (Q{next_q_idx + 1})',
+                        data=f'action=game_answer&theme={theme_id}&level={level_idx}&question={next_q_idx}'
+                    ))
+                )
+            elif all_level_passed:
+                # Level all passed
+                quick_reply_items.append(
+                    QuickReplyItem(action=PostbackAction(
+                        label='Level Completed!',
+                        data=f'action=game_levels&theme={theme_id}'
+                    ))
+                )
     
     if quick_reply_items:
         msg.quick_reply = QuickReply(items=quick_reply_items)
@@ -2705,14 +2931,51 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
 async def game_rules_instruction_message() -> FlexMessage:
     """Show game rules instruction card (bilingual).
     Used when user presses the Game Rules button in the game lobby menu.
+
+    規則文字中的主題數、關卡數、每關題數、最低通過分數，以及「逐關解鎖 / 自由作答」
+    的說明，全部依 config 動態產生。只要管理員更動 game_themes / levels_per_theme /
+    questions_per_level / min_score_to_pass / one_by_one，這張卡片的描述就會自動連動更新。
     """
+    from utils.file_utils import (
+        get_game_themes, get_levels_per_theme, get_questions_per_level,
+        get_min_score_to_pass, is_one_by_one
+    )
+    num_themes = len(get_game_themes())
+    num_levels = get_levels_per_theme()
+    num_questions = get_questions_per_level()
+    min_pass = get_min_score_to_pass()
+    open_mode = not is_one_by_one()
+
+    # 依作答模式產生不同的進度說明（逐關解鎖 vs 自由作答）。
+    # Progression sentence differs by mode (sequential unlock vs free answering).
+    if open_mode:
+        progress_eng = (
+            f"All levels and questions are open from the start, so you can answer in any order you like. "
+            f"A question counts as passed once you score at least {min_pass} out of 10. "
+        )
+        progress_chi = (
+            f"所有關卡與題目一開始就全部開放，你可以依自己喜歡的順序作答。"
+            f"每題只要達到 {min_pass} 分（滿分 10 分）即視為通過。"
+        )
+    else:
+        progress_eng = (
+            f"Answer the questions level by level: pass the current question (score at least "
+            f"{min_pass} out of 10) to move on, and clear a level to unlock the next one. "
+        )
+        progress_chi = (
+            f"請逐關作答：每題達到 {min_pass} 分（滿分 10 分）即可通過並前往下一題，"
+            f"通關後即可解鎖下一關。"
+        )
+
     rules_eng = (
         "Welcome to the Mystery Game! "
         "In this scenario-based puzzle game, you will play the role of a detective assistant, "
         "asking NPC characters about case details to solve a series of riddles. "
-        "Each of the three NPCs knows different information -- if you cannot find the answer, "
+        "Each NPC knows different information -- if you cannot find the answer, "
         "try asking a different character! "
-        "There are 3 topics in total, each with 5 levels, and each level has 3 small puzzles. "
+        f"There are {num_themes} topics in total, each with {num_levels} levels, "
+        f"and each level has {num_questions} small puzzles. "
+        f"{progress_eng}"
         "Don't be intimidated by the number of questions -- the game will provide sufficient "
         "clues and guidance to help you progress. Enjoy the game!"
     )
@@ -2720,8 +2983,10 @@ async def game_rules_instruction_message() -> FlexMessage:
         "歡迎來到情境解謎遊戲！"
         "在這個情境式解謎遊戲中，你將扮演偵探助手的角色，"
         "向 NPC 角色詢問案件細節以破解一道道謎題。"
-        "三個 NPC 人物知道的資訊都不同，如果問不出答案不妨換個人問問看喔！"
-        "此遊戲總共有三個主題，每個主題有五道關卡，每個關卡又有三個小謎題，"
+        "每位 NPC 人物知道的資訊都不同，如果問不出答案不妨換個人問問看喔！"
+        f"此遊戲總共有 {num_themes} 個主題，每個主題有 {num_levels} 道關卡，"
+        f"每個關卡又有 {num_questions} 個小謎題。"
+        f"{progress_chi}"
         "請不要被題目數量嚇到，遊戲中一定會提供足夠的線索和引導協助你破關。請享受遊戲吧！"
     )
     
@@ -3375,10 +3640,15 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         )
     
     unlocked_level = get_user_unlocked_level(user_id, theme_id)
+    # one_by_one=False（開放模式）時，所有關卡都開放、不鎖定。
+    # In open mode (one_by_one=False) every level is available and none is locked.
+    _open_mode = not is_one_by_one()
     bubbles = []
     
     for level in theme_config.levels:
-        is_locked = level.id > unlocked_level
+        # 開放模式下不鎖定任何關卡；逐關模式維持「高於已解鎖關卡即鎖定」。
+        # In open mode no level is locked; in sequential mode lock levels above the unlocked one.
+        is_locked = (level.id > unlocked_level) and (not _open_mode)
         
         if is_locked:
             continue  # Don't show locked levels
@@ -3386,7 +3656,9 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         # Get level score
         level_score = get_user_level_score(user_id, theme_id, level.id)
         max_level_score = get_questions_per_level() * 10
-        is_completed = level_score >= get_questions_per_level() * 6  # All questions passed
+        # 及格門檻改用動態 min_score_to_pass，移除硬編碼的 6。
+        # Use dynamic min_score_to_pass instead of the hardcoded 6.
+        is_completed = level_score >= get_questions_per_level() * get_min_score_to_pass()  # All questions passed
         
         body_contents = [
             FlexText(
@@ -3456,8 +3728,9 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         )
         bubbles.append(bubble)
     
-    # If there are still locked levels, show a hint
-    if unlocked_level < len(theme_config.levels) - 1:
+    # If there are still locked levels, show a hint (only in sequential one-by-one mode)
+    # 開放模式下沒有鎖定關卡，不顯示此提示。
+    if (not _open_mode) and unlocked_level < len(theme_config.levels) - 1:
         locked_bubble = FlexBubble(
             size='mega',
             body=FlexBox(

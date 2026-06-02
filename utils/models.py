@@ -308,6 +308,19 @@ class UserState(BaseModel):
         description="上次回答的資訊 (題目、回答、分數等)", 
         default=None
     )
+    # [新增 (SEL 作答語言)] 記錄使用者在 SEL 區塊選擇的作答語言。
+    # 'eng' = 用英文作答（維持原本雙語設計）；'chi' = 用中文作答（全中文字卡與中文回饋）。
+    # None 表示尚未選擇，依需求預設視為中文作答 ('chi')。此狀態為記憶體層級，不持久化。
+    #
+    # Records the answering language the user picked in the SEL section.
+    # 'eng' = answer in English (keeps the original bilingual design);
+    # 'chi' = answer in Chinese (all-Chinese cards and Chinese-only feedback).
+    # None means "not chosen yet"; per requirement it defaults to Chinese ('chi').
+    # This is in-memory session state and is not persisted to user data.
+    sel_language: Optional[str] = Field(
+        description="SEL 作答語言 ('eng' / 'chi' / None)",
+        default=None
+    )
 
 
 class Question(BaseModel):
