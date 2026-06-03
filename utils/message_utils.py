@@ -10,7 +10,7 @@ from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse
 import json
-# [新增] 用於 rich menu 建立時的節流與重試延遲。
+# 用於 rich menu 建立時的節流與重試延遲。
 # Used for throttling and retry-backoff sleeps during rich menu provisioning.
 import asyncio
 from utils.file_utils import (
@@ -23,7 +23,7 @@ from utils.file_utils import (
     get_game_info_config, get_theme_display_number,
     get_new_test_question, get_new_test_questions_count, get_new_test_questions_all,
     isAdmin, get_enabled_category_for_alias, get_min_score_to_pass,
-    # [新增] 逐題模式、SEL 語言選擇、跨關卡未作答題目查詢
+    # 逐題模式、SEL 語言選擇、跨關卡未作答題目查詢
     # one-by-one mode, SEL language-selection switch, first-never-answered finder
     is_one_by_one, is_sel_language_selection_enabled,
     get_first_never_answered_question_global,
@@ -34,12 +34,12 @@ IMG_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
 CHAT_CATEGORY = ["Travel", "Sports", "Interview", "English Skills"]
 CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports.jpg", "/templates/chat/interview.jpg", "/templates/chat/english_skills.jpg"]
 
-# ========== [新增] Chat 主題對應的中文標籤 (Chinese label for each chat topic) ==========
+# ========== Chat 主題對應的中文標籤 (Chinese label for each chat topic) ==========
 # 順序需與 CHAT_CATEGORY 保持一致。
 # Order must mirror CHAT_CATEGORY.
 CHAT_CATEGORY_CHI = ["旅遊", "運動", "面試", "英語技巧"]
 
-# ========== [新增] Chat 主題專屬 AI 提示詞 (Topic-specific AI prompt fragments) ==========
+# ========== Chat 主題專屬 AI 提示詞 (Topic-specific AI prompt fragments) ==========
 # 當使用者選定四個主題之一後，在 send_audio_request 的 system prompt 中追加對應段落，
 # 引導 AI 以該主題作為對話脈絡。每個主題包含「角色設定」與「對話建議」兩部分。
 # 此設計易於擴充：要新增主題只需在 CHAT_CATEGORY / CHAT_CATEGORY_CHI / CHAT_TOPIC_PROMPTS
@@ -105,7 +105,7 @@ def get_chat_topic_system_prompt(sub: int) -> str:
         return ""
     return CHAT_TOPIC_PROMPTS.get(sub, "")
 
-# ========== [新增] SEL 類別與作答語言輔助 (SEL helpers) ==========
+# ========== SEL 類別與作答語言輔助 (SEL helpers) ==========
 # 涵蓋舊的單一 'sel' 與新的六單元 'sel1'..'sel6'。
 # Covers both the legacy 'sel' and the six new units 'sel1'..'sel6'.
 _SEL_CATEGORIES_MU = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
@@ -931,7 +931,7 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
     question = question_manager.get_question(category, sub)
     history = getHistory(user_id, f'{category}-{sub}')
 
-    # [新增 1] SEL 中文作答模式：字卡與說明改為全中文，移除英文內容。
+    # SEL 中文作答模式：字卡與說明改為全中文，移除英文內容。
     # 非 SEL 類別（ex1..ex6、pretest 等）行為完全不變，確保 service1/2/3 相容。
     # SEL Chinese-answer mode: render the card/instruction entirely in Chinese.
     # Non-SEL categories are untouched, preserving service1/2/3 behaviour.
@@ -1022,7 +1022,7 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
         contents.append(history_bubble)
     
     # Instructions bubble
-    # [新增 1] SEL 中文模式顯示全中文說明「試著用中文回答以下問題」；
+    # SEL 中文模式顯示全中文說明「試著用中文回答以下問題」；
     # 其餘維持原本中英對照說明（含 service1/2/3 與 SEL 英文模式）。
     if _chi_mode:
         _instruction_text = (
@@ -1105,7 +1105,7 @@ async def chat_message(user_id, sub):
     )
 
 
-# ========== [新增] Chat 進入提示與主題選擇提示訊息 ==========
+# ========== Chat 進入提示與主題選擇提示訊息 ==========
 # 這些訊息僅針對 service4/5 (rag_mode=true) 的 menu_other → chat 入口而設計，
 # 但函式本身無服務限制；呼叫端負責判斷是否需要使用。
 #
@@ -1181,7 +1181,7 @@ async def chat_topic_intro_message(sub: int):
     return TextMessage(text=text)
 
 
-# ========== [新增 (SEL 多單元)] SEL 六個單元的設定與單元介紹卡片 ==========
+# ========== SEL 六個單元的設定與單元介紹卡片 ==========
 # SEL six-unit configuration and the unit intro card builder.
 #
 # 設計：每一個 SEL 單元在進入時都會先顯示一張卡片，卡片包含該單元的圖片與雙語說明，
@@ -1405,7 +1405,7 @@ async def sel_unit_intro_message(unit_num: int, language: str = 'eng'):
 
 
 async def sel_language_select_message(unit_num: int):
-    """[新增 1] 進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
+    """進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
     Language-selection card shown when entering a SEL unit: ask the student whether to
     answer in Chinese or English.
 
@@ -1626,10 +1626,41 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
             )
             bubbles.append(better_bubble)
     
-    return FlexMessage(
+    msg = FlexMessage(
         altText=f'Q{sub + 1} Result',
         contents=FlexCarousel(contents=bubbles)
     )
+
+    # SEL 作答結果下方加入兩顆氣泡按鈕：
+    #   - 「繼續補充回答」：重新作答同一題（沿用 record action，保留 category/sub 與作答語言），
+    #     讓學生不論完整重述或簡短補充，分數都能更新。
+    #   - 「下一題」：直接跳到下一題的作答介面（若已是最後一題則不顯示）。
+    # 僅 SEL 類別加入這些按鈕；其他類別（service1/2/3、pretest/posttest 等）行為完全不變。
+    # SEL result adds two quick-reply buttons: "Add to Answer" (re-answer the same question via
+    # the record action, keeping category/sub and answering language so the score can update)
+    # and "Next Question" (jump straight to the next question; hidden on the last question).
+    # Only SEL categories get these buttons; all other categories are unchanged.
+    if _sel:
+        quick_items = [
+            QuickReplyItem(action=PostbackAction(
+                label='繼續補充回答',
+                data=f'action=record&sub={sub}'
+            )),
+        ]
+        try:
+            _total_q = len(question_manager.get_all_questions(category))
+        except Exception:
+            _total_q = 0
+        if _total_q and (sub + 1) < _total_q:
+            quick_items.append(
+                QuickReplyItem(action=PostbackAction(
+                    label='下一題',
+                    data=f'action=record&sub={sub + 1}'
+                ))
+            )
+        msg.quick_reply = QuickReply(items=quick_items)
+
+    return msg
 
 
 async def carousel_message(user_id, category, page=0):
@@ -1805,7 +1836,6 @@ async def game_prologue_message(theme_id: str):
         )
     
     # Build prologue bubble footer BEFORE creating FlexMessage to ensure it always renders
-    # Fix #1: footer is fully constructed first, then passed into the bubble constructor
     prologue_footer_contents = [
         FlexButton(
             action=PostbackAction(
@@ -2083,19 +2113,35 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             ]
             
             if has_answered:
-                status_color = '#00aa00' if is_passed else '#ff8800'
-                status_text = 'Passed' if is_passed else 'Not Passed'
-                status_text_chi = '已通過' if is_passed else '未通過'
-                body_contents.append(
-                    FlexText(
-                        text=f'Best: {best_score}/10 ({status_text}/{status_text_chi})',
-                        wrap=True,
-                        size='sm',
-                        color=status_color,
-                        margin='md',
-                        align='center',
+                # 開放模式 (one_by_one=False)：只要作答即算完成，不顯示「通過/未通過」，
+                # 也不依 min_score 判定；逐關模式維持原本的通過/未通過顯示。
+                # Open mode: any answer counts as done; no Passed/Not Passed and no min_score
+                # judgement. Sequential mode keeps the original passed/not-passed display.
+                if not is_one_by_one():
+                    body_contents.append(
+                        FlexText(
+                            text=f'Best: {best_score}/10 (Answered/已作答)',
+                            wrap=True,
+                            size='sm',
+                            color='#00aa00',
+                            margin='md',
+                            align='center',
+                        )
                     )
-                )
+                else:
+                    status_color = '#00aa00' if is_passed else '#ff8800'
+                    status_text = 'Passed' if is_passed else 'Not Passed'
+                    status_text_chi = '已通過' if is_passed else '未通過'
+                    body_contents.append(
+                        FlexText(
+                            text=f'Best: {best_score}/10 ({status_text}/{status_text_chi})',
+                            wrap=True,
+                            size='sm',
+                            color=status_color,
+                            margin='md',
+                            align='center',
+                        )
+                    )
             
             if question.get('hint'):
                 body_contents.append(
@@ -2424,10 +2470,13 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
         ),
     ]
     
-    # 當分數未達最低通過分數時，在卡片中顯示最低通過分數規則，避免學生感到疑惑。
-    # Show minimum passing score rule when score is below threshold, so students understand why they cannot proceed.
+    # 僅在逐關解鎖模式 (one_by_one=True) 才使用 min_score_to_pass：當分數未達標時顯示
+    # 最低通過分數規則。開放模式 (one_by_one=False) 下「只要作答即視為通過」，不顯示此規則。
+    # Only use min_score_to_pass in sequential mode (one_by_one=True): show the minimum
+    # passing-score rule when below threshold. In open mode any answer counts as passed,
+    # so this rule is not shown.
     _min_score = get_min_score_to_pass()
-    if score < _min_score:
+    if is_one_by_one() and score < _min_score:
         main_contents.append(
             FlexText(
                 text=f'Minimum passing score: {_min_score}/10\n最低通過分數：{_min_score} 分',
@@ -2561,9 +2610,15 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     # Quick reply buttons - based on score decide which buttons to show
     # Threshold = min_score_to_pass (from config). Perfect (10) only shows "Next".
+    # [修正] 僅在此局部匯入「模組頂層尚未匯入」的名稱；get_questions_per_level / is_one_by_one /
+    # get_theme_display_number 已在檔案頂層匯入，若再於此函式內 import 會使它們在整個函式
+    # 變成區域變數，導致函式前段先用到 get_theme_display_number 時拋出 UnboundLocalError。
+    # Only import names NOT already imported at module top. Re-importing module-level names
+    # here would make them function-local for the whole function, so the earlier use of
+    # get_theme_display_number (near the top) raised UnboundLocalError.
     from utils.file_utils import (
-        is_level_all_questions_passed, get_next_unpassed_question, get_questions_per_level,
-        is_one_by_one, get_next_unanswered_question_global, get_theme_display_number
+        is_level_all_questions_passed, get_next_unpassed_question,
+        get_next_unanswered_question_global
     )
     min_score = get_min_score_to_pass()
     is_passed = score >= min_score
@@ -2635,6 +2690,17 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
                     ))
                 )
     
+    # 作答完成後加入「題目列表」按鈕，讓學生不必重新進入關卡即可回到「本題所在關卡」
+    # 的題目列表挑選其他題目。
+    # Add a "Question List" button so the student can jump back to THIS level's question list
+    # without re-entering the level.
+    quick_reply_items.append(
+        QuickReplyItem(action=PostbackAction(
+            label='List',
+            data=f'action=game_questions&theme={theme_id}&level={level_idx}'
+        ))
+    )
+
     if quick_reply_items:
         msg.quick_reply = QuickReply(items=quick_reply_items)
     
@@ -2829,11 +2895,16 @@ async def game_npc_chat_response_message(npc_name: str, npc_reply: str,
         altText=f'{npc_name} Response',
         contents=FlexCarousel(contents=bubbles)
     )
-    
-    # [Fix #4] Add hint: if user has enough clues, go to answer
+
+    # Also add a "Question List" button that opens the question list of the level the "Answer"
+    # button would go to (the level holding the earliest never-answered question).
     msg.quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(
-            label='Go to Answer / 前往作答',
+            label='List',
+            data='action=game_question_list_auto'
+        )),
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer',
             data='action=game_current_questions'
         )),
     ])
@@ -2951,11 +3022,11 @@ async def game_rules_instruction_message() -> FlexMessage:
     if open_mode:
         progress_eng = (
             f"All levels and questions are open from the start, so you can answer in any order you like. "
-            f"A question counts as passed once you score at least {min_pass} out of 10. "
+            f"Every question you answer counts as done -- there is no minimum passing score. "
         )
         progress_chi = (
             f"所有關卡與題目一開始就全部開放，你可以依自己喜歡的順序作答。"
-            f"每題只要達到 {min_pass} 分（滿分 10 分）即視為通過。"
+            f"每題只要作答過就算完成，沒有最低通過分數的限制。"
         )
     else:
         progress_eng = (
@@ -3656,9 +3727,20 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         # Get level score
         level_score = get_user_level_score(user_id, theme_id, level.id)
         max_level_score = get_questions_per_level() * 10
-        # 及格門檻改用動態 min_score_to_pass，移除硬編碼的 6。
-        # Use dynamic min_score_to_pass instead of the hardcoded 6.
-        is_completed = level_score >= get_questions_per_level() * get_min_score_to_pass()  # All questions passed
+        # 完成判定：逐關模式沿用 min_score_to_pass（每題達標）；開放模式下「只要作答即完成」，
+        # 因此改為「該關所有題目都至少作答過一次」即視為完成，不使用 min_score。
+        # Completion: sequential mode uses min_score_to_pass (each question must reach it);
+        # open mode counts a level as completed once every question has been answered at
+        # least once, without using min_score.
+        if _open_mode:
+            _qpl = get_questions_per_level()
+            _answered = sum(
+                1 for _q in range(_qpl)
+                if get_user_question_score(user_id, theme_id, level.id, _q) > 0
+            )
+            is_completed = _answered >= _qpl
+        else:
+            is_completed = level_score >= get_questions_per_level() * get_min_score_to_pass()
         
         body_contents = [
             FlexText(
@@ -3824,13 +3906,16 @@ async def progress_select_message() -> FlexMessage:
 
 async def game_progress_message(user_id: str) -> FlexMessage:
     """Show game progress summary: x/15 per theme"""
-    from utils.file_utils import get_game_themes, get_min_score_to_pass, get_user_question_score, get_levels_per_theme, get_questions_per_level
+    from utils.file_utils import get_game_themes, get_min_score_to_pass, get_user_question_score, get_levels_per_theme, get_questions_per_level, is_one_by_one
     
     themes = get_game_themes()
     levels_per_theme = get_levels_per_theme()
     questions_per_level = get_questions_per_level()
     total_per_theme = levels_per_theme * questions_per_level  # 5 * 3 = 15
     min_pass = get_min_score_to_pass()
+    # 開放模式：只要作答過即計入；逐關模式：需達 min_pass 才計入。
+    # Open mode counts any answered question; sequential mode requires reaching min_pass.
+    _open_mode = not is_one_by_one()
     
     body_contents = [
         FlexText(
@@ -3847,12 +3932,12 @@ async def game_progress_message(user_id: str) -> FlexMessage:
         theme_config = load_game_theme_config(theme_id)
         theme_name = theme_config.name if theme_config else f'Theme {theme_id}'
         
-        # Count passed questions across all levels
+        # Count completed questions across all levels (open mode: answered; sequential: passed)
         passed_count = 0
         for lv_idx in range(levels_per_theme):
             for q_idx in range(questions_per_level):
                 score = get_user_question_score(user_id, theme_id, lv_idx, q_idx)
-                if score >= min_pass:
+                if (score > 0) if _open_mode else (score >= min_pass):
                     passed_count += 1
         
         color = '#00aa00' if passed_count == total_per_theme else '#5b5b5b'
@@ -3921,7 +4006,7 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         )
 
     # ===== [Change 2] SEL progress =====
-    # [新增 (SEL 多單元)] SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
+    # SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
     # 進度顯示時，分別列出每個單元已作答題數。
     #
     # The SEL section now consists of six independent units (sel1..sel6),
@@ -4167,7 +4252,7 @@ async def handle_rich_menu(user_id):
     _SWITCH_CONTROLLED = {
         'pretest', 'posttest', 'rag_test',
         'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat',
-        # [新增 (SEL 多單元)] 將六個 SEL 單元納入即時開關監控，
+        # 將六個 SEL 單元納入即時開關監控，
         # 與 handlers.py 的 _SWITCH_CONTROLLED 同步，確保管理員關閉後立即驅離使用者。
         # Include the six SEL units so admin disable actions evict users immediately,
         # matching the _SWITCH_CONTROLLED set in handlers.py.
@@ -4478,11 +4563,15 @@ async def game_npc_voice_response_messages(
     # 語音訊息 (附快速回覆按鈕)
     quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(
-            label='Show Text / 顯示文字',
+            label='Show Text',
             data='action=game_show_npc_text'
         )),
         QuickReplyItem(action=PostbackAction(
-            label='Go to Answer / 前往作答',
+            label='List',
+            data='action=game_question_list_auto'
+        )),
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer',
             data='action=game_current_questions'
         )),
     ])
@@ -4559,7 +4648,11 @@ async def game_npc_text_card_message(
 
     msg.quick_reply = QuickReply(items=[
         QuickReplyItem(action=PostbackAction(
-            label='Go to Answer / 前往作答',
+            label='List',
+            data='action=game_question_list_auto'
+        )),
+        QuickReplyItem(action=PostbackAction(
+            label='Go to Answer',
             data='action=game_current_questions'
         )),
     ])
@@ -4568,7 +4661,7 @@ async def game_npc_text_card_message(
 
 # ========== [END] NPC 語音輸出相關訊息 ==========
 
-# ========== [新增] LINE 速率限制處理 (Rate-limit handling helpers) ==========
+# ==========  LINE 速率限制處理 (Rate-limit handling helpers) ==========
 # 啟動時批次重建 rich menu 容易在短時間內超過 LINE 的速率限制（HTTP 429）。
 # 以下兩個常數可控制節流行為，必要時可調大。
 #
@@ -4653,7 +4746,7 @@ async def create_rich_menu(force_rebuild: bool = None):
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
 
-    # [更新] 強制重建開關現在優先取自呼叫者傳入的參數；若未指定，再讀取環境變數。
+    # 強制重建開關現在優先取自呼叫者傳入的參數；若未指定，再讀取環境變數。
     # 這讓管理員指令 /refresh_all_menus 可以在不修改環境變數的情況下觸發強制重建。
     # The force_rebuild flag now prefers the explicit argument; falls back to the
     # environment variable when not provided. This lets the /refresh_all_menus admin
@@ -4770,7 +4863,7 @@ async def create_rich_menu(force_rebuild: bool = None):
 
     await save_config()
 
-# ========== [新增] 重建單一 rich menu (Refresh a single rich menu) ==========
+# ========== 重建單一 rich menu (Refresh a single rich menu) ==========
 # 配合管理員指令 /refresh_menu <name> 使用。
 # 當 rich_menu.json 沒改、但某張選單的圖片檔案內容換掉時，智能重用模式因為
 # 「名稱仍存在於 LINE」會直接重用，不會自動上傳新圖片；此函式提供「精準刪除

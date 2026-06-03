@@ -25,7 +25,7 @@ from utils.message_utils import (
     game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
     build_reference_answers_section,
-    # [新增] 用於 audio 評分的 <standard> 區段建構輔助函式
+    # 用於 audio 評分的 <standard> 區段建構輔助函式
     # 修正 chr(10) 壓平 bug 並對 SEL 套用十級 few-shot 格式
     # Helper for building the <standard> section in audio assessment;
     # fixes the chr(10) flattening bug and applies tiered few-shot formatting for SEL.
@@ -36,15 +36,15 @@ from utils.message_utils import (
     new_test_question_message,
     # NPC voice response messages (item 4)
     game_npc_voice_response_messages, game_npc_text_card_message,
-    # [新增] Chat 主題功能與 SEL 評分指示
+    # Chat 主題功能與 SEL 評分指示
     # New additions: chat topic helpers and SEL evaluation instruction
-    # [新增] SEL 提示詞 builder（依作答語言）與 SEL 作答語言選擇卡片
+    # SEL 提示詞 builder（依作答語言）與 SEL 作答語言選擇卡片
     # SEL prompt builder (language-aware) and the SEL language-selection card
     SEL_SYSTEM_INSTRUCTION, build_sel_system_instruction,
     sel_language_select_message,
     get_chat_topic_system_prompt,
     chat_welcome_message, chat_topic_intro_message,
-    # [新增 (SEL 多單元)] SEL 單元介紹卡片
+    # SEL 單元介紹卡片
     # SEL multi-unit intro card
     sel_unit_intro_message,
 )
@@ -63,7 +63,7 @@ from utils.file_utils import (
     get_npc_chat_memory, append_npc_chat_memory,
     increment_show_text_count, get_show_text_count,
     is_fallback_guide_enabled, load_guide_content,
-    # [新增] 逐題模式開關、SEL 語言選擇開關、跨關卡未作答題目查找
+    # 逐題模式開關、SEL 語言選擇開關、跨關卡未作答題目查找
     # one-by-one mode switch, SEL language-selection switch, first-never-answered finder
     is_one_by_one, is_sel_language_selection_enabled,
     get_first_never_answered_question_global,
@@ -205,7 +205,7 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
 user_data_enter = {}
 
 
-# ========== [新增] SEL 類別判別小工具 (SEL category helper) ==========
+# ========== SEL 類別判別小工具 (SEL category helper) ==========
 # 涵蓋舊的單一 'sel' 類別與新的多單元 'sel1'..'sel6'，作為評分路由的統一判斷點。
 # Covers both the legacy single 'sel' category and the new multi-unit 'sel1'..'sel6';
 # used as the unified routing predicate for SEL-specific evaluation.
@@ -282,7 +282,7 @@ async def handle_text_message(event):
     if not await check_user_login(event, message):
         return
 
-    # ===== [新增] 所有「/」開頭的訊息都交由 slash 指令分派器處理，不再 fall through 到 AI =====
+    # ===== 所有「/」開頭的訊息都交由 slash 指令分派器處理，不再 fall through 到 AI =====
     # Any message starting with "/" is routed through the slash-command dispatcher and
     # never falls through to the fallback guide AI. This guarantees that mistyped or
     # not-yet-implemented commands receive a clear "unknown command" reply rather than
@@ -878,7 +878,7 @@ async def handle_audio_message(event):
                 question.assessment_standard, is_sel=_is_sel
             )
 
-        # [新增] SEL：帶入該生「同一題」先前每一次的作答紀錄，讓 AI 將歷次回答視為同一段
+        # SEL：帶入該生「同一題」先前每一次的作答紀錄，讓 AI 將歷次回答視為同一段
         # 持續完善的答案來合併評分，避免引導後的片段式補充因脫離題目脈絡而被低估，
         # 使最終分數能忠實反映學生對該題的實際表達內容。
         # 此處在 updateHistory 之前讀取，因此只包含本次之前的歷史，不含當前作答。
@@ -1248,6 +1248,9 @@ async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info
 
 async def handle_game_answer(event, user_id, user_state):
     """Handle game question voice answers"""
+    # [診斷] 追蹤目前執行到哪一步，方便在外層 except 精確指出失敗位置。
+    # Track the current step so the outer except can pinpoint where it failed.
+    _step = 'start'
     try:
         theme_id = user_state.game_theme
         level_idx = user_state.game_level
@@ -1298,16 +1301,31 @@ async def handle_game_answer(event, user_id, user_state):
         )
 
         # Get AI response
-        completion = await client.beta.chat.completions.parse(
-            model="gpt-4o",
-            response_format=QuestionAnswerResponse,
-            max_completion_tokens=512,
-            temperature=0.7, 
-            messages=[
-                { "role": "system", "content": formatted_prompt },
-                { "role": "user", "content": text }
-            ],
-        )
+        # [診斷] 將 OpenAI 呼叫獨立包成 try/except，把真正的 API 例外（型別 + 訊息）
+        # 完整印出，避免被外層的廣域 except 吞掉而只剩「系統發生錯誤」。
+        # Wrap the OpenAI call so the real API exception (type + message) is logged
+        # explicitly instead of being swallowed by the broad outer except.
+        try:
+            completion = await client.beta.chat.completions.parse(
+                model="gpt-4o",
+                response_format=QuestionAnswerResponse,
+                max_completion_tokens=512,
+                temperature=0.7,
+                messages=[
+                    { "role": "system", "content": formatted_prompt },
+                    { "role": "user", "content": text }
+                ],
+            )
+        except Exception as api_error:
+            print(f"[Game Answer] OpenAI parse call failed: {type(api_error).__name__}: {api_error}")
+            import traceback
+            traceback.print_exc()
+            await send_text_message(
+                event,
+                "評分服務暫時無法使用，請稍後再試一次。\n"
+                "The scoring service is temporarily unavailable. Please try again shortly."
+            )
+            return
 
         # Handle response parsing with robust fallback
         answer_res = None
@@ -1339,6 +1357,7 @@ async def handle_game_answer(event, user_id, user_state):
                 )
 
         # Save evaluation result
+        _step = 'build_assessment'
         assessment = SpeechAssessment(
             chi_suggestion=answer_res.feedback_chi if answer_res.feedback_chi else "",
             eng_suggestion=answer_res.feedback_eng if answer_res.feedback_eng else "", 
@@ -1348,10 +1367,12 @@ async def handle_game_answer(event, user_id, user_state):
             timestamp=time.time()
         )
         
+        _step = 'update_history'
         history_key = f'{theme_id}-{level_idx}-{question_idx}'
         updateHistory(user_id, history_key, assessment)
         
         # Use new save function to record question answer
+        _step = 'save_question_answer_record'
         save_question_answer_record(
             user_id, theme_id, level_idx, question_idx, question_text,
             text, answer_res.score, answer_res.is_correct,
@@ -1361,11 +1382,13 @@ async def handle_game_answer(event, user_id, user_state):
         )
         
         # Update game score
+        _step = 'update_game_score'
         is_new_high, theme_total = update_game_score(
             user_id, theme_id, level_idx, question_idx, answer_res.score
         )
         
         # Check and unlock next level
+        _step = 'check_and_unlock_next_level'
         unlocked = check_and_unlock_next_level(user_id, theme_id, level_idx)
         
         # Save last answer info for improvement hint feature
@@ -1382,6 +1405,7 @@ async def handle_game_answer(event, user_id, user_state):
         }
         
         # Save interaction log
+        _step = 'save_interaction_log'
         interaction_log = GameInteractionLog(
             user_id=user_id,
             timestamp=time.time(),
@@ -1400,6 +1424,7 @@ async def handle_game_answer(event, user_id, user_state):
         user_state.game_question = -1
         
         # Send result message (score always shown; feedback controlled per-category)
+        _step = 'game_score_message'
         await send_message(event, await game_score_message(
             user_id, theme_id, level_idx, question_idx,
             answer_res.score, is_new_high,
@@ -1417,10 +1442,15 @@ async def handle_game_answer(event, user_id, user_state):
             await send_text_message(event, "恭喜！已解鎖下一關！\nCongratulations! Next level unlocked!")
         
         # Save user data
+        _step = 'save_user_data'
         await save_user_data()
 
     except Exception as e:
-        print(f"Game Answer Error: {e}")
+        # [診斷] 印出失敗的步驟與例外型別 + 訊息，讓真正的根因可以從日誌直接判讀，
+        # 不再只剩無資訊的「系統發生錯誤」。
+        # Log the failing step plus exception type/message so the real root cause is
+        # visible in the server log instead of an opaque generic error.
+        print(f"Game Answer Error at step '{_step}': {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
@@ -1569,7 +1599,7 @@ async def send_audio_request(event, history, text, secs):
     
     history.questions.append(text)
     
-    # [新增] 根據使用者目前所選的 chat 主題（user_state.sub）附加主題專屬提示詞。
+    # 根據使用者目前所選的 chat 主題（user_state.sub）附加主題專屬提示詞。
     # 若使用者尚未選擇主題（sub < 0），則回傳空字串，AI 走一般對話模式。
     # 僅在 service4/5 (rag_mode) 啟用主題感知，避免改變 service1/2/3 的原始行為。
     #
@@ -1682,7 +1712,7 @@ async def handle_postback(event):
         if vars.get('summary'):
             await handle_chat_summary(event)
         elif 'sub' in vars:
-            # [新增] 使用者點擊 chat rich menu 中的主題按鈕（旅遊 / 運動 / 面試 / 英語技巧）。
+            # 使用者點擊 chat rich menu 中的主題按鈕（旅遊 / 運動 / 面試 / 英語技巧）。
             # 將該主題索引存入 user_state.sub，後續 send_audio_request 會依此調整 AI 系統提示詞。
             # User picked a chat topic button (Travel / Sports / Interview / English Skills).
             # Save the topic index into user_state.sub so the subsequent AI system prompt
@@ -1767,7 +1797,7 @@ async def handle_postback(event):
             await send_text_message(event, '無權限!\nNo permission!')
             return
         
-        # [新增] 保存切換前所在的類別，供後續邏輯判斷使用（例如：判斷是否該補送 chat 進入提示）。
+        # 保存切換前所在的類別，供後續邏輯判斷使用（例如：判斷是否該補送 chat 進入提示）。
         # Capture the category the user was on BEFORE the switch, used by downstream logic
         # (e.g. deciding whether to send the chat welcome card).
         previous_category = user_state.category
@@ -1775,7 +1805,7 @@ async def handle_postback(event):
         # RAG mode menu switch logic
         is_rag = config.get('rag_mode', False)
         if alias == 'menu':
-            # [新增] service4/5 (rag_mode=true) 中，若使用者目前位於 chat 區塊，
+            # service4/5 (rag_mode=true) 中，若使用者目前位於 chat 區塊，
             # 「menu」按鈕應回到 menu_other，而非主選單 menu_game。
             # In service4/5 (rag_mode=true), when the user is currently on the chat menu,
             # the "menu" button should return to menu_other rather than the top menu_game.
@@ -1829,7 +1859,7 @@ async def handle_postback(event):
         # Auto popup menu
         # pretest/posttest family: the rich menu itself IS the navigation UI, no auto-popup needed.
         _NO_POPUP_PREFIXES = ('pretest', 'posttest')
-        # [新增] 進入 chat 區時主動發送中英對照歡迎訊息，但若使用者從語音設定（audio/sex/accent）
+        # 進入 chat 區時主動發送中英對照歡迎訊息，但若使用者從語音設定（audio/sex/accent）
         # 或已在 chat 內返回，則略過，避免重複打擾。
         # When entering the chat section, proactively send the bilingual welcome message,
         # but skip it when the user is bouncing back from audio settings or is already on chat,
@@ -1837,7 +1867,7 @@ async def handle_postback(event):
         if alias == 'chat' and is_rag and previous_category not in ('chat', 'audio', 'sex', 'accent'):
             await send_message(event, await chat_welcome_message())
             return
-        # [新增 (SEL 多單元)] 進入單一 SEL 單元 (sel1..sel6) 時，主動發送該單元的介紹卡片，
+        # 進入單一 SEL 單元 (sel1..sel6) 時，主動發送該單元的介紹卡片，
         # 取代原本針對有題目類別會自動彈出的題目輪播。
         # When entering a single SEL unit (sel1..sel6), send the unit intro card instead of the
         # default question carousel that would otherwise auto-pop for categories with questions.
@@ -1864,7 +1894,7 @@ async def handle_postback(event):
     elif action == 'progress':
         await send_message(event, await progress_message(user_id))
 
-    # ===== [新增 (SEL 多單元)] SEL 單元選擇 =====
+    # ===== SEL 單元選擇 =====
     # 使用者在 'sel' / 'sel-2' rich menu 點擊單元按鈕後觸發。
     # 將使用者切到該單元的 rich menu (sel1..sel6) 並送出該單元的介紹卡片。
     # User taps a unit button in the 'sel' / 'sel-2' rich menu; switch them to the
@@ -1920,7 +1950,7 @@ async def handle_postback(event):
             user_state.sel_language = 'chi'
             await send_message(event, await sel_unit_intro_message(unit_num, language='chi'))
 
-    # ===== [新增 1] SEL 作答語言選擇 (Chinese / English) =====
+    # ===== SEL 作答語言選擇 (Chinese / English) =====
     # 使用者在語言選擇卡片點選「用中文 / 用英文作答」後觸發。
     # 將選擇存入 user_state.sel_language，並以對應語言顯示該單元的介紹卡片。
     # Triggered when the user taps a language button on the SEL language-selection card.
@@ -2000,7 +2030,7 @@ async def handle_postback(event):
         ))
 
     elif action == 'progress_select':
-        # [Fix #1] Show progress category selection for service4
+        # Show progress category selection for service4
         await send_message(event, await progress_select_message())
     elif action == 'progress_detail':
         # Show progress detail for specific category
@@ -2066,7 +2096,7 @@ async def handle_postback(event):
     
     elif action == 'game_info':
         # Handle game lobby info section buttons
-        # Fix #3: always switch menu back to game_lobby regardless of which section is shown
+        # always switch menu back to game_lobby regardless of which section is shown
         lobby_menu_id = get_rich_menu_id('game_lobby')
         if lobby_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(user_id, lobby_menu_id)
@@ -2164,7 +2194,7 @@ async def handle_postback(event):
         user_state.game_npc = npc_idx
         user_state.game_question = -1  # Ensure not in answer mode
         user_state.in_npc_chat = True  # Set NPC chat mode
-        user_state.has_talked_to_npc = True  # [Fix #4] Mark that user has interacted with NPC
+        user_state.has_talked_to_npc = True  # Mark that user has interacted with NPC
         
         # Show NPC card instead of plain text
         try:
@@ -2228,6 +2258,33 @@ async def handle_postback(event):
         
         await send_message(event, await game_current_questions_message(theme_id, user_id))
     
+    elif action == 'game_question_list_auto':
+        # NPC 對話後 / 語音回覆後的「題目列表」按鈕：
+        # 回到「作答」按鈕會去到的那一關（最前面尚未作答任何一次的題目所在關卡）的題目列表。
+        # 因為對話時無法得知學生實際想作答哪一關，故統一導向尚未作答題目所在的關卡。
+        # "Question List" button shown after NPC chat / voice replies: open the question list of
+        # the level the "Answer" button would jump to (the level holding the earliest question
+        # never answered yet). NPC chat does not know which level the student means, so route to
+        # the level of the first never-answered question.
+        theme_id = vars.get('theme', user_state.game_theme)
+        if not theme_id:
+            await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
+            return
+        from utils.file_utils import get_user_unlocked_level
+        level_idx, _q = get_first_never_answered_question_global(user_id, theme_id)
+        if level_idx < 0:
+            # 全部題目皆已至少作答過一次：退而回到目前已解鎖（開放模式為第一關）的關卡。
+            # Every question already answered at least once: fall back to the unlocked level
+            # (level 0 in open mode).
+            level_idx = get_user_unlocked_level(user_id, theme_id)
+            if level_idx < 0:
+                level_idx = 0
+        user_state.game_theme = theme_id
+        user_state.game_level = level_idx
+        user_state.game_question = -1      # 離開作答模式
+        user_state.in_npc_chat = False     # 離開 NPC 對話模式
+        await send_message(event, await game_questions_carousel(theme_id, level_idx, user_id))
+    
     elif action == 'game_answer':
         # Select question to answer
         theme_id = vars.get('theme', user_state.game_theme)
@@ -2245,7 +2302,7 @@ async def handle_postback(event):
         
         # Get question text
         level_info = get_game_level_info(theme_id, level_idx)
-        # [Fix #5] Use topic-level-question numbering format
+        # Use topic-level-question numbering format
         from utils.file_utils import get_theme_display_number
         topic_num = get_theme_display_number(theme_id)
         q_label = f"Topic {topic_num} Q{level_idx + 1}-{question_idx + 1}"
