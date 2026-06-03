@@ -36,37 +36,19 @@ DEFAULT_CONFIG = {
     # 情境解謎遊戲的最低通過分數預設由 6 調降為 3，降低學生作答門檻。
     # 所有判斷及格 / 解鎖 / 描述文字皆透過 get_min_score_to_pass() 動態讀取此值，
     # 因此日後只要更動此數字（或在 config.json 覆寫），相關描述會自動連動更新。
-    #
-    # [Change 4] Default minimum passing score for the puzzle game lowered from 6 to 3.
-    # Every pass/unlock check and every description string reads this through
-    # get_min_score_to_pass(), so changing this number (or overriding it in config.json)
-    # automatically updates all related wording.
     'min_score_to_pass': 3,
-    # [新增 5] 逐題作答模式開關 (one-by-one answering mode).
-    #   True  = 維持原本「逐關解鎖、逐題作答」的設計（需通過目前題目才往下）。
-    #   False = 開放所有關卡與題目自由作答，以提高學生作答率；相關描述會自動調整。
+    # 逐題作答模式開關 (one-by-one answering mode).
+    # True  = 維持原本「逐關解鎖、逐題作答」的設計（需通過目前題目才往下）。
+    # False = 開放所有關卡與題目自由作答，以提高學生作答率；相關描述會自動調整。
     # 預設為 True 以維持與舊版機器人（service1/2/3 不受影響）相同的行為。
-    #
-    # [Addition 5] One-by-one answering mode switch.
-    #   True  = keep the original sequential design (unlock level by level, answer
-    #           question by question; you must pass the current question to proceed).
-    #   False = open every level and question for free answering to raise the answer
-    #           rate; related wording adjusts automatically.
-    # Defaults to True so existing behaviour is preserved.
     'one_by_one': True,
-    # [新增 1] SEL 作答語言選擇卡片開關 (SEL language-selection card switch).
-    #   True  = 進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
-    #   False = 不詢問，直接沿用預設（中文）進入單元。
+    # SEL 作答語言選擇卡片開關 (SEL language-selection card switch).
+    # True  = 進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
+    # False = 不詢問，直接沿用預設（中文）進入單元。
     # 此開關僅影響 SEL 區塊（service4/5），不影響舊的 service1/2/3。
-    #
-    # [Addition 1] Whether to show the language-selection card when entering a SEL unit.
-    #   True  = ask the student (Chinese vs English) with a card first.
-    #   False = skip the card and enter the unit using the default language (Chinese).
-    # Only affects the SEL section (service4/5); service1/2/3 are unaffected.
     'sel_language_selection_enabled': True,
     # 遊戲大廳介紹媒體設定 (Game lobby intro media config)
     # 管理員可修改這些欄位來更新遊戲大廳頁面的內容
-    # Admins may edit these fields to update game lobby intro content
     'game_story_eng': (
         "In a world where mystery lurks in every corner of London, "
         "three brilliant minds stand ready to help: Dr. John Watson, who gathers physical evidence; "
@@ -83,51 +65,30 @@ DEFAULT_CONFIG = {
         "你必須從每個角色身上拼湊線索，在一切為時已晚之前破解案件。"
     ),
     # 人物介紹影片路徑設定
-    # Characters intro video path configuration
-    #
     # 支援兩種格式 (either format works):
-    #   1. 只填檔名 (bare filename, placed in /templates/videos/ on the server):
-    #      'game_characters_video': 'characters_intro.mp4'
-    #   2. 完整路徑 (full URL path from site root):
-    #      'game_characters_video': '/templates/videos/characters_intro.mp4'
-    #
+    # 1. 只填檔名 (bare filename, placed in /templates/videos/ on the server):
+    # 2. 完整路徑 (full URL path from site root):
     # 留空字串代表停用，顯示佔位文字卡片。
-    # Empty string disables the feature and shows a placeholder card.
     'game_characters_video': 'NPCintroduce.mp4',
     # 遊戲架構圖片路徑 (相對於網站根目錄)
-    # Question structure image path (relative to site root)
-    #
     # 支援兩種格式 (either format works):
-    #   1. 只填檔名 (bare filename, placed in /templates/ on the server):
-    #      'game_structure_image': 'structure.jpg'
-    #   2. 完整路徑 (full URL path from site root):
-    #      'game_structure_image': '/templates/structure.jpg'
+    # 1. 只填檔名 (bare filename, placed in /templates/ on the server):
+    # 2. 完整路徑 (full URL path from site root):
     'game_structure_image': '/templates/structure.jpg',
-    # ========== [新增] 三項評分系統與卡片功能的開關 ==========
+    # ========== 三項評分系統與卡片功能的開關 ==========
     # 三個獨立的 config flag，可由管理員從後台單獨開關以利 A/B 比較或回滾。
     # 預設皆為 True（啟用最新的改善行為），若要回到舊行為可在 config.json 設為 false。
-    #
-    # Three independent config flags to enable/disable the new features individually.
-    # All default to True (latest improved behaviour); set to false in config.json
-    # to revert to the legacy behaviour for A/B testing or rollback.
-    #
     # (1) enable_level_card_image: 控制情境解謎模式 Topic-Level 卡片是否顯示頂部圖片。
-    #     圖片以命名規則自動對應到 /templates/level_img/theme{X}_level{Y}_img.jpg。
-    #     Toggle for showing the hero image on game Topic-Level intro cards.
+    # 圖片以命名規則自動對應到 /templates/level_img/theme{X}_level{Y}_img.jpg。
     'enable_level_card_image': True,
     # (2) fix_standard_newlines: 修正 audio 評分時 assessment_standard 的 chr(10) 壓平 bug。
-    #     設為 True 時保留十級分級結構的換行，讓 AI 可清楚識別每個分數區隔；
-    #     設為 False 則維持原本 .replace(chr(10), '') 的舊行為。
-    #     Toggle the chr(10) flattening bug fix for the assessment_standard text;
-    #     True preserves newlines (recommended), False keeps the legacy flattening.
+    # 設為 True 時保留十級分級結構的換行，讓 AI 可清楚識別每個分數區隔；
+    # 設為 False 則維持原本 .replace(chr(10), '') 的舊行為。
     'fix_standard_newlines': True,
     # (3) use_tiered_standard_for_sel: SEL 系列題目的 <standard> 是否要展開為 few-shot 區塊。
-    #     設為 True 時，SEL audio 評分會把 assessment_standard 解析為十級結構後，
-    #     格式化為「Score X examples:」few-shot 區塊（與情境解謎遊戲一致）；
-    #     設為 False 時 SEL 走與一般練習相同的純字串路徑。
-    #     For SEL questions, whether to expand <standard> into a few-shot block;
-    #     True formats it as "Score X examples:" (recommended for SEL),
-    #     False uses the same plain-string path as general exercises.
+    # 設為 True 時，SEL audio 評分會把 assessment_standard 解析為十級結構後，
+    # 格式化為「Score X examples:」few-shot 區塊（與情境解謎遊戲一致）；
+    # 設為 False 時 SEL 走與一般練習相同的純字串路徑。
     'use_tiered_standard_for_sel': True
 }
 
@@ -149,18 +110,15 @@ _last_npc_replies: Dict[str, Dict] = {}
 
 # ========== NPC 對話即時記憶快取 ==========
 # 在 Phase 1 回覆生成後立即寫入，避免等待 Phase 2 非同步儲存的競態問題。
-# Written immediately after Phase 1 reply to avoid race conditions with async Phase 2.
 _npc_chat_memory: Dict[str, List[dict]] = {}
 
 # ========== 引導型客服機器人文件快取 (新增 1：fallback guide) ==========
-# Cached guide document content for the fallback support assistant.
 _guide_content: str = ""
 
 # ========== 檔案路徑處理 (修復 Docker 持久化問題) ==========
 
 def get_user_data_file() -> str:
-    """
-    取得使用者資料檔案路徑。
+    """取得使用者資料檔案路徑。
     修復說明：在 Docker 環境中，主機的 data/user_data{N}.json 會被掛載為容器內的 /app/user_data.json。
     因此程式碼應直接操作 user_data.json (由 config.USER_DATA_FILE 定義)，
     而非嘗試在容器內建立 data/user_data{N}.json。
@@ -177,16 +135,7 @@ def get_display_feedback() -> bool:
     return config.get('display_feedback', True)
 
 def should_show_feedback(category: str) -> bool:
-    """判斷是否應顯示指定類別的回饋。
-    Check whether feedback should be displayed for the given category.
-
-    display_feedback 作為全域總開關；若 response 清單非空，則進一步逐類別控管。
-    若 response 清單為空，則僅以全域開關決定（向後相容 service1/2/3）。
-
-    display_feedback acts as the global master switch.
-    If the response list is non-empty, it further gates per-category feedback.
-    If the response list is empty, the global flag alone decides (backward compatible with service1/2/3).
-    """
+    """判斷是否應顯示指定類別的回饋。"""
     if not get_display_feedback():
         return False
     response_list = config.get('response', [])
@@ -195,37 +144,21 @@ def should_show_feedback(category: str) -> bool:
     return category in response_list
 
 def get_enabled_category_for_alias(alias: str) -> str:
-    """將 rich menu 別名解析為對應的啟用控制類別。
-    Map a rich menu alias to its corresponding enabled-control category.
-
-    例如：'pretest1' / 'pretest1-2' -> 'pretest'，'posttest1' -> 'posttest'，
-    'game_lobby' / 'game_theme1' 等遊戲相關別名 -> 'rag_test'，
-    'ex1' -> 'ex1'（其餘原樣回傳）。
-
-    Examples: 'pretest1' / 'pretest1-2' -> 'pretest', 'posttest1' -> 'posttest',
-    'game_lobby' / 'game_theme1' and other game aliases -> 'rag_test',
-    'ex1' -> 'ex1' (others returned as-is).
-    """
+    """將 rich menu 別名解析為對應的啟用控制類別。"""
     if alias.startswith('pretest'):
         return 'pretest'
     if alias.startswith('posttest'):
         return 'posttest'
     # exercises 大廳及其子頁（exercises2 等）統一對應 exercises 啟用控制
-    # The exercises lobby and all sub-page aliases map to the exercises enable key
-    # if alias.startswith('exercises'):
-    #     return 'exercises'
     # 所有遊戲大廳、主題、關卡相關別名統一對應 rag_test 啟用控制
-    # All game lobby / theme / level aliases map to the rag_test enable key
     _GAME_ALIASES = {
         'game_lobby', 'game_theme_select',
         'game_theme1', 'game_theme2', 'game_theme3',
     }
     if alias in _GAME_ALIASES or alias.startswith('game_theme'):
         return 'rag_test'
-    # [新增 (SEL 多單元)] SEL 單元選擇大廳的子頁面（sel-2）統一回到 sel 主開關。
-    # The SEL unit-selection lobby sub-pages (sel-2) map to the master 'sel' gate.
+    # SEL 單元選擇大廳的子頁面（sel-2）統一回到 sel 主開關。
     # 個別單元（sel1..sel6）本身就是各自的啟用類別，原樣回傳。
-    # Individual units (sel1..sel6) are their own enabled categories and are returned as-is.
     if alias == 'sel-2':
         return 'sel'
     return alias
@@ -307,20 +240,13 @@ async def addAdmin(user_id):
     config['admin'] = list(set(config['admin']))
 
 
-# ========== [新增] 移除管理員身分 (Remove admin status) ==========
+# ========== 移除管理員身分 (Remove admin status) ==========
 # 配合 /unmagic 指令使用，讓開發者可在不更動主帳號權限的前提下，
 # 暫時退出管理員身分以「學生視角」測試課程流程；之後再用 /magic 即可重新成為管理員。
 # 設計細節：
-#   - 若 user_id 本來就不在 admin 清單，不丟例外（避免 list.remove 的 ValueError）。
-#   - 為了避免在使用者誤打的情況下徹底鎖死後台，本函式 *不* 拒絕「移除最後一位管理員」，
-#     因為任何人都可以重新透過 /magic 取得管理員身分（與既有設計一致）。
-#
-# Companion to the /unmagic command. Lets a developer drop admin status temporarily
-# (for end-to-end testing as a regular student) and restore it later via /magic.
-# Design notes:
-#   - No-op (no exception) when the user_id is not currently an admin.
-#   - Removing the last admin is allowed by design, because anyone can re-acquire
-#     admin status via /magic (matching the existing addAdmin behaviour).
+# - 若 user_id 本來就不在 admin 清單，不丟例外（避免 list.remove 的 ValueError）。
+# - 為了避免在使用者誤打的情況下徹底鎖死後台，本函式 *不* 拒絕「移除最後一位管理員」，
+# 因為任何人都可以重新透過 /magic 取得管理員身分（與既有設計一致）。
 async def removeAdmin(user_id):
     if user_id in config['admin']:
         config['admin'] = [u for u in config['admin'] if u != user_id]
@@ -361,8 +287,7 @@ FEATURE_DISPLAY_NAMES = {
     'ex6': '練習六',
     # [Change 2] SEL
     'sel': 'SEL',
-    # [新增 (SEL 多單元)] 六個 SEL 子單元，方便後台管理員啟用/停用訊息顯示出對應名稱。
-    # The six SEL sub-units, so admin enable/disable messages show the correct name.
+    # 六個 SEL 子單元，方便後台管理員啟用/停用訊息顯示出對應名稱。
     'sel1': 'SEL-地產大亨',
     'sel2': 'SEL-生命之旅',
     'sel3': 'SEL-換言一新',
@@ -394,25 +319,18 @@ def get_max_score_per_question() -> int:
     return config.get('max_score_per_question', 10)
 
 def get_min_score_to_pass() -> int:
-    """取得及格分數 (動態讀取 config，預設 3 分)。
-    Get the passing score (read dynamically from config, default 3)."""
+    """取得及格分數 (動態讀取 config，預設 3 分)。"""
     return config.get('min_score_to_pass', 3)
 
 def is_one_by_one() -> bool:
-    """[新增 5] 是否採用逐題作答 / 逐關解鎖模式。
+    """是否採用逐題作答 / 逐關解鎖模式。
     True 維持原本逐關解鎖設計；False 開放所有關卡題目自由作答。
     預設 True，向後相容舊版設計。
-
-    Whether the sequential one-by-one (unlock level by level) mode is active.
-    True keeps the original sequential design; False opens everything for free
-    answering. Defaults to True for backward compatibility.
     """
     return config.get('one_by_one', True)
 
 def is_sel_language_selection_enabled() -> bool:
-    """[新增 1] 進入 SEL 單元時是否先以卡片詢問作答語言（中文 / 英文）。
-    Whether to show the SEL language-selection card when entering a SEL unit.
-    """
+    """進入 SEL 單元時是否先以卡片詢問作答語言（中文 / 英文）。"""
     return config.get('sel_language_selection_enabled', True)
 
 def load_game_theme_config(theme_id: str) -> Optional[GameThemeConfig]:
@@ -456,9 +374,7 @@ def clear_game_theme_cache():
 # ========== new_test 題目管理 (pretest1 / posttest1) ==========
 
 def load_new_test_questions() -> list:
-    """
-    載入 category/new_test.json 中的題目，供前測1 / 後測1使用。
-    Load new_test.json questions for pretest1 / posttest1.
+    """載入 category/new_test.json 中的題目，供前測1 / 後測1使用。
     回傳 Question 物件清單。
     """
     global _new_test_questions, _new_test_loaded
@@ -486,8 +402,7 @@ def load_new_test_questions() -> list:
 
 
 def get_new_test_question(idx: int):
-    """取得 new_test 第 idx 道題目 (0-based)。
-    Get the new_test question at the given index (0-based)."""
+    """取得 new_test 第 idx 道題目 (0-based)。"""
     questions = load_new_test_questions()
     if 0 <= idx < len(questions):
         return questions[idx]
@@ -495,23 +410,19 @@ def get_new_test_question(idx: int):
 
 
 def get_new_test_questions_count() -> int:
-    """取得 new_test 題目總數。
-    Get the total number of new_test questions."""
+    """取得 new_test 題目總數。"""
     return len(load_new_test_questions())
 
 
 def get_new_test_questions_all() -> list:
-    """取得全部 new_test 題目。
-    Get all new_test questions."""
+    """取得全部 new_test 題目。"""
     return load_new_test_questions()
 
 
 # ========== NPC 最後回覆快取 (Show Text / 顯示文字 功能) ==========
 
 def set_last_npc_reply(user_id: str, npc_name: str, npc_reply: str, npc_image):
-    """記錄使用者最近一次收到的 NPC 回覆，供「顯示文字」功能使用。
-    Store the most recent NPC reply for the 'Show Text' quick reply feature.
-    """
+    """記錄使用者最近一次收到的 NPC 回覆，供「顯示文字」功能使用。"""
     _last_npc_replies[user_id] = {
         'npc_name': npc_name,
         'npc_reply': npc_reply,
@@ -520,33 +431,25 @@ def set_last_npc_reply(user_id: str, npc_name: str, npc_reply: str, npc_image):
 
 
 def get_last_npc_reply(user_id: str) -> dict:
-    """取得使用者最近一次收到的 NPC 回覆資訊。
-    Get the most recent NPC reply info for the user.
-    """
+    """取得使用者最近一次收到的 NPC 回覆資訊。"""
     return _last_npc_replies.get(user_id)
 
 # ========== NPC 對話即時記憶快取功能 ==========
 
 def get_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int, npc_name: str) -> str:
-    """
-    取得 NPC 對話的最近五輪對話紀錄，格式化為字串。
+    """取得 NPC 對話的最近五輪對話紀錄，格式化為字串。
     優先讀取即時記憶快取；若快取尚未初始化，則從 npc_chat_history 或 SpeechAssessment 歷史中載入。
-
-    Get the last 5 NPC chat turns as a formatted string.
-    Reads from in-memory cache first; seeds from persisted history on first access.
     """
     global _npc_chat_memory
     mem_key = f"{user_id}:{theme_id}-npc-{npc_idx}"
 
     if mem_key not in _npc_chat_memory:
         # 初始化：從持久化資料載入歷史
-        # Seed from persisted data on first access in this session
         user = user_data.get(user_id)
         loaded: List[dict] = []
         if user:
             hist_key = f"{theme_id}-npc-{npc_idx}"
             # 優先使用 npc_chat_history（較完整的紀錄）
-            # Prefer npc_chat_history (richer records)
             if hasattr(user, 'npc_chat_history') and hist_key in (user.npc_chat_history or {}):
                 records = user.npc_chat_history[hist_key][-5:]
                 loaded = [
@@ -577,12 +480,8 @@ def get_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int, npc_name: str
 
 def append_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int,
                             user_text: str, npc_reply: str) -> None:
-    """
-    在 Phase 1 NPC 回覆生成後，立即將本輪對話寫入即時記憶快取（最多保留五輪）。
+    """在 Phase 1 NPC 回覆生成後，立即將本輪對話寫入即時記憶快取（最多保留五輪）。
     只保留最近五輪，以維持記憶的相關性。
-
-    Immediately save the current NPC chat turn to in-memory cache after Phase 1 reply.
-    Keeps only the most recent 5 turns.
     """
     global _npc_chat_memory
     mem_key = f"{user_id}:{theme_id}-npc-{npc_idx}"
@@ -595,12 +494,8 @@ def append_npc_chat_memory(user_id: str, theme_id: str, npc_idx: int,
 # ========== 「顯示文字」使用次數追蹤功能 ==========
 
 def increment_show_text_count(user_id: str) -> int:
-    """
-    增加使用者的「顯示文字」功能使用次數，並回傳新的次數。
+    """增加使用者的「顯示文字」功能使用次數，並回傳新的次數。
     僅在 npc_voice_output=True 的服務中呼叫（呼叫端負責判斷）。
-
-    Increment the user's 'Show Text' feature usage count and return the new count.
-    Caller is responsible for checking npc_voice_output before calling.
     """
     user = user_data.get(user_id)
     if not user:
@@ -612,10 +507,7 @@ def increment_show_text_count(user_id: str) -> int:
 
 
 def get_show_text_count(user_id: str) -> int:
-    """
-    取得使用者的「顯示文字」功能使用次數。
-    Get the user's 'Show Text' feature usage count.
-    """
+    """取得使用者的「顯示文字」功能使用次數。"""
     user = user_data.get(user_id)
     if not user:
         return 0
@@ -625,10 +517,7 @@ def get_show_text_count(user_id: str) -> int:
 # ========== 引導型客服文件載入==========
 
 def load_guide_content(guide_path: str = 'category/chatbot_guide.md') -> str:
-    """
-    載入引導型客服機器人文件內容。若載入失敗則回傳空字串。
-    Load the fallback guide document. Returns empty string if not found.
-    """
+    """載入引導型客服機器人文件內容。若載入失敗則回傳空字串。"""
     global _guide_content
     if _guide_content:
         return _guide_content
@@ -643,15 +532,11 @@ def load_guide_content(guide_path: str = 'category/chatbot_guide.md') -> str:
 
 
 def is_fallback_guide_enabled() -> bool:
-    """
-    判斷是否為 service4/5，以決定是否啟用引導型客服機器人 fallback 功能。
-    Determine whether the fallback guide feature should be active (service 4/5 only).
-    """
+    """判斷是否為 service4/5，以決定是否啟用引導型客服機器人 fallback 功能。"""
     return config.get('service_number', 1) in [4, 5]
 
 def get_game_info_config() -> dict:
-    """取得遊戲大廳介紹所需的媒體設定
-    Get game lobby intro media configuration."""
+    """取得遊戲大廳介紹所需的媒體設定"""
     return {
         'story_eng': config.get('game_story_eng', ''),
         'story_chi': config.get('game_story_chi', ''),
@@ -660,49 +545,28 @@ def get_game_info_config() -> dict:
     }
 
 def get_theme_display_number(theme_id: str) -> str:
-    """從主題 ID 取得顯示用的主題編號，例如 'theme1' -> '1'
-    Get display number from theme ID, e.g. 'theme1' -> '1'."""
+    """從主題 ID 取得顯示用的主題編號，例如 'theme1' -> '1'"""
     if theme_id and theme_id.startswith('theme'):
         return theme_id.replace('theme', '')
     return theme_id if theme_id else '?'
 
 def is_level_card_image_enabled() -> bool:
-    """是否啟用情境解謎模式 Topic-Level 卡片頂部圖片。
-    Whether to render the hero image on game Topic-Level intro cards."""
+    """是否啟用情境解謎模式 Topic-Level 卡片頂部圖片。"""
     return config.get('enable_level_card_image', True)
 
 
 def is_standard_newlines_fix_enabled() -> bool:
-    """是否啟用 assessment_standard 換行符保留修正 (修正 chr(10) bug)。
-    Whether to preserve newlines in assessment_standard (the chr(10) bug fix)."""
+    """是否啟用 assessment_standard 換行符保留修正 (修正 chr(10) bug)。"""
     return config.get('fix_standard_newlines', True)
 
 
 def is_tiered_standard_for_sel_enabled() -> bool:
-    """是否將 SEL 的 <standard> 展開為 few-shot 區塊。
-    Whether to expand SEL <standard> into a few-shot example block."""
+    """是否將 SEL 的 <standard> 展開為 few-shot 區塊。"""
     return config.get('use_tiered_standard_for_sel', True)
 
 
 def get_level_card_image_path(theme_id: str, level_idx: int) -> Optional[str]:
-    """取得 Topic-Level 卡片頂部圖片的網站相對路徑。
-    Get the site-relative path for the Topic-Level hero image.
-
-    命名規則: /templates/level_img/theme{X}_level{Y}_img.jpg
-      X = theme 顯示編號 (theme1 -> 1, theme2 -> 2, ...)
-      Y = 1-based 關卡編號 (level_idx + 1)
-
-    Naming convention: /templates/level_img/theme{X}_level{Y}_img.jpg
-      X = display theme number, Y = 1-based level number.
-
-    Args:
-        theme_id: 主題識別碼 (例如 'theme1')。Theme identifier.
-        level_idx: 0-based 關卡索引。 0-based level index.
-
-    Returns:
-        站點相對路徑字串 (不含 domain)；若 theme_id 或 level_idx 無效則回傳 None。
-        Site-relative path string (without the domain); None on invalid input.
-    """
+    """取得 Topic-Level 卡片頂部圖片的網站相對路徑。"""
     if not theme_id:
         return None
     if level_idx is None or level_idx < 0:
@@ -771,9 +635,7 @@ def get_game_npc_info(theme_id: str, npc_idx: int) -> Optional[dict]:
 # ========== 遊戲計分功能 ==========
 
 def update_game_score(user_id: str, theme_id: str, level_idx: int, question_idx: int, score: int) -> Tuple[bool, int]:
-    """
-    更新使用者的遊戲分數。回傳 (是否為新高分, 新的主題總分)。
-    """
+    """更新使用者的遊戲分數。回傳 (是否為新高分, 新的主題總分)。"""
     user = user_data.get(user_id)
     if not user:
         return False, 0
@@ -966,12 +828,9 @@ def get_next_unpassed_question(user_id: str, theme_id: str, level_idx: int) -> i
 # ========== 跨關卡題目進度追蹤功能 (新增) ==========
 
 def get_next_unanswered_question_global(user_id: str, theme_id: str) -> tuple:
-    """
-    取得整個主題中下一個未回答或未通過的題目。
+    """取得整個主題中下一個未回答或未通過的題目。
     回傳 (level_idx, question_idx)，若全部已通過則回傳 (-1, -1)。
     搜尋順序：按關卡順序、題目順序檢查。
-    Get the next unanswered or unpassed question across all levels in a theme.
-    Returns (level_idx, question_idx), or (-1, -1) if all completed.
     """
     theme_config = load_game_theme_config(theme_id)
     if not theme_config:
@@ -1013,28 +872,15 @@ def get_next_unanswered_question_global(user_id: str, theme_id: str) -> tuple:
     return (-1, -1)
 
 def is_all_questions_completed(user_id: str, theme_id: str) -> bool:
-    """
-    檢查使用者是否已完成該主題的所有題目
-    Check if user has completed all questions in a theme
-    """
+    """檢查使用者是否已完成該主題的所有題目"""
     level_idx, q_idx = get_next_unanswered_question_global(user_id, theme_id)
     return level_idx == -1 and q_idx == -1
 
 def get_first_never_answered_question_global(user_id: str, theme_id: str) -> tuple:
-    """
-    [新增 5] 取得整個主題中「最前面（關卡較低、題號較低）尚未作答任何一次」的題目。
+    """取得整個主題中「最前面（關卡較低、題號較低）尚未作答任何一次」的題目。
     與 get_next_unanswered_question_global 不同：本函式只看「是否曾經作答過」，
     不看分數是否及格。若某題已作答過（即使未通過），仍視為已作答而略過。
     回傳 (level_idx, question_idx)；若所有題目皆至少作答過一次，回傳 (-1, -1)。
-
-    用於 one_by_one=False（開放全部題目）時，選單「作答」按鈕的跳題邏輯：
-    跳到最前面那一題從未被作答過的題目，以鼓勵學生把每一題都至少作答一次。
-
-    Get the earliest (lowest level, lowest question index) question in the theme that
-    has NEVER been answered. Unlike get_next_unanswered_question_global, this only checks
-    whether an attempt exists at all, regardless of whether it passed. A question that was
-    attempted (even if it failed) counts as answered and is skipped.
-    Returns (level_idx, question_idx), or (-1, -1) if every question was answered at least once.
     """
     theme_config = load_game_theme_config(theme_id)
     if not theme_config:
@@ -1052,7 +898,6 @@ def get_first_never_answered_question_global(user_id: str, theme_id: str) -> tup
 
         for q_idx in range(actual_questions):
             # 沒有任何遊戲分數紀錄 -> 此題從未作答
-            # No game score record at all -> this question was never answered
             if not user or not user.game_scores:
                 return (level_idx, q_idx)
             if theme_id not in user.game_scores.themes:
@@ -1062,16 +907,13 @@ def get_first_never_answered_question_global(user_id: str, theme_id: str) -> tup
                 return (level_idx, q_idx)
             level = theme.levels[level_idx]
             # 題目不在已作答清單中 -> 從未作答
-            # Question not present in the answered map -> never attempted
             if q_idx not in level.questions:
                 return (level_idx, q_idx)
             # 已存在但嘗試次數為 0 的極端情況也視為未作答
-            # Edge case: present but with zero attempts also counts as never answered
             if level.questions[q_idx].attempts <= 0:
                 return (level_idx, q_idx)
 
     # 所有題目皆至少作答過一次
-    # Every question has been answered at least once
     return (-1, -1)
 
 # ========== 提示使用次數追蹤功能 (新增) ==========
@@ -1190,10 +1032,7 @@ async def save_interaction_log(log: GameInteractionLog):
 # ========== 遊戲進度查詢 (新增) ==========
 
 def get_game_progress_detail(user_id: str, theme_id: str) -> dict:
-    """
-    取得使用者在某主題的詳細遊戲進度
-    Get detailed game progress for a specific theme
-    """
+    """取得使用者在某主題的詳細遊戲進度"""
     theme_config = load_game_theme_config(theme_id)
     if not theme_config:
         return {"error": "Theme not found"}
@@ -1381,22 +1220,13 @@ async def load_config():
                 await file.write(json.dumps(config, indent=4))
         print("Config created successfully.")
 
-    # ===== [新增] SEL 多單元相容遷移 (SEL multi-unit compatibility migration) =====
+    # ===== SEL 多單元相容遷移 (SEL multi-unit compatibility migration) =====
     # 舊版本只有單一 'sel' 類別；新版本拆分為 sel1..sel6 並由後台個別控制開關。
     # 若 config 仍處於「'sel' 啟用、但 sel1..sel6 完全未列入 enabled」的舊狀態，
     # 視為「使用者尚未針對新版本做設定」，自動將 6 個單元加入 enabled 清單，
     # 避免一般學生因為遷移後相容性問題而完全無法作答（管理員會因 isAdmin bypass 而無感）。
     # 本遷移是 idempotent 的：執行後 sel1..sel6 已落在 enabled，下次啟動就不會再觸發；
     # 管理員之後可從 game_enabled4/5/6 後台選單精細地關閉任一單元。
-    #
-    # The legacy 'sel' (single-unit) section was split into six independent units
-    # (sel1..sel6) controlled individually from the admin panel. If the on-disk config
-    # is still in the legacy state ('sel' enabled, but NONE of sel1..sel6 enabled),
-    # treat it as "not yet configured for the new layout" and auto-enable all six
-    # units, so that students (who don't enjoy the isAdmin bypass) can answer again
-    # immediately after the code upgrade. The migration is idempotent: once any
-    # sel{N} is present in enabled the migration will not re-trigger; admins can
-    # later toggle individual units from the game_enabled4/5/6 panels.
     try:
         enabled_list = config.get('enabled', [])
         if isinstance(enabled_list, list) and 'sel' in enabled_list:
@@ -1416,7 +1246,6 @@ async def load_config():
                 )
     except Exception as _mig_err:
         # 遷移失敗不應阻擋啟動，僅警告。
-        # Migration failure must not block startup; just log a warning.
         print(f"[WARN] SEL multi-unit migration skipped due to error: {_mig_err}")
 
 async def save_config():
@@ -1458,7 +1287,6 @@ async def load_user_data():
             if 'game_scores' not in value:
                 value['game_scores'] = {'themes': {}}
             # 確保 show_text_count 欄位存在於舊資料中 (向後相容)
-            # Ensure show_text_count field exists for backward compatibility
             if 'show_text_count' not in value:
                 value['show_text_count'] = 0
             # 確保 hint_count 欄位存在於舊資料中

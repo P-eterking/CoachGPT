@@ -27,8 +27,6 @@ from utils.message_utils import (
     build_reference_answers_section,
     # 用於 audio 評分的 <standard> 區段建構輔助函式
     # 修正 chr(10) 壓平 bug 並對 SEL 套用十級 few-shot 格式
-    # Helper for building the <standard> section in audio assessment;
-    # fixes the chr(10) flattening bug and applies tiered few-shot formatting for SEL.
     build_standard_section_for_audio,
     # Question card with image for service4 game_answer action
     game_answer_card_message,
@@ -37,15 +35,12 @@ from utils.message_utils import (
     # NPC voice response messages (item 4)
     game_npc_voice_response_messages, game_npc_text_card_message,
     # Chat 主題功能與 SEL 評分指示
-    # New additions: chat topic helpers and SEL evaluation instruction
     # SEL 提示詞 builder（依作答語言）與 SEL 作答語言選擇卡片
-    # SEL prompt builder (language-aware) and the SEL language-selection card
     SEL_SYSTEM_INSTRUCTION, build_sel_system_instruction,
     sel_language_select_message,
     get_chat_topic_system_prompt,
     chat_welcome_message, chat_topic_intro_message,
     # SEL 單元介紹卡片
-    # SEL multi-unit intro card
     sel_unit_intro_message,
 )
 from utils.models import (
@@ -64,7 +59,6 @@ from utils.file_utils import (
     increment_show_text_count, get_show_text_count,
     is_fallback_guide_enabled, load_guide_content,
     # 逐題模式開關、SEL 語言選擇開關、跨關卡未作答題目查找
-    # one-by-one mode switch, SEL language-selection switch, first-never-answered finder
     is_one_by_one, is_sel_language_selection_enabled,
     get_first_never_answered_question_global,
 )
@@ -77,7 +71,6 @@ import os
 
 # ========== 引導型客服機器人系統提示詞 ==========
 # 作為文件載入失敗時的備援，直接嵌入核心指引。
-# Embedded as fallback in case the guide file cannot be loaded.
 _FALLBACK_GUIDE_SYSTEM_PROMPT_CORE = """
 You are a concise bilingual (English / Traditional Chinese) support assistant for CoachGPT, an English-learning LINE chatbot.
 Your ONLY purpose: guide users on how to use this chatbot. Never engage in extended conversation or off-topic discussion.
@@ -94,17 +87,11 @@ Traditional Chinese: "此助理僅回應 CoachGPT 相關問題，請點選下方
 
 
 async def handle_fallback_guide(event, user_id: str, message_text: str) -> None:
-    """
-    引導型客服機器人：當使用者在無特定模式下傳送訊息時，以 AI 提供簡短的雙語引導回應。
+    """引導型客服機器人：當使用者在無特定模式下傳送訊息時，以 AI 提供簡短的雙語引導回應。
     僅在 service4/5 (rag_mode) 中啟用，不影響 service1/2/3。
-
-    Fallback guide handler: provides a short bilingual AI-generated guidance response
-    when the user sends a message outside any active interaction mode.
-    Only active for service 4/5. Does not affect service 1/2/3.
     """
     try:
         # 載入引導文件（優先使用外部文件，備援使用內建提示詞）
-        # Load guide document; fall back to embedded prompt if file unavailable
         guide_doc = load_guide_content()
         system_prompt = (
             f"{_FALLBACK_GUIDE_SYSTEM_PROMPT_CORE}\n\n--- Detailed Guide ---\n{guide_doc}"
@@ -153,13 +140,7 @@ def convert_m4a_to_mp3_base64(message_content: bytes) -> str:
 
 
 async def generate_npc_tts(npc_reply: str, voice: str = "onyx") -> tuple:
-    """產生 NPC 語音 TTS，回傳 (相對於 templates/ 的路徑, 毫秒長度)。
-    Generate NPC TTS audio and return (path relative to templates/, duration_ms).
-
-    Args:
-        npc_reply: NPC 回覆文字
-        voice: TTS 聲音 (預設 onyx，具角色感)
-    """
+    """產生 NPC 語音 TTS，回傳 (相對於 templates/ 的路徑, 毫秒長度)。"""
     import uuid
     import aiofiles
 
@@ -180,8 +161,7 @@ async def generate_npc_tts(npc_reply: str, voice: str = "onyx") -> tuple:
     return filename, duration
 
 async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
-    """
-    Transcribe audio to text
+    """Transcribe audio to text
     language parameter specifies the transcription language, default is English
     IMPORTANT: Do NOT translate, only transcribe in the specified language
     """
@@ -201,75 +181,34 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
         return transcript_obj.text.strip()
 
 # 儲存尚未完成綁定的使用者資料暫存，key 為 user_id，value 為已填寫的資料列表
-# Temporary store for users in the middle of the account binding flow
 user_data_enter = {}
 
 
 # ========== SEL 類別判別小工具 (SEL category helper) ==========
 # 涵蓋舊的單一 'sel' 類別與新的多單元 'sel1'..'sel6'，作為評分路由的統一判斷點。
-# Covers both the legacy single 'sel' category and the new multi-unit 'sel1'..'sel6';
-# used as the unified routing predicate for SEL-specific evaluation.
 _SEL_CATEGORIES = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
 
 
 def _is_sel_category(category) -> bool:
-    """判斷給定類別是否為SEL系列（單一 'sel' 或六個單元 'sel1'..'sel6'）。
-    Determine whether a given category belongs to the SEL family
-    (the legacy 'sel' or any of the six units 'sel1'..'sel6').
-    """
+    """判斷給定類別是否為SEL系列（單一 'sel' 或六個單元 'sel1'..'sel6'）。"""
     if not category:
         return False
     return category in _SEL_CATEGORIES
 
 
 async def handle_follow(event) -> None:
-    """處理使用者首次加入（或封鎖後重新加入）機器人好友的事件。
-    Handle the FollowEvent triggered when a user adds (or re-adds after blocking) the bot as a friend.
-
-    修正說明：
-      原本的同意聲明僅由 check_user_login 觸發，而 check_user_login 需要使用者先主動
-      發送訊息才會執行。若 Greeting message 為純文字（無按鈕），新使用者加入後不會有任何
-      事件打到 check_user_login，導致同意聲明完全不出現。
-      本函式直接攔截 FollowEvent，在使用者加入的瞬間主動推送同意聲明，
-      不再依賴使用者主動發送訊息。
-
-    Fix:
-      The consent notice was previously only shown inside check_user_login, which requires
-      the user to send a message first. With a plain-text Greeting Message (no buttons),
-      new users trigger no events, so check_user_login is never reached and the notice never
-      appears. This function intercepts FollowEvent and proactively pushes the consent notice
-      the moment the user adds the bot, without relying on the user sending any message.
-
-    正確流程 / Correct onboarding flow:
-      1. 使用者加入好友 -> LINE 平台送出 Greeting Message (由 LINE Manager 設定)
-         User adds bot -> LINE platform sends Greeting Message (configured in LINE Manager)
-      2. FollowEvent 觸發 -> 本函式立即推送「語音資料與AI處理同意聲明」
-         FollowEvent fires -> this function immediately sends the voice data consent notice
-      3. 使用者點擊「我同意 / I agree」-> handle_postback 處理 consent -> 進入帳號綁定
-         User taps "I agree" -> handle_postback handles consent -> account binding starts
-      4. 使用者點擊「我不同意 / I disagree」-> 顯示拒絕授權卡片
-         User taps "I disagree" -> consent declined card is shown
-
-    重新綁定流程 / Re-binding flow (after /unlink, without leaving the chat):
-      - 使用者使用 /unlink 解除綁定後仍在聊天室，不會再次觸發 FollowEvent
-      - 此時使用者發送任意訊息 -> handle_text_message -> check_user_login 顯示同意聲明
-      - After /unlink, the user stays in chat so FollowEvent does not fire again.
-      - Any message they send goes through check_user_login which shows the notice.
-    """
+    """處理使用者首次加入（或封鎖後重新加入）機器人好友的事件。"""
     user_id = event.source.user_id
 
     # 若使用者已完成綁定（封鎖後重新加入的老使用者），直接略過
-    # If the user is already bound (returning user who re-followed after blocking), skip
     if hasData(user_id):
         return
 
     # 若使用者已在進行帳號綁定流程中，直接略過，避免中斷進行中的流程
-    # If the user is already in the middle of the binding flow, skip
     if user_id in user_data_enter:
         return
 
     # 推送同意聲明卡片
-    # Push the consent notice card immediately
     await send_message(event, _build_privacy_notice_message())
 
 
@@ -283,39 +222,24 @@ async def handle_text_message(event):
         return
 
     # ===== 所有「/」開頭的訊息都交由 slash 指令分派器處理，不再 fall through 到 AI =====
-    # Any message starting with "/" is routed through the slash-command dispatcher and
-    # never falls through to the fallback guide AI. This guarantees that mistyped or
-    # not-yet-implemented commands receive a clear "unknown command" reply rather than
-    # an unrelated AI answer. Adding a new command only requires appending an entry to
-    # the _SLASH_COMMANDS table near the bottom of this file.
     if message.startswith('/'):
         await _dispatch_slash_command(event, user_id, message)
         return
 
     if is_fallback_guide_enabled() and hasData(user_id):
-        #Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
-        # Service4/5: respond to any non-command text message with the guide AI.
+        # Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
         await show_loading(user_id, secs=15)
         await handle_fallback_guide(event, user_id, message)
 
 
 # ============================================================================
-# Slash command dispatcher
 # ============================================================================
 # 設計目標 / Design goals
-#   1. 任何以「/」開頭的訊息都會被攔截，不會交給 AI fallback guide 處理（避免
-#      AI 機器人對「/unmagic」這類指令回覆「我只能回答課程相關問題」這類無關訊息）。
-#   2. 用「最長別名優先」策略比對，未來若有 /something 與 /something_else 共存
-#      也不會誤判（雖然目前 /magic vs /unmagic 因字頭不同其實沒有衝突問題）。
-#   3. 新增指令時只需要：寫一個 async handler，然後在 _SLASH_COMMANDS 加一行。
-#
-#   1. Any message starting with "/" is intercepted by this dispatcher and is
-#      NEVER sent to the fallback guide AI. This avoids the AI replying to typos
-#      or unknown commands with unrelated answers.
-#   2. Longest-alias-first matching prevents future commands sharing a prefix
-#      from shadowing each other.
-#   3. Adding a new command = write an async handler + add one row to
-#      _SLASH_COMMANDS at the bottom of this section.
+# 1. 任何以「/」開頭的訊息都會被攔截，不會交給 AI fallback guide 處理（避免
+# AI 機器人對「/unmagic」這類指令回覆「我只能回答課程相關問題」這類無關訊息）。
+# 2. 用「最長別名優先」策略比對，未來若有 /something 與 /something_else 共存
+# 也不會誤判（雖然目前 /magic vs /unmagic 因字頭不同其實沒有衝突問題）。
+# 3. 新增指令時只需要：寫一個 async handler，然後在 _SLASH_COMMANDS 加一行。
 
 
 async def _cmd_unlink(event, user_id, _message):
@@ -342,8 +266,6 @@ async def _cmd_unmagic(event, user_id, _message):
     await removeAdmin(user_id)
     await save_config()
     # 切回預設主選單，方便立即以學生身分操作；切換失敗不影響權限變更。
-    # Switch the user back to the default main menu for immediate student-view
-    # testing; a switch failure does not affect the permission change.
     try:
         _default_menu_alias = 'menu_game' if config.get('rag_mode', False) else 'menu'
         _default_menu_id = get_rich_menu_id(_default_menu_alias)
@@ -421,9 +343,7 @@ async def _cmd_help(event, user_id, _message):
 # ----------------------------------------------------------------------------
 # Slash 指令登錄表 (Slash command registry)
 # 每筆: (別名 tuple, handler, 中文說明, 英文說明, 是否管理員專用)
-# Each row: (aliases_tuple, handler, zh_desc, en_desc, admin_only)
 # 加入新指令 = 上面寫個 _cmd_xxx，這裡加一行。
-# To add a new command: write _cmd_xxx above, then append one row here.
 # ----------------------------------------------------------------------------
 _SLASH_COMMANDS = (
     (('/unlink', '/解除綁定'), _cmd_unlink,
@@ -454,16 +374,7 @@ _SLASH_COMMANDS = (
 
 
 async def _dispatch_slash_command(event, user_id, message: str):
-    """將「/」開頭的訊息分派至對應 handler；未知指令給出明確錯誤訊息。
-    Dispatch a slash-prefixed message to the matching handler; emit a clear error
-    for unknown commands.
-
-    匹配規則：別名長度由長到短排序，要求訊息完全等於別名，或別名後緊接一個空白
-    （後者用於支援帶參數的指令，例如 /refresh_menu sel1）。
-    Matching: aliases are sorted longest-first; the message must equal the alias
-    exactly OR start with `alias + ' '` (the latter supports commands with args
-    such as /refresh_menu sel1).
-    """
+    """將「/」開頭的訊息分派至對應 handler；未知指令給出明確錯誤訊息。"""
     pairs = []
     for aliases, handler, _zh, _en, _admin in _SLASH_COMMANDS:
         for alias in aliases:
@@ -484,7 +395,6 @@ async def _dispatch_slash_command(event, user_id, message: str):
             return
 
     # 未知 / 字頭指令：明確回應，不要落入 AI fallback。
-    # Unknown slash command: explicit reply, do NOT fall through to the AI.
     cmd_token = message.split(maxsplit=1)[0] if message else '/'
     await send_text_message(
         event,
@@ -805,7 +715,6 @@ async def handle_audio_message(event):
 
         if not category or not question_manager.has_question(category):
             # Service4/5：對無法識別類別的語音訊息，轉錄後由引導型客服機器人回應。
-            # Service4/5: transcribe unmatched audio and pass to guide AI.
             if is_fallback_guide_enabled():
                 try:
                     message_content_fb = await get_audio_content(event)
@@ -833,13 +742,11 @@ async def handle_audio_message(event):
         # SEL 作答語言判斷（提前到轉錄之前，因為轉錄語言需依此決定）。
         # 'chi' = 用中文作答（中文轉錄、全中文回饋、不評英文文法、不給建議回答）。
         # 'eng' = 用英文作答（英文轉錄、中英對照回饋）。未選擇預設為中文。
-        # Determine the SEL answering language up front (transcription language depends on it).
         _is_sel = _is_sel_category(category)
         _sel_language = None
         if _is_sel:
             _sel_language = getattr(user_state, 'sel_language', None) or 'chi'
         # SEL 中文模式以中文轉錄；其餘（含英文 SEL 與一般練習）維持英文轉錄。
-        # Chinese SEL mode transcribes in Chinese; everything else stays in English.
         _transcribe_lang = 'zh' if (_is_sel and _sel_language == 'chi') else 'en'
 
         try:
@@ -860,8 +767,6 @@ async def handle_audio_message(event):
         
         # SEL（'sel' 或多單元 'sel1'..'sel6'）改用以 SEL 五大核心能力為主軸的評分提示詞，
         # 並依作答語言（中 / 英）選擇對應版本；其餘練習維持原本的 SYSTEM_INSTRUCTION。
-        # SEL now uses an SEL-competency-based evaluation prompt selected by answering language;
-        # all other exercises keep using SYSTEM_INSTRUCTION.
         if _is_sel:
             _system_prompt_for_audio = build_sel_system_instruction(_sel_language)
         else:
@@ -869,8 +774,6 @@ async def handle_audio_message(event):
 
         # SEL 中文作答模式不附上 <standard>（題庫的十級參考答案為英文，對中文作答不適用）。
         # 其餘情況維持原本行為（SEL 英文模式仍展開十級 few-shot；一般練習照舊）。
-        # In SEL Chinese mode, skip the <standard> section (the tiered English references do not
-        # apply to Chinese answers). Otherwise keep the original behaviour.
         if _is_sel and _sel_language == 'chi':
             standard_section = ""
         else:
@@ -882,9 +785,6 @@ async def handle_audio_message(event):
         # 持續完善的答案來合併評分，避免引導後的片段式補充因脫離題目脈絡而被低估，
         # 使最終分數能忠實反映學生對該題的實際表達內容。
         # 此處在 updateHistory 之前讀取，因此只包含本次之前的歷史，不含當前作答。
-        # For SEL, feed the student's previous attempts on THIS SAME question so the AI can treat
-        # all attempts as one evolving answer and score the combined expression. Read before
-        # updateHistory, so it contains only prior attempts (not the current one).
         previous_attempts_section = ""
         if _is_sel:
             _prev = getHistory(user_id, f'{category}-{sub}') or []
@@ -925,8 +825,6 @@ async def handle_audio_message(event):
 
         # SEL 一律不提供「建議回答」(better_ans)，避免框架住學生回應；
         # 中文作答模式同時清空英文回饋，確保只給中文回饋。
-        # SEL never provides a "suggested answer" (better_ans); in Chinese mode also clear the
-        # English feedback so only Chinese feedback is shown.
         if _is_sel:
             assessment.better_ans = ""
             if _sel_language == 'chi':
@@ -1056,8 +954,7 @@ async def handle_npc_chat(event, user_id, user_state):
                 "file": "narrator.md"
             }
         
-        # [修正] 補上 NPC 對話用的 history_key，原本在後續 Phase 2 評估呼叫中被引用但未定義。
-        # Define history_key here; it was referenced by the Phase 2 evaluation task but never set.
+        # 補上 NPC 對話用的 history_key，原本在後續 Phase 2 評估呼叫中被引用但未定義。
         history_key = f'{theme_id}-npc-{npc_idx}'
         
         # Get RAG context
@@ -1067,11 +964,8 @@ async def handle_npc_chat(event, user_id, user_state):
         
         context_content = await get_rag_context_v2(rag_path, query=text)
         
-        # Get chat history
         # 使用即時記憶快取取代 SpeechAssessment 歷史，解決 Phase 2 非同步儲存的競態問題。
         # 快取在 Phase 1 回覆生成後立即更新，確保下一輪對話能正確看到本輪的內容。
-        # Use in-memory cache instead of persisted history to avoid Phase 2 async race condition.
-        # Cache is updated immediately after Phase 1 reply so next turn sees current conversation.
         history_str = get_npc_chat_memory(user_id, theme_id, npc_idx, npc_info['name'])
         
         # ===== Phase 1: Quick NPC response (target: 3-5 sec) =====
@@ -1097,7 +991,6 @@ async def handle_npc_chat(event, user_id, user_state):
         )
 
         # 立即將本輪對話存入即時記憶快取，使下一輪 Phase 1 能看到本輪內容。
-        # Immediately save this turn to in-memory cache so the next Phase 1 sees it.
         append_npc_chat_memory(user_id, theme_id, npc_idx, text, quick_res.npc_reply)
 
         # Send NPC response immediately with image
@@ -1249,7 +1142,6 @@ async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info
 async def handle_game_answer(event, user_id, user_state):
     """Handle game question voice answers"""
     # [診斷] 追蹤目前執行到哪一步，方便在外層 except 精確指出失敗位置。
-    # Track the current step so the outer except can pinpoint where it failed.
     _step = 'start'
     try:
         theme_id = user_state.game_theme
@@ -1300,11 +1192,8 @@ async def handle_game_answer(event, user_id, user_state):
             user_answer=text
         )
 
-        # Get AI response
         # [診斷] 將 OpenAI 呼叫獨立包成 try/except，把真正的 API 例外（型別 + 訊息）
         # 完整印出，避免被外層的廣域 except 吞掉而只剩「系統發生錯誤」。
-        # Wrap the OpenAI call so the real API exception (type + message) is logged
-        # explicitly instead of being swallowed by the broad outer except.
         try:
             completion = await client.beta.chat.completions.parse(
                 model="gpt-4o",
@@ -1433,11 +1322,8 @@ async def handle_game_answer(event, user_id, user_state):
             show_feedback=should_show_feedback('rag_test')
         ))
         
-        # If new level unlocked, send notification
         # 僅在逐關解鎖模式 (one_by_one=True) 顯示解鎖通知；
         # 開放模式下所有關卡本就開放，顯示解鎖訊息會造成誤解，故略過。
-        # Only show the unlock notice in sequential mode; in open mode all levels are already
-        # available, so the unlock message would be misleading and is skipped.
         if unlocked and is_one_by_one():
             await send_text_message(event, "恭喜！已解鎖下一關！\nCongratulations! Next level unlocked!")
         
@@ -1448,8 +1334,6 @@ async def handle_game_answer(event, user_id, user_state):
     except Exception as e:
         # [診斷] 印出失敗的步驟與例外型別 + 訊息，讓真正的根因可以從日誌直接判讀，
         # 不再只剩無資訊的「系統發生錯誤」。
-        # Log the failing step plus exception type/message so the real root cause is
-        # visible in the server log instead of an opaque generic error.
         print(f"Game Answer Error at step '{_step}': {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
@@ -1602,11 +1486,6 @@ async def send_audio_request(event, history, text, secs):
     # 根據使用者目前所選的 chat 主題（user_state.sub）附加主題專屬提示詞。
     # 若使用者尚未選擇主題（sub < 0），則回傳空字串，AI 走一般對話模式。
     # 僅在 service4/5 (rag_mode) 啟用主題感知，避免改變 service1/2/3 的原始行為。
-    #
-    # Append topic-specific prompt fragment based on the user's selected chat topic
-    # (user_state.sub). If no topic is selected, the fragment is an empty string and the
-    # AI behaves in generic conversation mode. Topic awareness is gated to service4/5
-    # (rag_mode) to preserve the original behavior of service1/2/3.
     _topic_prompt = ""
     if config.get('rag_mode', False) and user_state is not None:
         _topic_prompt = get_chat_topic_system_prompt(user_state.sub)
@@ -1714,9 +1593,6 @@ async def handle_postback(event):
         elif 'sub' in vars:
             # 使用者點擊 chat rich menu 中的主題按鈕（旅遊 / 運動 / 面試 / 英語技巧）。
             # 將該主題索引存入 user_state.sub，後續 send_audio_request 會依此調整 AI 系統提示詞。
-            # User picked a chat topic button (Travel / Sports / Interview / English Skills).
-            # Save the topic index into user_state.sub so the subsequent AI system prompt
-            # can be tailored in send_audio_request.
             try:
                 sub = int(vars.get('sub'))
             except (TypeError, ValueError):
@@ -1727,7 +1603,6 @@ async def handle_postback(event):
             user_state.category = 'chat'
             user_state.sub = sub
             # 傳送中英對照的主題確認訊息（英文在前、中文在後）。
-            # Send the bilingual topic confirmation message (English first, Chinese second).
             await send_message(event, await chat_topic_intro_message(sub))
         else:
             history = getChatHistory(user_id)
@@ -1758,7 +1633,6 @@ async def handle_postback(event):
         user_state.sub = sub
         # SEL 題目卡片依使用者選擇的作答語言（中 / 英）顯示；
         # 非 SEL 類別 sel_language 傳 None，行為完全不變。
-        # SEL question cards render in the chosen answering language; non-SEL passes None.
         _record_sel_lang = getattr(user_state, 'sel_language', None) if _is_sel_category(user_state.category) else None
         await send_message(event, await question_message(user_id, user_state.category, sub, show_feedback=should_show_feedback(user_state.category), sel_language=_record_sel_lang))
     elif action == 'carousel':
@@ -1785,7 +1659,6 @@ async def handle_postback(event):
             await send_text_message(event, "該單元目前不提供回饋。\nCurrently unavailable.")
             return
         # 後台關閉回饋時，即使 postback 被直接觸發也拒絕顯示詳細回饋
-        # Block detailed feedback when admin has disabled it, even if postback is triggered directly
         if not should_show_feedback(category):
             await send_text_message(event, "此單元目前不提供詳細回饋。\nDetailed feedback is not available for this section.")
             return
@@ -1798,8 +1671,6 @@ async def handle_postback(event):
             return
         
         # 保存切換前所在的類別，供後續邏輯判斷使用（例如：判斷是否該補送 chat 進入提示）。
-        # Capture the category the user was on BEFORE the switch, used by downstream logic
-        # (e.g. deciding whether to send the chat welcome card).
         previous_category = user_state.category
 
         # RAG mode menu switch logic
@@ -1807,8 +1678,6 @@ async def handle_postback(event):
         if alias == 'menu':
             # service4/5 (rag_mode=true) 中，若使用者目前位於 chat 區塊，
             # 「menu」按鈕應回到 menu_other，而非主選單 menu_game。
-            # In service4/5 (rag_mode=true), when the user is currently on the chat menu,
-            # the "menu" button should return to menu_other rather than the top menu_game.
             if is_rag and previous_category == 'chat':
                 alias = 'menu_other'
             elif is_rag:
@@ -1828,9 +1697,6 @@ async def handle_postback(event):
             await send_text_message(event, "此區塊尚未開放作答或使用，請等待老師開啟。\nThis section is not yet open for answering or use. Please wait for your teacher to enable it.")
             # 若 LINE 平台已先執行了選單跳轉（RichMenuSwitchAction），立刻將使用者拉回預設主選單，
             # 確保不論底層用哪種 action 類型，使用者都不會停留在被關閉的選單上。
-            # If LINE's platform already performed a rich menu switch before the webhook fired
-            # (RichMenuSwitchAction), immediately re-link the user to the default main menu so
-            # they never remain on the locked section regardless of the action type used.
             _default_menu_alias = 'menu_game' if config.get('rag_mode', False) else 'menu'
             _default_menu_id = get_rich_menu_id(_default_menu_alias)
             if _default_menu_id:
@@ -1861,16 +1727,11 @@ async def handle_postback(event):
         _NO_POPUP_PREFIXES = ('pretest', 'posttest')
         # 進入 chat 區時主動發送中英對照歡迎訊息，但若使用者從語音設定（audio/sex/accent）
         # 或已在 chat 內返回，則略過，避免重複打擾。
-        # When entering the chat section, proactively send the bilingual welcome message,
-        # but skip it when the user is bouncing back from audio settings or is already on chat,
-        # to avoid repeated notices.
         if alias == 'chat' and is_rag and previous_category not in ('chat', 'audio', 'sex', 'accent'):
             await send_message(event, await chat_welcome_message())
             return
         # 進入單一 SEL 單元 (sel1..sel6) 時，主動發送該單元的介紹卡片，
         # 取代原本針對有題目類別會自動彈出的題目輪播。
-        # When entering a single SEL unit (sel1..sel6), send the unit intro card instead of the
-        # default question carousel that would otherwise auto-pop for categories with questions.
         if alias in ('sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'):
             try:
                 unit_num = int(alias.replace('sel', ''))
@@ -1878,7 +1739,6 @@ async def handle_postback(event):
                 unit_num = 1
             user_state.sub = -1
             # 依使用者已選的作答語言顯示介紹卡（未選擇預設中文）。
-            # Show the intro card in the chosen answering language (defaults to Chinese).
             _sel_lang = getattr(user_state, 'sel_language', None) or 'chi'
             await send_message(event, await sel_unit_intro_message(unit_num, language=_sel_lang))
             return
@@ -1886,7 +1746,6 @@ async def handle_postback(event):
             pass
         elif alias in ('chat', 'admin', 'game_admin', 'sel', 'sel-2'):
             # chat 與 sel 系列大廳頁面（unit selection）不自動彈題目；交由其他邏輯處理。
-            # chat and SEL lobby pages (unit selection) do not auto-pop a question carousel.
             pass
         elif question_manager.has_question(user_state.category):
             await send_message(event, await carousel_message(user_id, user_state.category, 0))
@@ -1897,8 +1756,6 @@ async def handle_postback(event):
     # ===== SEL 單元選擇 =====
     # 使用者在 'sel' / 'sel-2' rich menu 點擊單元按鈕後觸發。
     # 將使用者切到該單元的 rich menu (sel1..sel6) 並送出該單元的介紹卡片。
-    # User taps a unit button in the 'sel' / 'sel-2' rich menu; switch them to the
-    # individual unit menu (sel1..sel6) and show that unit's bilingual intro card.
 
     elif action == 'sel_unit':
         try:
@@ -1911,14 +1768,11 @@ async def handle_postback(event):
 
         unit_category = f'sel{unit_num}'
         # 每個單元獨立開關控制；管理員不受此限制（與其他類別一致）。
-        # Per-unit enable gate; admins bypass (consistent with other categories).
         if not isEnabled(unit_category) and not isAdmin(user_id):
             await send_text_message(event, "該單元尚未開放，請等待老師開啟。\nThis unit is not yet open. Please wait for your teacher to enable it.")
             return
 
         # 切換至該單元的 rich menu。若該 rich menu 尚未註冊，提示管理員處理。
-        # Switch the user to that unit's rich menu. If the rich menu has not been
-        # registered yet, prompt the admin to reload.
         rich_menu_id = get_rich_menu_id(unit_category)
         if rich_menu_id:
             try:
@@ -1940,9 +1794,6 @@ async def handle_postback(event):
         # 進入 SEL 單元時，若開啟語言選擇功能，先以卡片詢問要用中文或英文作答；
         # 重設本次的作答語言，待使用者點選後再以對應語言顯示介紹卡與題目。
         # 若功能關閉，預設以中文作答並直接顯示介紹卡。
-        # On entering a SEL unit, if language selection is enabled, show the language-choice
-        # card first (resetting the per-entry language). If disabled, default to Chinese and
-        # show the intro card directly.
         if is_sel_language_selection_enabled():
             user_state.sel_language = None
             await send_message(event, await sel_language_select_message(unit_num))
@@ -1953,8 +1804,6 @@ async def handle_postback(event):
     # ===== SEL 作答語言選擇 (Chinese / English) =====
     # 使用者在語言選擇卡片點選「用中文 / 用英文作答」後觸發。
     # 將選擇存入 user_state.sel_language，並以對應語言顯示該單元的介紹卡片。
-    # Triggered when the user taps a language button on the SEL language-selection card.
-    # Stores the choice in user_state.sel_language and shows the unit intro card in that language.
 
     elif action == 'sel_lang':
         lang = vars.get('lang', 'chi')
@@ -1968,7 +1817,6 @@ async def handle_postback(event):
 
         unit_category = f'sel{unit_num}'
         # 與 sel_unit 一致的開關保護；管理員 bypass。
-        # Same enable gate as sel_unit; admins bypass.
         if not isEnabled(unit_category) and not isAdmin(user_id):
             await send_text_message(event, "該單元尚未開放，請等待老師開啟。\nThis unit is not yet open. Please wait for your teacher to enable it.")
             return
@@ -1983,7 +1831,6 @@ async def handle_postback(event):
 
     elif action == 'new_test_record':
         # 使用者點擊 rich menu 中的 Q 按鈕，顯示題目卡片
-        # Triggered when user taps a Q button in the pretest1/posttest1 rich menus
         sub = int(vars.get('sub', 0))
         base = vars.get('base', 'pretest')
         if not isEnabled(base) and not isAdmin(user_id):
@@ -1995,7 +1842,6 @@ async def handle_postback(event):
 
     elif action == 'new_test_last':
         # 查看 new_test 某題的上次評分回饋
-        # Show last assessment result for a new_test question
         sub = int(vars.get('sub', 0))
         base = vars.get('base', 'pretest')
         section_category = f'{base}1'
@@ -2004,7 +1850,6 @@ async def handle_postback(event):
             await send_text_message(event, f'Q{sub + 1} 查無紀錄！\nNo history found in Q{sub + 1}!')
             return
         # 後台關閉回饋時，即使 postback 被直接觸發也拒絕顯示詳細回饋
-        # Block detailed feedback when admin has disabled it, even if postback is triggered directly
         if not should_show_feedback(base):
             await send_text_message(event, "此單元目前不提供詳細回饋。\nDetailed feedback is not available for this section.")
             return
@@ -2018,7 +1863,6 @@ async def handle_postback(event):
             await send_text_message(event, "找不到最近的 NPC 回覆。\nNo recent NPC reply found.")
             return
         # 當語音輸出功能開啟時，記錄使用者使用「顯示文字」的次數，以供研究分析。
-        # Track 'Show Text' usage when npc_voice_output is enabled, for research analysis.
         if config.get('npc_voice_output', False):
             new_count = increment_show_text_count(user_id)
             print(f"[STAT] User {user_id} used Show Text feature (total: {new_count} times)")
@@ -2041,11 +1885,9 @@ async def handle_postback(event):
             await send_message(event, await other_progress_message(user_id))
         elif category == 'pretest':
             # 前測進度：前測1 (10題) + 前測2 (5題) 分開呈現
-            # Pre-test progress: Pre-test 1 (10 Qs) + Pre-test 2 (5 Qs) shown separately
             await send_message(event, await pretest_progress_message(user_id))
         elif category == 'posttest':
             # 後測進度：後測1 (10題) + 後測2 (5題) 分開呈現
-            # Post-test progress: Post-test 1 (10 Qs) + Post-test 2 (5 Qs) shown separately
             await send_message(event, await posttest_progress_message(user_id))
         else:
             await send_text_message(event, "未知的進度類別。\nUnknown progress category.")
@@ -2232,7 +2074,6 @@ async def handle_postback(event):
         user_state.game_question = -1
         user_state.in_npc_chat = False  # Exit NPC chat mode
         
-        # Send only the level intro (description card + video).
         # The "Show Questions / 顯示題目" button in the card triggers game_questions action.
         messages = await game_level_intro_message(theme_id, level_idx, user_id)
         if messages:
@@ -2262,10 +2103,6 @@ async def handle_postback(event):
         # NPC 對話後 / 語音回覆後的「題目列表」按鈕：
         # 回到「作答」按鈕會去到的那一關（最前面尚未作答任何一次的題目所在關卡）的題目列表。
         # 因為對話時無法得知學生實際想作答哪一關，故統一導向尚未作答題目所在的關卡。
-        # "Question List" button shown after NPC chat / voice replies: open the question list of
-        # the level the "Answer" button would jump to (the level holding the earliest question
-        # never answered yet). NPC chat does not know which level the student means, so route to
-        # the level of the first never-answered question.
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
             await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")
@@ -2274,8 +2111,6 @@ async def handle_postback(event):
         level_idx, _q = get_first_never_answered_question_global(user_id, theme_id)
         if level_idx < 0:
             # 全部題目皆已至少作答過一次：退而回到目前已解鎖（開放模式為第一關）的關卡。
-            # Every question already answered at least once: fall back to the unlocked level
-            # (level 0 in open mode).
             level_idx = get_user_unlocked_level(user_id, theme_id)
             if level_idx < 0:
                 level_idx = 0
@@ -2340,9 +2175,6 @@ async def handle_postback(event):
     elif action == 'game_next_answer':
         # 選單「作答」按鈕：跳到最前面（關卡較低、題號較低）尚未作答任何一次的題目，
         # 鼓勵學生把每一題都至少作答一次。若所有題目皆已作答過，回報已全部作答。
-        # The menu "Answer" button jumps to the earliest question never answered yet
-        # (lowest level, lowest question). If every question has been answered at least once,
-        # report that all questions have been attempted.
         theme_id = vars.get('theme', user_state.game_theme)
         if not theme_id:
             await send_text_message(event, "請先選擇主題。\nPlease select a topic first.")

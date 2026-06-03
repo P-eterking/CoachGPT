@@ -108,7 +108,7 @@ class GameThemeScore(BaseModel):
         description="關卡分數 (以關卡索引為鍵)",
         default_factory=dict
     )
-    current_level: int = Field(description="當前解鎖到的關卡 (0-based)", default=0)  #當前進度
+    current_level: int = Field(description="當前解鎖到的關卡 (0-based)", default=0)  # 當前進度
     
     def get_total_score(self) -> int:
         """計算此主題的總分"""
@@ -137,8 +137,7 @@ class GameScores(BaseModel):
     )
     
     def update_score(self, theme_id: str, level_idx: int, question_idx: int, score: int) -> bool:
-        """
-        更新特定題目的分數。若為新高分則回傳 True。
+        """更新特定題目的分數。若為新高分則回傳 True。
         若該題目已作答過，則取較高分數。
         """
         # 若主題不存在則初始化
@@ -266,7 +265,7 @@ class User(BaseModel):
     id: str = Field(description="學號")  # 學號
     dep: str = Field(description="系級") # 系級
     name: str = Field(description='姓名')  # 姓名
-    class_time: int = Field(description='上課時段')  # 上課時段 
+    class_time: int = Field(description='上課時段')  # 上課時段
     history: dict[str, list[SpeechAssessment]] = Field(description='歷史紀錄')  # 歷史紀錄
     chat: ChatHistory = Field(description='聊天紀錄', default_factory=lambda: ChatHistory())  # 聊天紀錄
     # 遊戲分數
@@ -277,8 +276,7 @@ class User(BaseModel):
     npc_evaluation_history: dict[str, list[dict]] = Field(description='NPC對話詳細評估紀錄', default_factory=dict)  # NPC評估紀錄
     # 問題回答紀錄 (分開儲存)
     question_history: dict[str, list[dict]] = Field(description='問題回答紀錄', default_factory=dict)  # 問題回答紀錄
-    # [新增] 「顯示文字」功能使用次數 (僅在 npc_voice_output=True 的服務中記錄，用於研究分析)
-    # "Show Text" feature usage count (recorded only when npc_voice_output=True, for research analysis)
+    # 「顯示文字」功能使用次數 (僅在 npc_voice_output=True 的服務中記錄，用於研究分析)
     show_text_count: int = Field(description='顯示文字功能使用次數 (service5 語音模式)', default=0)
     
     def to_dict(self) -> dict:
@@ -308,15 +306,9 @@ class UserState(BaseModel):
         description="上次回答的資訊 (題目、回答、分數等)", 
         default=None
     )
-    # [新增 (SEL 作答語言)] 記錄使用者在 SEL 區塊選擇的作答語言。
+    # 記錄使用者在 SEL 區塊選擇的作答語言。
     # 'eng' = 用英文作答（維持原本雙語設計）；'chi' = 用中文作答（全中文字卡與中文回饋）。
     # None 表示尚未選擇，依需求預設視為中文作答 ('chi')。此狀態為記憶體層級，不持久化。
-    #
-    # Records the answering language the user picked in the SEL section.
-    # 'eng' = answer in English (keeps the original bilingual design);
-    # 'chi' = answer in Chinese (all-Chinese cards and Chinese-only feedback).
-    # None means "not chosen yet"; per requirement it defaults to Chinese ('chi').
-    # This is in-memory session state and is not persisted to user data.
     sel_language: Optional[str] = Field(
         description="SEL 作答語言 ('eng' / 'chi' / None)",
         default=None
@@ -370,7 +362,6 @@ class GameNPC(BaseModel):
         default=None
     )
     # TTS 語音風格指示，用於控制口音、語氣、節奏等
-    # e.g. "Speak with a calm British Received Pronunciation accent. Measured, authoritative tone."
     tts_instructions: Optional[str] = Field(
         description="TTS 語音風格指示 (留空則使用預設英式口音指示)",
         default=None
@@ -409,14 +400,9 @@ class GameLevelQuestion(BaseModel):
         return self.reference_answers if self.reference_answers else []
 
     def parse_tiered_reference_answers(self) -> Optional[Dict[int, List[str]]]:
-        """
-        解析十級評分參考答案格式。
-        格式：每行以「分數\\t例句1|例句2|...」構成，行之間以\\n分隔。
+        """解析十級評分參考答案格式。
+        格式：每行以「分數\t例句1|例句2|...」構成，行之間以\n分隔。
         若 reference_answers 不符合此格式，回傳 None。
-
-        Parse tiered (10-level) reference answer format.
-        Format: each line is 'score\\texample1|example2|...', lines separated by \\n.
-        Returns None if reference_answers does not match this format.
         """
         if not self.reference_answers:
             return None

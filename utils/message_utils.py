@@ -11,7 +11,6 @@ from linebot.v3.messaging.models import SetWebhookEndpointRequest
 from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse
 import json
 # 用於 rich menu 建立時的節流與重試延遲。
-# Used for throttling and retry-backoff sleeps during rich menu provisioning.
 import asyncio
 from utils.file_utils import (
     get_user_state, getHistory, get_rich_menu_id, isEnabled, isResponse, 
@@ -24,7 +23,6 @@ from utils.file_utils import (
     get_new_test_question, get_new_test_questions_count, get_new_test_questions_all,
     isAdmin, get_enabled_category_for_alias, get_min_score_to_pass,
     # 逐題模式、SEL 語言選擇、跨關卡未作答題目查詢
-    # one-by-one mode, SEL language-selection switch, first-never-answered finder
     is_one_by_one, is_sel_language_selection_enabled,
     get_first_never_answered_question_global,
 )
@@ -36,7 +34,6 @@ CHAT_CATEGORY_IMAGE_URL = ["/templates/chat/travel.jpg", "/templates/chat/sports
 
 # ========== Chat 主題對應的中文標籤 (Chinese label for each chat topic) ==========
 # 順序需與 CHAT_CATEGORY 保持一致。
-# Order must mirror CHAT_CATEGORY.
 CHAT_CATEGORY_CHI = ["旅遊", "運動", "面試", "英語技巧"]
 
 # ========== Chat 主題專屬 AI 提示詞 (Topic-specific AI prompt fragments) ==========
@@ -44,10 +41,6 @@ CHAT_CATEGORY_CHI = ["旅遊", "運動", "面試", "英語技巧"]
 # 引導 AI 以該主題作為對話脈絡。每個主題包含「角色設定」與「對話建議」兩部分。
 # 此設計易於擴充：要新增主題只需在 CHAT_CATEGORY / CHAT_CATEGORY_CHI / CHAT_TOPIC_PROMPTS
 # 三個地方各加上對應索引的項目即可。
-#
-# Topic-specific prompt fragments appended to the chat system prompt when the user selects a topic.
-# Adding a new topic only requires appending to CHAT_CATEGORY, CHAT_CATEGORY_CHI, and CHAT_TOPIC_PROMPTS
-# at the same index.
 CHAT_TOPIC_PROMPTS = {
     0: (
         "Current Conversation Topic: TRAVEL.\n"
@@ -86,44 +79,31 @@ CHAT_TOPIC_PROMPTS = {
 }
 
 def _get_chat_topic_label(sub: int) -> tuple:
-    """取得指定 sub 的中英主題名稱。
-    Get the bilingual topic labels for the given sub index.
-
-    Returns (eng_label, chi_label). Returns empty strings if sub is out of range.
-    """
+    """取得指定 sub 的中英主題名稱。"""
     if sub is None or sub < 0 or sub >= len(CHAT_CATEGORY):
         return ("", "")
     return (CHAT_CATEGORY[sub], CHAT_CATEGORY_CHI[sub])
 
 
 def get_chat_topic_system_prompt(sub: int) -> str:
-    """根據主題索引回傳要附加到 chat AI 系統提示詞的段落。
-    Get the topic-specific system prompt fragment for the given chat topic sub index.
-    Returns an empty string when no topic is selected (sub < 0 or out of range).
-    """
+    """根據主題索引回傳要附加到 chat AI 系統提示詞的段落。"""
     if sub is None or sub < 0:
         return ""
     return CHAT_TOPIC_PROMPTS.get(sub, "")
 
 # ========== SEL 類別與作答語言輔助 (SEL helpers) ==========
 # 涵蓋舊的單一 'sel' 與新的六單元 'sel1'..'sel6'。
-# Covers both the legacy 'sel' and the six new units 'sel1'..'sel6'.
 _SEL_CATEGORIES_MU = {'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6'}
 
 
 def _is_sel_cat(category) -> bool:
-    """判斷類別是否屬於 SEL 系列。
-    Whether a category belongs to the SEL family.
-    """
+    """判斷類別是否屬於 SEL 系列。"""
     return bool(category) and category in _SEL_CATEGORIES_MU
 
 
 def normalize_sel_language(language) -> str:
     """將 SEL 作答語言正規化為 'eng' 或 'chi'。
     依需求，未選擇（None / 未知值）一律預設為中文 'chi'。
-
-    Normalize the SEL answering language to 'eng' or 'chi'.
-    Per requirement, an unset/unknown value defaults to Chinese ('chi').
     """
     return 'eng' if language == 'eng' else 'chi'
 
@@ -131,16 +111,7 @@ def build_reference_answers_section(
     tiered_reference_answers: dict = None,
     reference_answers: list = None
 ) -> str:
-    """
-    根據參考答案格式，生成適合放入 prompt 的評分指引段落。
-
-    若有十級評分參考答案 (tiered_reference_answers)，產生 few-shot 示例段落；
-    否則退而使用舊版答案列表。
-
-    Build a prompt section from reference answers.
-    If tiered_reference_answers (dict of score->examples) is provided,
-    generate a few-shot example block; otherwise fall back to plain answer list.
-    """
+    """根據參考答案格式，生成適合放入 prompt 的評分指引段落。"""
     if tiered_reference_answers:
         lines = [
             "The following are score-level example answers (few-shot reference).",
@@ -185,26 +156,11 @@ def build_standard_section_for_audio(
     assessment_standard: str,
     is_sel: bool = False
 ) -> str:
-    """
-    產生 audio 評分 user message 中的 <standard>...</standard> 區段。
-    Build the <standard>...</standard> XML section for the audio assessment user message.
-
-    Args:
-        assessment_standard: 題目的 assessment_standard 原始字串（可能是十級格式）。
-                              Raw assessment_standard string for the question (possibly tiered).
-        is_sel: 是否為SEL 系列題目；SEL 採取展開十級為 few-shot 的格式以強化辨識度。
-                Whether the question is from the SEL family; SEL uses an expanded
-                few-shot block for stronger AI parsing.
-
-    Returns:
-        若 assessment_standard 為空則回傳空字串；否則回傳完整 <standard>...</standard> 段落。
-        Empty string if assessment_standard is empty; otherwise the full XML section.
-    """
+    """產生 audio 評分 user message 中的 <standard>...</standard> 區段。"""
     if not assessment_standard:
         return ""
 
     # 動態載入 config flags，避免循環引用。
-    # Imported lazily to avoid circular imports with file_utils.
     try:
         from utils.file_utils import (
             is_standard_newlines_fix_enabled,
@@ -214,12 +170,10 @@ def build_standard_section_for_audio(
         use_tiered_for_sel = is_tiered_standard_for_sel_enabled()
     except Exception:
         # Fallback：若無法載入 config，套用安全的預設值。
-        # Fallback to safe defaults if config helpers are unavailable.
         fix_newlines = True
         use_tiered_for_sel = True
 
     # SEL 區塊：嘗試以十級結構展開為 few-shot 區塊。
-    # SEL: try to expand tiered structure into a few-shot block.
     if is_sel and use_tiered_for_sel:
         tiered = _parse_tiered_assessment_standard(assessment_standard)
         if tiered:
@@ -227,14 +181,11 @@ def build_standard_section_for_audio(
             return f"<standard>\n{section}</standard>"
 
     # 一般練習與 fallback：根據 config flag 決定是否保留換行。
-    # General exercises and fallback: respect config flag to preserve newlines.
     if fix_newlines:
         # 修正 chr(10) bug：保留換行，僅去除首尾空白。
-        # Bug fix: preserve newlines, only strip outer whitespace.
         cleaned = assessment_standard.strip()
     else:
         # 維持舊行為（chr(10) 移除）以提供回滾選項。
-        # Legacy behaviour (chr(10) stripped) kept as a rollback option.
         cleaned = assessment_standard.replace(chr(10), '').strip()
 
     return f"<standard>{cleaned}</standard>"
@@ -330,17 +281,10 @@ SYSTEM_INSTRUCTION = f"""
 # 評分改以 SEL（社會情緒學習）五大核心能力為主軸，輔以表達清晰度，
 # 而非以英文文法 / 句子完整度為唯一標準（這對選擇中文作答的學生並不適合）。
 # 透過 build_sel_system_instruction(language) 產生中文 / 英文兩種模式的提示詞：
-#   - language == 'eng'：學生用英文作答，回饋採中英對照。
-#   - language == 'chi'：學生用中文作答，回饋只給中文，且不評斷英文文法。
-#
-# The SEL section lets students share personal experiences and feelings; there is NO fixed
-# answer and NO "suggested answer" is given. Grading is anchored on the five SEL core
-# competencies plus expression clarity, NOT on English grammar/sentence completeness (which
-# is unsuitable for students who choose to answer in Chinese). build_sel_system_instruction
-# (language) produces a Chinese-mode or English-mode prompt accordingly.
+# - language == 'eng'：學生用英文作答，回饋採中英對照。
+# - language == 'chi'：學生用中文作答，回饋只給中文，且不評斷英文文法。
 
 # SEL 五大核心能力（中英對照），供提示詞與其他模組重複使用。
-# The five SEL core competencies (bilingual), reused across the prompt and other modules.
 SEL_CORE_COMPETENCIES = [
     ("Self-Awareness", "自我覺察", "認識自己的情緒、優勢與想法。"),
     ("Self-Management", "自我管理", "管理情緒、壓力與行為。"),
@@ -351,8 +295,7 @@ SEL_CORE_COMPETENCIES = [
 
 
 def _sel_competency_block() -> str:
-    """產生提示詞中描述 SEL 五大核心能力的段落（英文，供 AI 理解評分面向）。
-    Build the SEL five-competency description block used inside the prompt."""
+    """產生提示詞中描述 SEL 五大核心能力的段落（英文，供 AI 理解評分面向）。"""
     lines = []
     for eng, chi, desc in SEL_CORE_COMPETENCIES:
         lines.append(f"- {eng} ({chi}): {desc}")
@@ -360,20 +303,12 @@ def _sel_competency_block() -> str:
 
 
 def build_sel_system_instruction(language: str = 'chi') -> str:
-    """依作答語言產生 SEL 評分系統提示詞。
-    Build the SEL evaluation system prompt according to the answering language.
-
-    Args:
-        language: 'eng' = 學生用英文作答（回饋中英對照）；
-                  'chi' = 學生用中文作答（回饋僅中文，不評斷英文文法）。
-                  其他值一律視為 'chi'。
-    """
+    """依作答語言產生 SEL 評分系統提示詞。"""
     language = 'eng' if language == 'eng' else 'chi'
     competencies = _sel_competency_block()
     schema = json.dumps(SpeechAssessment.model_json_schema(), indent=2)
 
     # 共用的核心理念（中英文模式皆適用）。
-    # Shared core philosophy (applies to both language modes).
     shared_core = f"""
         You are a warm, supportive Social-Emotional Learning (SEL) coach and assessor for
         Taiwanese college students. In this SEL section, students share their personal
@@ -522,8 +457,6 @@ def build_sel_system_instruction(language: str = 'chi') -> str:
 
 
 # 向後相容：保留 SEL_SYSTEM_INSTRUCTION 名稱（英文模式預設），供既有 import 使用。
-# Backward compatibility: keep the SEL_SYSTEM_INSTRUCTION name (English-mode default)
-# for existing imports; new code should call build_sel_system_instruction(language).
 SEL_SYSTEM_INSTRUCTION = build_sel_system_instruction('eng')
 
 # NPC Chat System Instructions - Includes language detection and relevance scoring
@@ -933,8 +866,6 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
 
     # SEL 中文作答模式：字卡與說明改為全中文，移除英文內容。
     # 非 SEL 類別（ex1..ex6、pretest 等）行為完全不變，確保 service1/2/3 相容。
-    # SEL Chinese-answer mode: render the card/instruction entirely in Chinese.
-    # Non-SEL categories are untouched, preserving service1/2/3 behaviour.
     _sel = _is_sel_cat(category)
     _chi_mode = _sel and normalize_sel_language(sel_language) == 'chi'
 
@@ -1005,7 +936,6 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
                 ]
             ),
             # 僅在後台開啟回饋時顯示 View Feedback 按鈕
-            # Show View Feedback button only when feedback is enabled in admin
             footer=FlexBox(
                 layout='vertical',
                 contents=[
@@ -1021,7 +951,6 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
         )
         contents.append(history_bubble)
     
-    # Instructions bubble
     # SEL 中文模式顯示全中文說明「試著用中文回答以下問題」；
     # 其餘維持原本中英對照說明（含 service1/2/3 與 SEL 英文模式）。
     if _chi_mode:
@@ -1108,19 +1037,9 @@ async def chat_message(user_id, sub):
 # ========== Chat 進入提示與主題選擇提示訊息 ==========
 # 這些訊息僅針對 service4/5 (rag_mode=true) 的 menu_other → chat 入口而設計，
 # 但函式本身無服務限制；呼叫端負責判斷是否需要使用。
-#
-# These message builders are designed for the service4/5 (rag_mode=true) chat entry experience,
-# but the functions themselves are service-agnostic; the caller decides when to invoke them.
 
 async def chat_welcome_message():
-    """進入 Chat 頁面時的中英文歡迎/說明訊息。
-    Bilingual welcome message shown when the user enters the chat menu.
-
-    告知使用者：
-      1. 可直接傳送語音訊息和 AI 對話；
-      2. 可至「語音設定」調整語音性別與口音；
-      3. 下方主題按鈕可選擇對話主題（旅遊 / 運動 / 面試 / 英語技巧）。
-    """
+    """進入 Chat 頁面時的中英文歡迎/說明訊息。"""
     text = (
         "歡迎進入 Chat 區！\n"
         "傳送語音訊息即可直接和 AI 開始進行對話，如有偏好的語音性別與口音，"
@@ -1136,17 +1055,10 @@ async def chat_welcome_message():
 
 
 async def chat_topic_intro_message(sub: int):
-    """使用者選擇 Chat 主題（旅遊 / 運動 / 面試 / 英語技巧）後送出的中英文確認訊息。
-    Bilingual confirmation message shown after the user picks a chat topic.
-
-    Args:
-        sub: 主題索引（0=旅遊 / 1=運動 / 2=面試 / 3=英語技巧）。
-             Topic index (0=Travel / 1=Sports / 2=Interview / 3=English Skills).
-    """
+    """使用者選擇 Chat 主題（旅遊 / 運動 / 面試 / 英語技巧）後送出的中英文確認訊息。"""
     eng_label, chi_label = _get_chat_topic_label(sub)
     if not eng_label:
         # 防呆：若 sub 超出範圍，回傳一般提示。
-        # Safety fallback: if sub is out of range, return a generic prompt.
         text = (
             "您已進入聊天模式，請傳送語音訊息開始與 AI 對話。\n"
             "You have entered chat mode. Please send a voice message to start chatting with the AI."
@@ -1154,7 +1066,6 @@ async def chat_topic_intro_message(sub: int):
         return TextMessage(text=text)
 
     # 為四個主題客製化中英對照的提示文案。
-    # Topic-specific bilingual intro text for the four supported topics.
     TOPIC_TEMPLATES_CHI = {
         0: "您已選擇「旅遊」主題，AI 將與您聊聊有關旅遊的話題，例如旅行經驗、嚮往的目的地或旅遊小撇步。",
         1: "您已選擇「運動」主題，AI 將與您聊聊有關運動的話題，例如喜歡的運動、運動習慣或印象深刻的比賽。",
@@ -1182,16 +1093,9 @@ async def chat_topic_intro_message(sub: int):
 
 
 # ========== SEL 六個單元的設定與單元介紹卡片 ==========
-# SEL six-unit configuration and the unit intro card builder.
-#
 # 設計：每一個 SEL 單元在進入時都會先顯示一張卡片，卡片包含該單元的圖片與雙語說明，
 # 使用者了解該單元的桌遊背景後，才從 rich menu 中選擇題目作答。
 # 圖片預設放在 /templates/sel/sel{N}.jpg；若圖片缺失則僅顯示文字。
-#
-# Design: when a user enters a SEL unit, an intro card is shown first. The card carries the
-# unit image and the bilingual description, so the user knows which board game context the
-# unit is based on before selecting questions. Images default to /templates/sel/sel{N}.jpg;
-# if the image is missing, the card renders text-only.
 
 SEL_UNITS_CONFIG = {
     1: {
@@ -1228,16 +1132,12 @@ SEL_UNITS_CONFIG = {
 
 
 def get_sel_unit_config(unit_num: int) -> dict:
-    """取得指定 SEL 單元的設定（含中英文名稱與圖片網址）。
-    Get the SEL unit configuration (bilingual names and image path) for the given unit number.
-    """
+    """取得指定 SEL 單元的設定（含中英文名稱與圖片網址）。"""
     return SEL_UNITS_CONFIG.get(unit_num, {})
 
 
 def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
-    """取得 SEL 單元的中文 / 英文 / 中英對照名稱。
-    Get the SEL unit name in English, Traditional Chinese, or both (combined).
-    """
+    """取得 SEL 單元的中文 / 英文 / 中英對照名稱。"""
     cfg = get_sel_unit_config(unit_num)
     if not cfg:
         return ''
@@ -1249,24 +1149,11 @@ def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
 
 
 async def sel_unit_intro_message(unit_num: int, language: str = 'eng'):
-    """進入 SEL 單元時顯示的介紹卡片（依作答語言調整）。
-    Intro card shown when the user enters a SEL unit (adapts to answering language).
-
-      - language == 'eng'：維持原本中英對照設計（英文在前、中文在後），鼓勵用英文作答。
-      - language == 'chi'：全中文卡片，移除英文內容，說明文字為「試著用中文回答以下問題」。
-
-    Card content:
-      - Unit image (if available)
-      - Unit name (bilingual in English mode; Chinese-only in Chinese mode)
-      - Instruction line:
-          * English mode: bilingual (English first, then Chinese).
-          * Chinese mode: Chinese only ("試著用中文回答以下問題").
-    """
+    """進入 SEL 單元時顯示的介紹卡片（依作答語言調整）。"""
     language = normalize_sel_language(language)
     cfg = get_sel_unit_config(unit_num)
     if not cfg:
         # 防呆：未知單元編號時退回純文字提示。
-        # Safety fallback: unknown unit number returns a plain text notice.
         return TextMessage(text=f"Unknown SEL unit / 未知的 SEL 單元: {unit_num}")
 
     name_eng = cfg.get('name_eng', '')
@@ -1381,10 +1268,8 @@ async def sel_unit_intro_message(unit_num: int, language: str = 'eng'):
     )
 
     # 若有圖片路徑則加入 hero 區。
-    # Add hero image when an image path is configured.
     if image_path:
         # image_path 可能是相對於網站根目錄的路徑（以 / 開頭），也可能是檔名。
-        # The image_path may be either a root-relative path (leading "/") or a bare filename.
         if image_path.startswith('http://') or image_path.startswith('https://'):
             full_url = image_path
         elif image_path.startswith('/'):
@@ -1405,15 +1290,7 @@ async def sel_unit_intro_message(unit_num: int, language: str = 'eng'):
 
 
 async def sel_language_select_message(unit_num: int):
-    """進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。
-    Language-selection card shown when entering a SEL unit: ask the student whether to
-    answer in Chinese or English.
-
-    - 「用英文作答 / Answer in English」-> postback action=sel_lang&lang=eng&unit=N
-    - 「用中文作答 / Answer in Chinese」 -> postback action=sel_lang&lang=chi&unit=N
-    下方以鼓勵文字邀請學生嘗試用英文作答。
-    A short encouragement to try English is shown below the buttons.
-    """
+    """進入 SEL 單元時，先以卡片詢問學生要用中文或英文作答。"""
     name_eng = get_sel_unit_name(unit_num, 'eng')
     name_chi = get_sel_unit_name(unit_num, 'chi')
     title_eng = name_eng if name_eng else f"Unit {unit_num}"
@@ -1497,16 +1374,6 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
                          show_feedback: bool = None, sel_language: str = None):
     """顯示作答結果。score 卡片永遠顯示；feedback 卡片由 show_feedback 控制。
     若 show_feedback 為 None，退而使用全域 display_feedback 設定。
-
-    SEL 類別特例：
-      - 不顯示「建議回答 / Suggested Answer」卡片（避免框架住學生的回應）。
-      - sel_language == 'chi' 時不顯示英文回饋卡片（中文作答只給中文回饋）。
-    其他類別行為完全不變，維持 service1/2/3 相容。
-
-    Show assessment result. Score card always renders; feedback cards are
-    controlled by show_feedback. Falls back to global display_feedback when None.
-    SEL special-casing: never show the "Suggested Answer" card; in Chinese mode,
-    omit the English feedback card. Other categories are unchanged.
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     _sel = _is_sel_cat(category)
@@ -1600,7 +1467,6 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
             )
             bubbles.append(chi_bubble)
         
-        # Better answer
         # SEL 類別不顯示「建議回答」，避免框架住學生的回應；其餘類別維持原行為。
         if assessment.better_ans and not _sel:
             better_bubble = FlexBubble(
@@ -1632,14 +1498,10 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
     )
 
     # SEL 作答結果下方加入兩顆氣泡按鈕：
-    #   - 「繼續補充回答」：重新作答同一題（沿用 record action，保留 category/sub 與作答語言），
-    #     讓學生不論完整重述或簡短補充，分數都能更新。
-    #   - 「下一題」：直接跳到下一題的作答介面（若已是最後一題則不顯示）。
+    # - 「繼續補充回答」：重新作答同一題（沿用 record action，保留 category/sub 與作答語言），
+    # 讓學生不論完整重述或簡短補充，分數都能更新。
+    # - 「下一題」：直接跳到下一題的作答介面（若已是最後一題則不顯示）。
     # 僅 SEL 類別加入這些按鈕；其他類別（service1/2/3、pretest/posttest 等）行為完全不變。
-    # SEL result adds two quick-reply buttons: "Add to Answer" (re-answer the same question via
-    # the record action, keeping category/sub and answering language so the score can update)
-    # and "Next Question" (jump straight to the next question; hidden on the last question).
-    # Only SEL categories get these buttons; all other categories are unchanged.
     if _sel:
         quick_items = [
             QuickReplyItem(action=PostbackAction(
@@ -2021,7 +1883,6 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
                 )
     except Exception as _img_err:
         # 圖片載入失敗不應阻擋主流程，僅警告。
-        # Hero image resolution failure must not block the main flow.
         print(f"[WARN] game_level_intro_message: hero image lookup failed: {_img_err}")
     
     messages.append(FlexMessage(
@@ -2043,14 +1904,7 @@ async def game_level_intro_message(theme_id: str, level_idx: int, user_id: str):
     return messages
 
 async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, force_show_all: bool = False) -> FlexMessage:
-    """Show level questions as scrollable cards
-    
-    Args:
-        theme_id: Theme ID
-        level_idx: Level index
-        user_id: User ID
-        force_show_all: Whether to force show all questions (when user has passed the level)
-    """
+    """Show level questions as scrollable cards"""
     from utils.file_utils import (
         is_level_all_questions_passed, get_next_unpassed_question,
         get_min_score_to_pass, is_one_by_one
@@ -2083,8 +1937,6 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
     
     # one_by_one=False（開放模式）時，整關所有題目都同時開放自由作答，
     # 因此一律走「顯示全部題目」分支，不再僅顯示目前未通過的單一題目。
-    # In open mode (one_by_one=False), every question in the level is available at once,
-    # so always take the "show all questions" branch instead of showing only the current one.
     show_all = all_passed or force_show_all or (not is_one_by_one())
     
     # If all passed or force show (or open mode), display all questions for free selection
@@ -2115,8 +1967,6 @@ async def game_questions_carousel(theme_id: str, level_idx: int, user_id: str, f
             if has_answered:
                 # 開放模式 (one_by_one=False)：只要作答即算完成，不顯示「通過/未通過」，
                 # 也不依 min_score 判定；逐關模式維持原本的通過/未通過顯示。
-                # Open mode: any answer counts as done; no Passed/Not Passed and no min_score
-                # judgement. Sequential mode keeps the original passed/not-passed display.
                 if not is_one_by_one():
                     body_contents.append(
                         FlexText(
@@ -2341,15 +2191,7 @@ async def game_answer_card_message(
     theme_id: str, level_idx: int, question_idx: int,
     q_text: str, has_talked_to_npc: bool = True
 ) -> FlexMessage:
-    """Show a question card with image and hint texts when the user selects a question to answer.
-
-    The hero image is resolved from the ragQuestion template folder using the naming convention:
-    topic{X}_Q{Y}-{Z}.jpg  (X = display topic number, Y = level number, Z = question number)
-
-    Two bilingual hint texts are rendered in small gray font inside the card body:
-      1. Microphone instruction hint
-      2. NPC hint (shown only when has_talked_to_npc is False)
-    """
+    """Show a question card with image and hint texts when the user selects a question to answer."""
     topic_num = get_theme_display_number(theme_id)
     q_label = f'Topic {topic_num} Q{level_idx + 1}-{question_idx + 1}'
     q_label_chi = f'主題 {topic_num} 題目 {level_idx + 1}-{question_idx + 1}'
@@ -2436,13 +2278,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     """Show game result and score - English feedback first, Chinese feedback second.
     Score card always renders; feedback cards are controlled by show_feedback.
     Falls back to global display_feedback when show_feedback is None.
-
-    Button logic (passing threshold = min_score_to_pass, read from config):
-    - Below threshold: Show "Try Again" + "Improvement Hint"
-    - At/above threshold (not perfect): "Try Again" + "Improvement Hint" + "Next Question"
-    - Perfect score (10): Show only "Next Question"
-    In open mode (one_by_one=False) the "Next Question" button points to the next
-    unanswered question across all levels and is always offered when one exists.
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
@@ -2472,9 +2307,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     # 僅在逐關解鎖模式 (one_by_one=True) 才使用 min_score_to_pass：當分數未達標時顯示
     # 最低通過分數規則。開放模式 (one_by_one=False) 下「只要作答即視為通過」，不顯示此規則。
-    # Only use min_score_to_pass in sequential mode (one_by_one=True): show the minimum
-    # passing-score rule when below threshold. In open mode any answer counts as passed,
-    # so this rule is not shown.
     _min_score = get_min_score_to_pass()
     if is_one_by_one() and score < _min_score:
         main_contents.append(
@@ -2608,14 +2440,9 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
         contents=FlexCarousel(contents=bubbles)
     )
     
-    # Quick reply buttons - based on score decide which buttons to show
-    # Threshold = min_score_to_pass (from config). Perfect (10) only shows "Next".
-    # [修正] 僅在此局部匯入「模組頂層尚未匯入」的名稱；get_questions_per_level / is_one_by_one /
+    # 僅在此局部匯入「模組頂層尚未匯入」的名稱；get_questions_per_level / is_one_by_one /
     # get_theme_display_number 已在檔案頂層匯入，若再於此函式內 import 會使它們在整個函式
     # 變成區域變數，導致函式前段先用到 get_theme_display_number 時拋出 UnboundLocalError。
-    # Only import names NOT already imported at module top. Re-importing module-level names
-    # here would make them function-local for the whole function, so the earlier use of
-    # get_theme_display_number (near the top) raised UnboundLocalError.
     from utils.file_utils import (
         is_level_all_questions_passed, get_next_unpassed_question,
         get_next_unanswered_question_global
@@ -2649,8 +2476,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     if _open_mode:
         # 開放模式：「下一題」跳到跨關卡的下一個未通過題目，且一律提供（不需先通過本題）。
-        # Open mode: "Next" jumps to the next unpassed question across all levels and is
-        # always offered, regardless of whether the current question was passed.
         nxt_level, nxt_q = get_next_unanswered_question_global(user_id, theme_id)
         if nxt_level >= 0 and nxt_q >= 0:
             t_num = get_theme_display_number(theme_id)
@@ -2662,7 +2487,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             )
         else:
             # 全部題目皆已通過：提供回關卡選單的入口。
-            # All questions passed: offer a way back to the level menu.
             quick_reply_items.append(
                 QuickReplyItem(action=PostbackAction(
                     label='All Done / 全部完成',
@@ -2671,7 +2495,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
             )
     else:
         # 逐題模式：通過本題後才顯示「下一題」(同一關內的下一個未通過題目)。
-        # Sequential mode: only show "Next" after passing the current question.
         if is_passed:
             next_q_idx = get_next_unpassed_question(user_id, theme_id, level_idx)
             if next_q_idx >= 0 and next_q_idx < questions_per_level_count:
@@ -2692,8 +2515,6 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
     
     # 作答完成後加入「題目列表」按鈕，讓學生不必重新進入關卡即可回到「本題所在關卡」
     # 的題目列表挑選其他題目。
-    # Add a "Question List" button so the student can jump back to THIS level's question list
-    # without re-entering the level.
     quick_reply_items.append(
         QuickReplyItem(action=PostbackAction(
             label='List',
@@ -2708,16 +2529,7 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
 
 async def game_improvement_hint_message(theme_id: str, level_idx: int, question_idx: int,
                                          hint_eng: str, hint_chi: str, hint_count: int = 1) -> FlexMessage:
-    """Show improvement hint message (without revealing answer)
-    
-    Args:
-        theme_id: Theme ID
-        level_idx: Level index
-        question_idx: Question index
-        hint_eng: English hint
-        hint_chi: Chinese hint
-        hint_count: Number of times hints have been used for this question
-    """
+    """Show improvement hint message (without revealing answer)"""
     bubbles = []
     
     # English hint card
@@ -2810,14 +2622,7 @@ async def game_improvement_hint_message(theme_id: str, level_idx: int, question_
 async def game_npc_chat_response_message(npc_name: str, npc_reply: str, 
                                           is_english: bool = True,
                                           npc_image: str = None) -> FlexMessage:
-    """Show NPC quick response (immediate display), with random character image
-    
-    Args:
-        npc_name: NPC name
-        npc_reply: NPC response content
-        is_english: Whether user used English
-        npc_image: NPC base image filename (e.g. John_Watson.jpg), will randomly select _1, _2, _3 variant
-    """
+    """Show NPC quick response (immediate display), with random character image"""
     import random
     
     bubbles = []
@@ -3002,10 +2807,6 @@ async def game_npc_evaluation_message(npc_name: str, language_score: int,
 async def game_rules_instruction_message() -> FlexMessage:
     """Show game rules instruction card (bilingual).
     Used when user presses the Game Rules button in the game lobby menu.
-
-    規則文字中的主題數、關卡數、每關題數、最低通過分數，以及「逐關解鎖 / 自由作答」
-    的說明，全部依 config 動態產生。只要管理員更動 game_themes / levels_per_theme /
-    questions_per_level / min_score_to_pass / one_by_one，這張卡片的描述就會自動連動更新。
     """
     from utils.file_utils import (
         get_game_themes, get_levels_per_theme, get_questions_per_level,
@@ -3018,7 +2819,6 @@ async def game_rules_instruction_message() -> FlexMessage:
     open_mode = not is_one_by_one()
 
     # 依作答模式產生不同的進度說明（逐關解鎖 vs 自由作答）。
-    # Progression sentence differs by mode (sequential unlock vs free answering).
     if open_mode:
         progress_eng = (
             f"All levels and questions are open from the start, so you can answer in any order you like. "
@@ -3135,10 +2935,6 @@ async def game_story_message() -> FlexMessage:
             "三位傑出的人物隨時準備好協助你破解案件。"
         )
     
-    # ===== [Change 1] Map image: displayed above the story text.
-    # The image is placed in the bubble hero so it always appears at the top.
-    # Path: templates/map/map.jpg (served via the static files route).
-    # To disable this image, set MAP_IMAGE_ENABLED to False.
     # ===== 地圖圖片：顯示於故事背景文字上方。
     # 圖片放在 bubble hero 使其永遠出現在最上方。
     # 路徑：templates/map/map.jpg（透過靜態檔案路由提供）。
@@ -3222,15 +3018,6 @@ async def game_characters_message() -> list:
     """Show game characters intro video.
     Used when user presses the Characters button in the game lobby menu.
     Returns a list of messages (video + optional text fallback).
-    
-    Path handling for game_characters_video config:
-    - If the value starts with '/' it is treated as a URL path relative to the site root,
-      e.g. '/templates/videos/characters_intro.mp4'  ->  {URL}/templates/videos/characters_intro.mp4
-    - If the value does NOT start with '/' it is treated as a bare filename inside
-      /templates/videos/, e.g. 'characters_intro.mp4'  ->  {URL}/templates/videos/characters_intro.mp4
-    Either format works; just be consistent.  Example values:
-      'game_characters_video': 'characters_intro.mp4'
-      'game_characters_video': '/templates/videos/characters_intro.mp4'
     """
     game_info = get_game_info_config()
     video_value = game_info.get('characters_video', '')
@@ -3712,13 +3499,11 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
     
     unlocked_level = get_user_unlocked_level(user_id, theme_id)
     # one_by_one=False（開放模式）時，所有關卡都開放、不鎖定。
-    # In open mode (one_by_one=False) every level is available and none is locked.
     _open_mode = not is_one_by_one()
     bubbles = []
     
     for level in theme_config.levels:
         # 開放模式下不鎖定任何關卡；逐關模式維持「高於已解鎖關卡即鎖定」。
-        # In open mode no level is locked; in sequential mode lock levels above the unlocked one.
         is_locked = (level.id > unlocked_level) and (not _open_mode)
         
         if is_locked:
@@ -3729,9 +3514,6 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         max_level_score = get_questions_per_level() * 10
         # 完成判定：逐關模式沿用 min_score_to_pass（每題達標）；開放模式下「只要作答即完成」，
         # 因此改為「該關所有題目都至少作答過一次」即視為完成，不使用 min_score。
-        # Completion: sequential mode uses min_score_to_pass (each question must reach it);
-        # open mode counts a level as completed once every question has been answered at
-        # least once, without using min_score.
         if _open_mode:
             _qpl = get_questions_per_level()
             _answered = sum(
@@ -3810,7 +3592,6 @@ async def game_level_select_message(theme_id: str, user_id: str) -> FlexMessage:
         )
         bubbles.append(bubble)
     
-    # If there are still locked levels, show a hint (only in sequential one-by-one mode)
     # 開放模式下沒有鎖定關卡，不顯示此提示。
     if (not _open_mode) and unlocked_level < len(theme_config.levels) - 1:
         locked_bubble = FlexBubble(
@@ -3914,7 +3695,6 @@ async def game_progress_message(user_id: str) -> FlexMessage:
     total_per_theme = levels_per_theme * questions_per_level  # 5 * 3 = 15
     min_pass = get_min_score_to_pass()
     # 開放模式：只要作答過即計入；逐關模式：需達 min_pass 才計入。
-    # Open mode counts any answered question; sequential mode requires reaching min_pass.
     _open_mode = not is_one_by_one()
     
     body_contents = [
@@ -4005,12 +3785,8 @@ async def other_progress_message(user_id: str) -> FlexMessage:
             )
         )
 
-    # ===== [Change 2] SEL progress =====
     # SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
     # 進度顯示時，分別列出每個單元已作答題數。
-    #
-    # The SEL section now consists of six independent units (sel1..sel6),
-    # each with 5 questions. Show per-unit progress instead of a single combined line.
     SEL_QUESTION_COUNT = 5
     SEL_UNITS = [
         ('sel1', 'Monopoly / 地產大亨'),
@@ -4068,10 +3844,7 @@ def _build_test_section_bubble(
     category: str,
     total_q: int,
 ) -> FlexBubble:
-    """建立單一測驗區塊的進度泡泡，每題一行，全部完成顯示綠色，否則灰色。
-    Build a single test section progress bubble; each question is one row,
-    green if answered, gray if not.
-    """
+    """建立單一測驗區塊的進度泡泡，每題一行，全部完成顯示綠色，否則灰色。"""
     answered_count = 0
     q_rows = []
 
@@ -4142,9 +3915,7 @@ def _build_test_section_bubble(
 
 async def pretest_progress_message(user_id: str) -> FlexMessage:
     """顯示前測進度，分為前測1 (5題) 和前測2 (5題) 兩個泡泡。
-    Show pre-test progress split into Pre-test 1 (5 Qs) and Pre-test 2 (5 Qs).
     全部作答完成顯示綠色，未完成顯示灰色。
-    Fully completed sections are shown in green; incomplete ones in gray.
     """
     NEW_TEST_TOTAL = 5
     PRETEST2_TOTAL = 5
@@ -4172,9 +3943,7 @@ async def pretest_progress_message(user_id: str) -> FlexMessage:
 
 async def posttest_progress_message(user_id: str) -> FlexMessage:
     """顯示後測進度，分為後測1 (5題) 和後測2 (5題) 兩個泡泡。
-    Show post-test progress split into Post-test 1 (5 Qs) and Post-test 2 (5 Qs).
     全部作答完成顯示綠色，未完成顯示灰色。
-    Fully completed sections are shown in green; incomplete ones in gray.
     """
     NEW_TEST_TOTAL = 5
     POSTTEST2_TOTAL = 5
@@ -4237,25 +4006,12 @@ async def show_loading(user_id, secs=20):
     await line_bot_api.show_loading_animation(show_loading_animation_request=ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=secs), async_req=True).get()
     
 async def handle_rich_menu(user_id):
-    """初始化或修正使用者的 rich menu 狀態。
-    Initialise or correct the user's rich menu state.
-
-    每次互動開始時都會呼叫此函式。除了原本的「偵測目前選單並設定 category」邏輯外，
-    還會主動檢查使用者目前所在的選單區塊是否仍處於開放狀態，若已被管理員關閉，
-    立即將使用者重新連結回預設主選單，確保無法在關閉後的區塊繼續操作。
-
-    Called at the start of every interaction. In addition to the original
-    'detect current menu and set category' logic, it actively checks whether
-    the user's current menu section is still enabled. If the admin has since
-    disabled it, the user is immediately re-linked to the default main menu.
-    """
+    """初始化或修正使用者的 rich menu 狀態。"""
     _SWITCH_CONTROLLED = {
         'pretest', 'posttest', 'rag_test',
         'ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'chat',
         # 將六個 SEL 單元納入即時開關監控，
         # 與 handlers.py 的 _SWITCH_CONTROLLED 同步，確保管理員關閉後立即驅離使用者。
-        # Include the six SEL units so admin disable actions evict users immediately,
-        # matching the _SWITCH_CONTROLLED set in handlers.py.
         'sel', 'sel1', 'sel2', 'sel3', 'sel4', 'sel5', 'sel6',
     }
 
@@ -4265,8 +4021,6 @@ async def handle_rich_menu(user_id):
 
     if user_state.category:
         # 即使 category 已知，仍需驗證該區塊是否仍開放（管理員可能在使用者進入後才關閉）。
-        # Even if the category is already known, verify the section is still enabled
-        # (admin may have disabled it after the user navigated in).
         enabled_cat = get_enabled_category_for_alias(user_state.category)
         if (
             enabled_cat in _SWITCH_CONTROLLED
@@ -4274,7 +4028,6 @@ async def handle_rich_menu(user_id):
             and not isAdmin(user_id)
         ):
             # 使用者仍停留在已關閉的區塊，立即踢回主選單。
-            # User is still on a now-disabled section; kick them back to main menu.
             default_menu_id = get_rich_menu_id(default_menu)
             if default_menu_id:
                 try:
@@ -4288,14 +4041,12 @@ async def handle_rich_menu(user_id):
         return
 
     # category 尚未設定：從 LINE 平台查詢使用者目前連結的 rich menu。
-    # Category not yet set: query LINE platform for the user's currently linked menu.
     try:
         rich_menu_id = await rich_menu_manager.get_rich_menu_id(user_id)
         category = get_rich_menu_category_from_id(rich_menu_id)
         if not category:
             raise ApiException('No rich menu category found.')
         # 查詢到的 category 也需要通過 enabled 檢查。
-        # The detected category also needs to pass the enabled check.
         enabled_cat = get_enabled_category_for_alias(category)
         if (
             enabled_cat in _SWITCH_CONTROLLED
@@ -4315,7 +4066,6 @@ async def handle_rich_menu(user_id):
             user_state.category = category
     except ApiException:
         # LINE 回報沒有連結的 rich menu，連結預設主選單。
-        # LINE reports no linked rich menu; link the default main menu.
         default_menu_id = get_rich_menu_id(default_menu)
         if default_menu_id:
             await rich_menu_manager.link_rich_menu_to_user(
@@ -4328,14 +4078,7 @@ async def handle_rich_menu(user_id):
 # ========== [START] new_test 題目訊息 (pretest1 / posttest1 rich menu) ==========
 
 async def new_test_question_message(user_id: str, sub: int, base_category: str, show_feedback: bool = True) -> FlexMessage:
-    """顯示 new_test 單道題目卡片 (含作答紀錄)。
-    Show a single new_test question card with history if available.
-
-    Args:
-        user_id: 使用者 ID
-        sub: 題目索引 (0-based)
-        base_category: 'pretest' 或 'posttest'
-    """
+    """顯示 new_test 單道題目卡片 (含作答紀錄)。"""
     question = get_new_test_question(sub)
     if not question:
         return FlexMessage(
@@ -4415,7 +4158,6 @@ async def new_test_question_message(user_id: str, sub: int, base_category: str, 
                 ]
             ),
             # 僅在後台開啟回饋時顯示 View Feedback 按鈕
-            # Show View Feedback button only when feedback is enabled in admin
             footer=FlexBox(
                 layout='vertical',
                 contents=[
@@ -4472,22 +4214,7 @@ async def game_npc_voice_response_messages(
     audio_filename: str,
     audio_duration: int
 ) -> list:
-    """NPC 語音回覆模式：回傳訊息列表 [語言警告卡(若有), 圖片卡, 語音訊息]。
-    NPC voice response mode: returns message list [warning card (if any), image card, audio message].
-
-    圖片卡只顯示 NPC 人物圖片，不顯示文字回覆。
-    語音訊息附帶「顯示文字 / Show Text」及「前往作答 / Go to Answer」快速回覆按鈕。
-    The image card shows only the NPC character image without the reply text.
-    The audio message includes 'Show Text' and 'Go to Answer' quick reply buttons.
-
-    Args:
-        npc_name: NPC 名稱
-        npc_reply: NPC 回覆文字 (僅用於 altText，不顯示在卡片上)
-        is_english: 使用者是否使用英文
-        npc_image: NPC 圖片檔名 (e.g. John_Watson.jpg)
-        audio_filename: 語音檔案路徑 (相對於 templates/)
-        audio_duration: 語音長度 (毫秒)
-    """
+    """NPC 語音回覆模式：回傳訊息列表 [語言警告卡(若有), 圖片卡, 語音訊息]。"""
     import random
 
     messages = []
@@ -4591,12 +4318,7 @@ async def game_npc_text_card_message(
     npc_reply: str,
     npc_image=None
 ) -> FlexMessage:
-    """顯示 NPC 文字回覆卡片，由「顯示文字 / Show Text」按鈕觸發。
-    Show NPC text reply card, triggered by the 'Show Text' quick reply button.
-
-    此為語音模式下使用者主動查看文字時的卡片，外觀與原本 game_npc_chat_response_message 相同。
-    This is the text variant for voice mode; it mirrors game_npc_chat_response_message in appearance.
-    """
+    """顯示 NPC 文字回覆卡片，由「顯示文字 / Show Text」按鈕觸發。"""
     import random
 
     bubbles = []
@@ -4664,9 +4386,6 @@ async def game_npc_text_card_message(
 # ==========  LINE 速率限制處理 (Rate-limit handling helpers) ==========
 # 啟動時批次重建 rich menu 容易在短時間內超過 LINE 的速率限制（HTTP 429）。
 # 以下兩個常數可控制節流行為，必要時可調大。
-#
-# Bulk rebuilding rich menus at startup easily exceeds LINE's burst rate limit (HTTP 429).
-# The two constants below control throttling; raise them if you still hit 429.
 RICH_MENU_API_DELAY = 0.6          # 每個 rich menu 操作之間的最小間隔 (秒)
                                    # Minimum delay between each rich menu API operation (seconds).
 RICH_MENU_RATE_LIMIT_MAX_RETRY = 6  # 遇到 429 時的最大重試次數 (採用指數退避)
@@ -4677,22 +4396,7 @@ async def _call_with_rate_limit_retry(coro_func, *args, op_desc: str = "LINE API
                                        max_retries: int = RICH_MENU_RATE_LIMIT_MAX_RETRY,
                                        base_delay: float = 2.0,
                                        **kwargs):
-    """以指數退避方式重試會被速率限制的 LINE API 呼叫。
-    Retry a rate-limited LINE API coroutine with exponential backoff.
-
-    Args:
-        coro_func: 要呼叫的 async 函式（不要先 await，這裡會代為 await）。
-                   The async function to call (do NOT pre-await it).
-        op_desc:   描述用字串，會在日誌中印出。
-                   Human-readable description for logging.
-        max_retries: 最大重試次數。Max attempts.
-        base_delay:  指數退避基底秒數。Base seconds for exponential backoff.
-
-    Returns:
-        被呼叫函式的回傳值；若多次重試後仍失敗，原樣拋出最後一次的 ApiException。
-        The wrapped coroutine's return value, or re-raises the final ApiException
-        if all retries are exhausted.
-    """
+    """以指數退避方式重試會被速率限制的 LINE API 呼叫。"""
     last_exc = None
     for attempt in range(max_retries):
         try:
@@ -4700,7 +4404,6 @@ async def _call_with_rate_limit_retry(coro_func, *args, op_desc: str = "LINE API
         except ApiException as e:
             last_exc = e
             # 僅在 429 才重試，其餘錯誤直接拋出。
-            # Only retry on 429; bubble up everything else immediately.
             if getattr(e, 'status', None) != 429:
                 raise
             if attempt >= max_retries - 1:
@@ -4712,50 +4415,20 @@ async def _call_with_rate_limit_retry(coro_func, *args, op_desc: str = "LINE API
             )
             await asyncio.sleep(wait)
     # 重試耗盡，拋出最後一次的例外。
-    # Retries exhausted; raise the last captured exception.
     raise last_exc
 
 
 async def create_rich_menu(force_rebuild: bool = None):
-    """建立或同步 rich menu 到 LINE 平台。
-    Provision rich menus on the LINE platform.
-
-    執行策略 / Strategy
-    ------------------
-    預設採用「智能重用 (smart reuse)」模式：
-      1. 讀取 LINE 上現有的所有 rich menu，建立「menu 名稱 → ID」對照表。
-      2. 對 rich_menu.json 裡的每個 menu：
-           - 若名稱已存在於 LINE，直接重用該 ID（不打任何建立 / 上傳 API），
-             僅在需要時把它設為預設 menu。
-           - 若不存在，才執行建立 → 上傳圖片 → （視情況）設為預設。
-      3. 若該 menu 是預設 menu，無論重用或新建都會呼叫 set_default。
-      4. 此模式下不會主動刪除任何既有 menu（避免燒掉 LINE 的 burst 配額）；
-         若 LINE 上有多餘的舊 menu 需要清理，請透過 LINE Official Account Manager
-         手動刪除（LINE 文件指出該介面的刪除不受 API 速率限制）。
-
-    若需要強制全部重建（例如改了按鈕的 action type、或要清掉舊版殘留），
-    在 docker-compose / 環境變數中設定 RICH_MENU_FORCE_REBUILD=1 即可。
-    此時會走「先刪光全部 → 再依序重建」的舊邏輯，並完整套用 429 退避重試。
-
-    Default mode is *smart reuse*: existing menus on LINE are matched by name and
-    their IDs are reused with zero API calls. Missing menus are created
-    individually. No existing menus are deleted, which avoids the LINE burst
-    rate-limit cascade. Set RICH_MENU_FORCE_REBUILD=1 in the environment to fall
-    back to the original force-delete-and-rebuild behaviour (with retries).
-    """
+    """建立或同步 rich menu 到 LINE 平台。"""
     await line_bot_api.set_webhook_endpoint(SetWebhookEndpointRequest(endpoint=f'{URL}/callback'))
     configs = load_rich_menu_configs()
 
     # 強制重建開關現在優先取自呼叫者傳入的參數；若未指定，再讀取環境變數。
     # 這讓管理員指令 /refresh_all_menus 可以在不修改環境變數的情況下觸發強制重建。
-    # The force_rebuild flag now prefers the explicit argument; falls back to the
-    # environment variable when not provided. This lets the /refresh_all_menus admin
-    # command trigger a force rebuild without having to mutate process environment.
     if force_rebuild is None:
         force_rebuild = os.environ.get('RICH_MENU_FORCE_REBUILD', '').lower() in ('1', 'true', 'yes')
 
     # 讀取 LINE 上目前存在的所有 rich menu。
-    # Inventory the rich menus already present on the LINE platform.
     try:
         existing_menus = await rich_menu_manager.get_all_rich_menus()
     except Exception as _list_err:
@@ -4763,7 +4436,6 @@ async def create_rich_menu(force_rebuild: bool = None):
         existing_menus = []
 
     # 建立「menu 名稱 → rich_menu_id」對照表，重複名稱以最後一個為準。
-    # Build a name→id map of existing menus (later duplicates win).
     existing_by_name = {}
     for m in (existing_menus or []):
         name = getattr(m, 'name', None)
@@ -4776,7 +4448,6 @@ async def create_rich_menu(force_rebuild: bool = None):
 
     if force_rebuild:
         # ===== 強制重建模式 =====
-        # Force-rebuild mode: delete every existing menu, then recreate from configs.
         # 每個刪除呼叫之間皆 sleep 並走 429 重試，避免一次打爆 burst quota。
         if existing_menus:
             print(f"[RICH_MENU] Force rebuild: deleting {len(existing_menus)} existing rich menu(s)...")
@@ -4794,11 +4465,8 @@ async def create_rich_menu(force_rebuild: bool = None):
         existing_by_name = {}  # 已全部刪除，重置對照表 / map is now empty
     else:
         # ===== 智能重用模式 (預設) =====
-        # Smart reuse (default): preserve existing menus and reuse their IDs by name.
         # 由於僅根據名稱比對，若你修改了 rich_menu.json 中某個 menu 的版面或按鈕動作，
         # 該 menu 在 LINE 上仍然是舊內容；此時請改用 RICH_MENU_FORCE_REBUILD=1 重啟一次。
-        # Reuse is name-only; if you change a menu's layout or actions in rich_menu.json,
-        # run once with RICH_MENU_FORCE_REBUILD=1 to refresh.
         reused = sum(1 for n in desired_names if n in existing_by_name)
         missing = len(desired_names) - reused
         leftover = len(set(existing_by_name.keys()) - desired_names)
@@ -4807,7 +4475,6 @@ async def create_rich_menu(force_rebuild: bool = None):
             f"{leftover} leftover on LINE (not deleted)."
         )
         # 清空本地 ID 快取後重新填入，確保 rich_menu_ids 與 LINE 上實際狀況同步。
-        # Clear the local ID cache and refill it so rich_menu_ids stays in sync with LINE.
         clear_rich_menu_id()
 
     for menu_name, config_data in configs['rich_menus'].items():
@@ -4815,12 +4482,9 @@ async def create_rich_menu(force_rebuild: bool = None):
         try:
             if (not force_rebuild) and menu_name in existing_by_name:
                 # 重用既有 menu：不打建立 / 上傳 API，僅將 ID 寫回本地 config。
-                # Reuse path: don't call create/upload; just record the existing ID.
                 rich_menu_id = existing_by_name[menu_name]
                 if menu_name == target_default:
                     # 預設 menu 仍需設定一次，確保預設指向當前版本（這支 API 很輕，沒問題）。
-                    # The default menu setter must still run so the default points to the
-                    # reused menu (this endpoint is light and won't hit the burst limit).
                     await _call_with_rate_limit_retry(
                         rich_menu_manager.set_default_rich_menu,
                         rich_menu_id,
@@ -4830,7 +4494,6 @@ async def create_rich_menu(force_rebuild: bool = None):
                 print(f"Rich Menu {menu_name} reused: {rich_menu_id}")
             else:
                 # 建立新 menu：建立 → 上傳圖片 → （視情況）設為預設。
-                # Create path: create → upload image → (optionally) set as default.
                 builder = build_rich_menu_from_config(menu_name, config_data)
                 rich_menu_id = await _call_with_rate_limit_retry(
                     rich_menu_manager.create_rich_menu,
@@ -4858,7 +4521,6 @@ async def create_rich_menu(force_rebuild: bool = None):
             import traceback
             traceback.print_exc()
         # 每個 menu 之間固定 sleep，避免任何高密度 API 呼叫觸發 LINE 的 burst 限制。
-        # Sleep between menus to avoid bursty API patterns even in reuse mode.
         await asyncio.sleep(RICH_MENU_API_DELAY)
 
     await save_config()
@@ -4868,19 +4530,8 @@ async def create_rich_menu(force_rebuild: bool = None):
 # 當 rich_menu.json 沒改、但某張選單的圖片檔案內容換掉時，智能重用模式因為
 # 「名稱仍存在於 LINE」會直接重用，不會自動上傳新圖片；此函式提供「精準刪除
 # 並重建單一 menu」的能力，讓圖片更新可以在不打斷其他選單的情況下生效。
-#
-# Companion helper for the /refresh_menu <name> admin command. Smart reuse keeps
-# an existing LINE menu when its name matches, so simply replacing an image file
-# on disk does NOT propagate to LINE. This helper deletes any LINE-side menu(s)
-# with the given name and re-creates exactly that one, leaving every other menu
-# untouched.
 async def refresh_single_rich_menu(menu_name: str):
-    """刪除並重建指定名稱的單一 rich menu。
-    Delete and rebuild a single rich menu identified by name.
-
-    Returns:
-        tuple[bool, str]: (success, human-readable status message in bilingual form).
-    """
+    """刪除並重建指定名稱的單一 rich menu。"""
     configs = load_rich_menu_configs()
     if menu_name not in configs.get('rich_menus', {}):
         return (
@@ -4890,8 +4541,6 @@ async def refresh_single_rich_menu(menu_name: str):
         )
 
     # 列出 LINE 上所有現有 menu，刪除所有同名項目（包含因失敗部署殘留的副本）。
-    # List every menu on LINE and delete all entries sharing the target name
-    # (including stale duplicates from past failed deployments).
     deleted_count = 0
     try:
         existing_menus = await rich_menu_manager.get_all_rich_menus()
@@ -4916,7 +4565,6 @@ async def refresh_single_rich_menu(menu_name: str):
             await asyncio.sleep(RICH_MENU_API_DELAY)
 
     # 重新建立該 menu，並上傳對應的圖片。
-    # Recreate the menu and upload its image.
     config_data = configs['rich_menus'][menu_name]
     rich_menu_manager.set_display_name(menu_name, config_data.get('chat_bar_text'))
     try:
@@ -4935,8 +4583,6 @@ async def refresh_single_rich_menu(menu_name: str):
                 op_desc=f"upload_rich_menu_image({menu_name})",
             )
         # 若這支恰好是預設 menu，必須再設一次預設（因為舊 ID 已被刪除）。
-        # If this happens to be the default menu, re-set the default since the
-        # previous default ID was just deleted.
         target_default = 'menu_game' if config.get('rag_mode', False) else 'menu'
         if menu_name == target_default:
             await _call_with_rate_limit_retry(
