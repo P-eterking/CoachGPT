@@ -1,4 +1,5 @@
 # CoachGPT — AI-Powered English Speaking Practice Chatbot
+串接ChatGPT的line chatbot，以遊戲化的設計和後設認知學習，提供大專學生全新的英語口說練習系統。透過RAG提升評分與回饋的標準一致性，能夠準確評估學生使用此系統的練習成效。本系統功能包含口說前後測、AI NPC情境式解謎遊戲、SEL之情感察覺與表達、與AI自由聊天、多組練習題。
 
 > A LINE-based chatbot system designed for Taiwanese college students to practice English speaking through immersive scenario-based activities, AI-scored voice assessments, and Social-Emotional Learning modules.
 
