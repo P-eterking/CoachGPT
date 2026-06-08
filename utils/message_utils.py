@@ -3641,6 +3641,7 @@ async def progress_select_message() -> FlexMessage:
     categories = [
         ("Pretest\n前測", "action=progress_detail&category=pretest"),
         ("Game\n遊戲", "action=progress_detail&category=game"),
+        ("SEL\n社會情緒學習", "action=progress_detail&category=sel"),
         ("Posttest\n後測", "action=progress_detail&category=posttest"),
         ("Other\n其他", "action=progress_detail&category=other"),
     ]
@@ -3744,7 +3745,9 @@ async def game_progress_message(user_id: str) -> FlexMessage:
     )
 
 async def other_progress_message(user_id: str) -> FlexMessage:
-    """Show progress for exercises (ex1-ex6)"""
+    """Show progress for exercises (ex1-ex6) only.
+    SEL progress is now shown separately via sel_progress_message.
+    """
     body_contents = [
         FlexText(
             text='Other Progress\n其他進度',
@@ -3785,27 +3788,45 @@ async def other_progress_message(user_id: str) -> FlexMessage:
             )
         )
 
-    # SEL 已擴充為六個獨立單元（sel1..sel6），每個單元各 5 題。
-    # 進度顯示時，分別列出每個單元已作答題數。
+    return FlexMessage(
+        altText='Other Progress / 其他進度',
+        contents=FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=body_contents
+            )
+        )
+    )
+
+
+async def sel_progress_message(user_id: str) -> FlexMessage:
+    """Show SEL progress for all six units (sel1-sel6).
+    Display order matches the updated SEL menu: Monopoly, Life, Piranha, Tower, FLIP, Seven!
+    Data keys (sel1.json, sel2.json, ...) are unchanged; only the display order is new.
+    """
     SEL_QUESTION_COUNT = 5
+    # New display order: Monopoly(sel1), Life(sel2), Piranha(sel5), Tower(sel4), FLIP(sel3), Seven!(sel6)
     SEL_UNITS = [
         ('sel1', 'Monopoly / 地產大亨'),
         ('sel2', 'The Game of Life / 生命之旅'),
-        ('sel3', 'FLIP / 換言一新'),
-        ('sel4', 'Balancing Tower / 驚險塔'),
         ('sel5', 'Piranha Plant / 食人花'),
+        ('sel4', 'Balancing Tower / 驚險塔'),
+        ('sel3', 'FLIP / 換言一新'),
         ('sel6', 'Seven!'),
     ]
-    body_contents.append(
+
+    body_contents = [
         FlexText(
-            text='SEL',
+            text='SEL Progress\nSEL進度',
             wrap=True,
-            size='md',
             weight='bold',
-            color='#1a1a2e',
-            margin='lg',
-        )
-    )
+            size='xl',
+            align='center',
+        ),
+    ]
+
     for sel_cat, sel_label in SEL_UNITS:
         unit_answered = 0
         for q_idx in range(SEL_QUESTION_COUNT):
@@ -3815,17 +3836,16 @@ async def other_progress_message(user_id: str) -> FlexMessage:
         unit_color = '#00aa00' if unit_answered == SEL_QUESTION_COUNT else '#5b5b5b'
         body_contents.append(
             FlexText(
-                text=f'  - {sel_label}: {unit_answered}/{SEL_QUESTION_COUNT}',
+                text=f'{sel_label}: {unit_answered}/{SEL_QUESTION_COUNT}',
                 wrap=True,
-                size='sm',
+                size='md',
                 color=unit_color,
-                margin='sm',
+                margin='lg',
             )
         )
-    # ===== [End Change 2] =====
 
     return FlexMessage(
-        altText='Other Progress / 其他進度',
+        altText='SEL Progress / SEL進度',
         contents=FlexBubble(
             size='mega',
             body=FlexBox(

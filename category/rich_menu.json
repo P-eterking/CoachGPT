@@ -22,10 +22,10 @@
             "actions": [
                 { "type": "switch", "label": "pretest", "alias_id": "pretest" },
                 { "type": "switch", "label": "Game Mode", "alias_id": "game_lobby" },
+                { "type": "switch", "label": "SEL", "alias_id": "sel" },
                 { "type": "switch", "label": "posttest", "alias_id": "posttest" },
-                { "type": "switch", "label": "Other", "alias_id": "menu_other" },
                 { "type": "postback", "label": "progress", "data": "action=progress_select" },
-                { "type": "switch", "label": "admin", "alias_id": "game_admin" }
+                { "type": "switch", "label": "Other", "alias_id": "menu_other" }
             ]
         },
         "game_lobby": {
@@ -63,7 +63,7 @@
             "actions": [
                 { "type": "switch", "label": "exercises", "alias_id": "exercises" },
                 { "type": "switch", "label": "chat", "alias_id": "chat" },
-                { "type": "switch", "label": "sel", "alias_id": "sel" },
+                { "type": "switch", "label": "admin", "alias_id": "game_admin" },
                 {},
                 {},
                 { "type": "switch", "label": "Back", "alias_id": "menu_game" }
@@ -465,7 +465,7 @@
                 { "type": "postback", "label": "save", "data": "action=save" },
                 { "type": "postback", "label": "reload", "data": "action=reload" },
                 {},
-                { "type": "switch", "label": "menu", "alias_id": "menu_game" }
+                { "type": "switch", "label": "menu", "alias_id": "menu_other" }
             ]
         },
         "game_enabled": {
@@ -525,9 +525,9 @@
             "chat_bar_text": "Enabled",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "sel3", "data": "action=enabled&alias=sel3" },
-                { "type": "postback", "label": "sel4", "data": "action=enabled&alias=sel4" },
                 { "type": "postback", "label": "sel5", "data": "action=enabled&alias=sel5" },
+                { "type": "postback", "label": "sel4", "data": "action=enabled&alias=sel4" },
+                { "type": "postback", "label": "sel3", "data": "action=enabled&alias=sel3" },
                 { "type": "switch", "label": "prev", "alias_id": "game_enabled4" },
                 { "type": "switch", "label": "next", "alias_id": "game_enabled6" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
@@ -603,9 +603,9 @@
             "chat_bar_text": "Respond",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "sel3", "data": "action=respond&alias=sel3" },
-                { "type": "postback", "label": "sel4", "data": "action=respond&alias=sel4" },
                 { "type": "postback", "label": "sel5", "data": "action=respond&alias=sel5" },
+                { "type": "postback", "label": "sel4", "data": "action=respond&alias=sel4" },
+                { "type": "postback", "label": "sel3", "data": "action=respond&alias=sel3" },
                 { "type": "switch", "label": "prev", "alias_id": "game_respond4" },
                 { "type": "switch", "label": "next", "alias_id": "game_respond6" },
                 { "type": "switch", "label": "menu", "alias_id": "game_admin" }
@@ -761,10 +761,10 @@
             "actions": [
                 { "type": "postback", "label": "Monopoly", "data": "action=sel_unit&unit=1" },
                 { "type": "postback", "label": "Life", "data": "action=sel_unit&unit=2" },
-                { "type": "postback", "label": "FLIP", "data": "action=sel_unit&unit=3" },
+                { "type": "postback", "label": "Piranha", "data": "action=sel_unit&unit=5" },
                 {},
                 { "type": "switch", "label": "next", "alias_id": "sel-2" },
-                { "type": "switch", "label": "back", "alias_id": "menu_other" }
+                { "type": "switch", "label": "back", "alias_id": "menu_game" }
             ]
         },
         "sel-2": {
@@ -773,11 +773,11 @@
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "Tower", "data": "action=sel_unit&unit=4" },
-                { "type": "postback", "label": "Piranha", "data": "action=sel_unit&unit=5" },
+                { "type": "postback", "label": "FLIP", "data": "action=sel_unit&unit=3" },
                 { "type": "postback", "label": "Seven!", "data": "action=sel_unit&unit=6" },
                 { "type": "switch", "label": "prev", "alias_id": "sel" },
                 {},
-                { "type": "switch", "label": "back", "alias_id": "menu_other" }
+                { "type": "switch", "label": "back", "alias_id": "menu_game" }
             ]
         },
         "sel1": {
@@ -816,7 +816,7 @@
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
                 { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
-                { "type": "switch", "label": "back", "alias_id": "sel" }
+                { "type": "switch", "label": "back", "alias_id": "sel-2" }
             ]
         },
         "sel4": {
@@ -842,7 +842,7 @@
                 { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
                 { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
                 { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
-                { "type": "switch", "label": "back", "alias_id": "sel-2" }
+                { "type": "switch", "label": "back", "alias_id": "sel" }
             ]
         },
         "sel6": {

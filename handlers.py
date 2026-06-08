@@ -21,6 +21,8 @@ from utils.message_utils import (
     game_progress_message, other_progress_message,
     # Pretest / Posttest detailed progress (split by section)
     pretest_progress_message, posttest_progress_message,
+    # SEL detailed progress (separate card, new display order)
+    sel_progress_message,
     # Game lobby info messages
     game_story_message, game_characters_message, game_structure_message,
     # Helper for building tiered reference answer prompt section
@@ -1881,6 +1883,10 @@ async def handle_postback(event):
         category = vars.get('category', '')
         if category == 'game':
             await send_message(event, await game_progress_message(user_id))
+        elif category == 'sel':
+            # SEL 進度現在是獨立卡片，以新排列順序顯示各單元完成情況。
+            # SEL progress is now a standalone card showing completion per unit in the new display order.
+            await send_message(event, await sel_progress_message(user_id))
         elif category == 'other':
             await send_message(event, await other_progress_message(user_id))
         elif category == 'pretest':
