@@ -49,6 +49,32 @@ class ImprovementHintResponse(BaseModel):
         default=""
     )
 
+# ========== 語音表達評估回應模型 (僅 service6) ==========
+class PronunciationAssessment(BaseModel):
+    """語音表達綜合評估 (發音、語調與重音、流暢度)，僅 service6 使用。
+    透過將音訊直接送入 GPT-4o 進行多模態分析，評估學生的口說表現。
+    """
+    pronunciation_score: int = Field(
+        description="Pronunciation score (1-10): accuracy, clarity, naturalness of individual sounds",
+        ge=1, le=10
+    )
+    intonation_score: int = Field(
+        description="Intonation & stress score (1-10): pitch patterns, stress placement, rhythm",
+        ge=1, le=10
+    )
+    fluency_score: int = Field(
+        description="Fluency score (1-10): speech continuity, pace, smoothness, absence of unnecessary pauses",
+        ge=1, le=10
+    )
+    pronunciation_feedback_eng: str = Field(
+        description="English feedback on pronunciation, intonation and fluency with specific improvement suggestions",
+        default=""
+    )
+    pronunciation_feedback_chi: str = Field(
+        description="繁體中文語音表達回饋，包含發音、語調和流暢度的具體改善建議",
+        default=""
+    )
+
 # RAG 切片模型
 class RagChunk(BaseModel):
     content: str = Field(description="切片後的文本內容")

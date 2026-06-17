@@ -44,12 +44,14 @@ from utils.message_utils import (
     chat_welcome_message, chat_topic_intro_message,
     # SEL 單元介紹卡片
     sel_unit_intro_message,
+    # 語音表達評估提示詞 (service6)
+    PRONUNCIATION_ASSESSMENT_INSTRUCTION,
 )
 from utils.models import (
     ChatSummary, ChatSummaryAndScore, SpeechAssessment, GameResponse,
     # Response models
     NPCChatResponse, NPCChatEvaluation, QuestionAnswerResponse, GameInteractionLog,
-    ImprovementHintResponse
+    ImprovementHintResponse, PronunciationAssessment
 )
 from utils.file_utils import *
 from utils.file_utils import (
@@ -63,6 +65,8 @@ from utils.file_utils import (
     # 逐題模式開關、SEL 語言選擇開關、跨關卡未作答題目查找
     is_one_by_one, is_sel_language_selection_enabled,
     get_first_never_answered_question_global,
+    # 語音表達評估開關 (service6)
+    is_pronunciation_assessment_enabled,
 )
 import tempfile
 import time
@@ -181,6 +185,84 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
             prompt="This is an English educational game. The user may say alphanumeric codes like CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. Transcribe exactly what is spoken in English without translation.",
         )
         return transcript_obj.text.strip()
+
+
+# ========== 語音表達綜合評估 (Pronunciation Assessment - service6 only) ==========
+# 將學生的原始音訊送入 GPT-4o-audio-preview 進行多模態分析，
+# 評估發音、語調與重音、流暢度三個維度。僅在 pronunciation_assessment_enabled=True 時執行。
+
+async def assess_pronunciation(
+    message_content: bytes,
+    transcribed_text: str,
+    question_text: str = "",
+) -> 'PronunciationAssessment | None':
+    """對學生的語音進行發音 / 語調 / 流暢度的綜合評估。
+    message_content: LINE 傳來的原始音訊 (m4a)。
+    transcribed_text: 已轉錄的文字（作為輔助參考）。
+    question_text: 學生回答的題目文字（作為語境參考）。
+    回傳 PronunciationAssessment；若評估失敗則回傳 None（不影響主流程）。
+    """
+    try:
+        # 將 m4a 轉為 mp3 base64（GPT-4o-audio-preview 接受 mp3 格式）
+        audio_base64 = convert_m4a_to_mp3_base64(message_content)
+
+        context_text = ""
+        if question_text:
+            context_text += f"<question>{question_text}</question>\n"
+        if transcribed_text:
+            context_text += f"<transcription>{transcribed_text}</transcription>"
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-audio-preview",
+            modalities=["text"],
+            max_completion_tokens=512,
+            temperature=0.3,
+            messages=[
+                {
+                    "role": "system",
+                    "content": PRONUNCIATION_ASSESSMENT_INSTRUCTION,
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": audio_base64,
+                                "format": "mp3",
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": context_text if context_text else "Please assess the pronunciation of this audio.",
+                        },
+                    ],
+                },
+            ],
+        )
+
+        raw = response.choices[0].message.content
+        if not raw:
+            print("[PronunciationAssessment] Empty response from model.")
+            return None
+
+        # 清理可能的 markdown 包裹
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3].strip()
+
+        import json as _json
+        data = _json.loads(cleaned)
+        return PronunciationAssessment(**data)
+
+    except Exception as e:
+        print(f"[PronunciationAssessment] Error: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 
 # 儲存尚未完成綁定的使用者資料暫存，key 為 user_id，value 為已填寫的資料列表
 user_data_enter = {}
@@ -703,13 +785,20 @@ async def handle_audio_message(event):
             assessment.transcript = text
             assessment.timestamp = time.time()
 
+            # ===== 語音表達評估 (僅 service6) =====
+            _pron_result_pp = None
+            if is_pronunciation_assessment_enabled():
+                _pron_result_pp = await assess_pronunciation(
+                    message_content, text, question_text=question.text
+                )
+
             history_key = f'{category}-{sub}'
             updateHistory(user_id, history_key, assessment)
 
             if should_show_feedback(base_cat):
-                await send_message(event, await result_message(assessment, category, sub, show_feedback=True))
+                await send_message(event, await result_message(assessment, category, sub, show_feedback=True, pronunciation_data=_pron_result_pp))
             else:
-                await send_message(event, await result_message(assessment, category, sub, show_feedback=False))
+                await send_message(event, await result_message(assessment, category, sub, show_feedback=False, pronunciation_data=_pron_result_pp))
 
             await save_user_data()
             return
@@ -831,14 +920,21 @@ async def handle_audio_message(event):
             assessment.better_ans = ""
             if _sel_language == 'chi':
                 assessment.eng_suggestion = ""
+
+        # ===== 語音表達評估 (僅 service6) =====
+        _pron_result_ex = None
+        if is_pronunciation_assessment_enabled():
+            _pron_result_ex = await assess_pronunciation(
+                message_content, text, question_text=question.text
+            )
         
         history_key = f'{category}-{sub}'
         updateHistory(user_id, history_key, assessment)
         
         if should_show_feedback(category):
-            await send_message(event, await result_message(assessment, category, sub, show_feedback=True, sel_language=_sel_language))
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=True, sel_language=_sel_language, pronunciation_data=_pron_result_ex))
         else:
-            await send_message(event, await result_message(assessment, category, sub, show_feedback=False, sel_language=_sel_language))
+            await send_message(event, await result_message(assessment, category, sub, show_feedback=False, sel_language=_sel_language, pronunciation_data=_pron_result_ex))
         
         # Save user data
         await save_user_data()
@@ -1046,7 +1142,8 @@ async def handle_npc_chat(event, user_id, user_state):
             evaluate_and_save_npc_chat(
                 event, user_id, theme_id, npc_idx, npc_info,
                 text, quick_res.npc_reply, quick_res.is_english,
-                history_key
+                history_key,
+                message_content=message_content
             )
         )
         
@@ -1057,7 +1154,8 @@ async def handle_npc_chat(event, user_id, user_state):
         await send_text_message(event, "系統發生錯誤，請聯絡管理員。\nSystem error, please contact admin.")
 
 async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info,
-                                       user_text, npc_reply, is_english, history_key):
+                                       user_text, npc_reply, is_english, history_key,
+                                       message_content=None):
     """Async evaluation and save NPC chat (background, non-blocking)"""
     try:
         # Get theme context for evaluation
@@ -1095,6 +1193,14 @@ async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info
             better_ans=npc_reply,
             timestamp=time.time()
         )
+
+        # ===== 語音表達評估 (僅 service6，非同步背景執行) =====
+        _pron_result_npc = None
+        if is_pronunciation_assessment_enabled() and message_content:
+            _pron_result_npc = await assess_pronunciation(
+                message_content, user_text
+            )
+
         updateHistory(user_id, history_key, assessment)
         
         # Save to dedicated NPC chat record
@@ -1134,6 +1240,18 @@ async def evaluate_and_save_npc_chat(event, user_id, theme_id, npc_idx, npc_info
         
         if eval_message and should_show_feedback('rag_test'):
             await send_message(event, eval_message)
+
+        # ===== 語音表達評估回饋 (僅 service6，NPC 對話後額外顯示) =====
+        if _pron_result_npc is not None:
+            from utils.message_utils import build_pronunciation_result_bubbles
+            from linebot.v3.messaging import FlexMessage, FlexCarousel
+            pron_bubbles = build_pronunciation_result_bubbles(_pron_result_npc)
+            if pron_bubbles and should_show_feedback('rag_test'):
+                pron_msg = FlexMessage(
+                    altText='Speech Assessment / 語音表達評估',
+                    contents=FlexCarousel(contents=pron_bubbles)
+                )
+                await send_message(event, pron_msg)
         
     except Exception as e:
         print(f"NPC Chat Evaluation Error: {e}")
@@ -1257,6 +1375,14 @@ async def handle_game_answer(event, user_id, user_state):
             better_ans=answer_res.reference_comparison if answer_res.reference_comparison else "",
             timestamp=time.time()
         )
+
+        # ===== 語音表達評估 (僅 service6) =====
+        _pron_result_game = None
+        if is_pronunciation_assessment_enabled():
+            _step = 'pronunciation_assessment'
+            _pron_result_game = await assess_pronunciation(
+                message_content, text, question_text=question_text
+            )
         
         _step = 'update_history'
         history_key = f'{theme_id}-{level_idx}-{question_idx}'
@@ -1321,7 +1447,8 @@ async def handle_game_answer(event, user_id, user_state):
             answer_res.score, is_new_high,
             feedback_chi=answer_res.feedback_chi if answer_res.feedback_chi else "",
             feedback_eng=answer_res.feedback_eng if answer_res.feedback_eng else "",
-            show_feedback=should_show_feedback('rag_test')
+            show_feedback=should_show_feedback('rag_test'),
+            pronunciation_assessment=_pron_result_game
         ))
         
         # 僅在逐關解鎖模式 (one_by_one=True) 顯示解鎖通知；

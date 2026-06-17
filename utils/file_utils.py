@@ -89,7 +89,11 @@ DEFAULT_CONFIG = {
     # 設為 True 時，SEL audio 評分會把 assessment_standard 解析為十級結構後，
     # 格式化為「Score X examples:」few-shot 區塊（與情境解謎遊戲一致）；
     # 設為 False 時 SEL 走與一般練習相同的純字串路徑。
-    'use_tiered_standard_for_sel': True
+    'use_tiered_standard_for_sel': True,
+    # (4) pronunciation_assessment_enabled: 控制是否啟用語音表達綜合評估（發音 / 語調 / 流暢度）。
+    # 設為 True 時，學生的語音回覆會額外送入 GPT-4o 進行多模態分析，產生發音相關的評分與回饋。
+    # 預設 False；目前僅在 service6 中啟用。不影響 service1-5。
+    'pronunciation_assessment_enabled': False
 }
 
 # 設定檔案
@@ -532,8 +536,16 @@ def load_guide_content(guide_path: str = 'category/chatbot_guide.md') -> str:
 
 
 def is_fallback_guide_enabled() -> bool:
-    """判斷是否為 service4/5，以決定是否啟用引導型客服機器人 fallback 功能。"""
-    return config.get('service_number', 1) in [4, 5]
+    """判斷是否為 service4/5/6，以決定是否啟用引導型客服機器人 fallback 功能。"""
+    return config.get('service_number', 1) in [4, 5, 6]
+
+
+def is_pronunciation_assessment_enabled() -> bool:
+    """判斷是否啟用語音表達綜合評估（發音 / 語調與重音 / 流暢度）。
+    透過 config.json 的 pronunciation_assessment_enabled 旗標控制，
+    目前僅在 service6 中預設開啟，不影響 service1-5。
+    """
+    return config.get('pronunciation_assessment_enabled', False)
 
 def get_game_info_config() -> dict:
     """取得遊戲大廳介紹所需的媒體設定"""

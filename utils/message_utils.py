@@ -8,7 +8,7 @@ from linebot.v3.messaging import (
 from manager.richmenu import *
 from linebot.v3.messaging.exceptions import ApiException
 from linebot.v3.messaging.models import SetWebhookEndpointRequest
-from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse
+from utils.models import ChatSummary, QuestionSet, SpeechAssessment, NPCChatResponse, QuestionAnswerResponse, ImprovementHintResponse, PronunciationAssessment
 import json
 # 用於 rich menu 建立時的節流與重試延遲。
 import asyncio
@@ -642,6 +642,77 @@ Output MUST be valid JSON:
 {{
   "hint_eng": "English improvement hint that guides without revealing the answer",
   "hint_chi": "Traditional Chinese improvement hint that guides without revealing the answer"
+}}
+"""
+
+# ========== 語音表達綜合評估提示詞 (Pronunciation Assessment Instruction) ==========
+# 僅 service6 使用。將學生的原始音訊送入 GPT-4o 進行多模態分析，
+# 評估發音 (Pronunciation)、語調與重音 (Intonation & Stress)、流暢度 (Fluency) 三個維度。
+# 評分量表來源：語音表達與流暢性十級評分表 (1781693819595_image.png)。
+PRONUNCIATION_ASSESSMENT_INSTRUCTION = """
+You are a professional speech and pronunciation assessment expert for Taiwanese non-native English-speaking college students. You will receive the student's AUDIO recording and its transcription.
+
+Your task: Listen carefully to the audio and evaluate the student's SPOKEN English on THREE dimensions, each scored 1-10.
+
+=== DIMENSION 1: PRONUNCIATION (1-10) ===
+Evaluate the accuracy, clarity, and naturalness of the student's pronunciation of individual sounds and words.
+
+10 - Accurate pronunciation with no noticeable errors; clear and natural delivery.
+9  - Clear pronunciation with only very slight deviations; no impact on comprehension.
+8  - Mostly accurate; only a few minor pronunciation deviations with minimal impact.
+7  - Basic intelligibility, but some words or syllables are unclear or indistinct.
+6  - Many pronunciation errors that partially affect comprehension.
+5  - Frequent pronunciation errors; listener must often re-listen to understand parts.
+4  - Severe pronunciation errors; most content is difficult to understand.
+3  - Pronunciation is unclear; unable to recognize most of the content.
+2  - Can only produce simple syllables; cannot express or complete meaningful words.
+1  - No recognizable pronunciation or speech.
+
+=== DIMENSION 2: INTONATION & STRESS (1-10) ===
+Evaluate whether the student's speech patterns, pitch variations, and stress placement are natural and help convey meaning.
+
+10 - Smooth and natural intonation; stress is placed appropriately, demonstrating strong language command.
+9  - Natural intonation; stress placement has only minor, inconspicuous deviations; overall expression is good.
+8  - Generally reasonable intonation, but occasionally sounds stiff or unnatural.
+7  - Inconsistent intonation; stress placement has noticeable errors.
+6  - Stiff or incorrect intonation; stress placement frequently deviates from natural patterns.
+5  - Monotone or completely incorrect stress patterns; expression sounds rigid.
+4  - Almost no intonation variation; frequent stress errors.
+3  - Fundamental errors in intonation and stress; speech cannot be properly understood.
+2  - No intonation or stress patterns at all.
+1  - No intonation, stress, or any recognizable linguistic features.
+
+=== DIMENSION 3: FLUENCY (1-10) ===
+Evaluate whether the student's speech is continuous and smooth, with appropriate pace and without unnecessary pauses or hesitations.
+
+10 - Completely continuous speech; natural pace with no noticeable pauses or hesitation.
+9  - Smooth and fluent; only occasional minor pauses or slight rhythm variations.
+8  - Generally fluent, but with a few noticeable pauses or hesitations.
+7  - Some discontinuity; slower pace with frequent pauses.
+6  - Disconnected speech; frequent pauses; delivery feels labored and unstable.
+5  - Frequent pauses; sentences are often incomplete; delivery is unsteady.
+4  - Difficult to complete basic expressions; almost every sentence has noticeable stops.
+3  - Speech is labored; almost unable to form complete sentences.
+2  - Can only occasionally produce single words or short phrases; unable to sustain speech.
+1  - Completely unable to produce any meaningful speech.
+
+=== FEEDBACK RULES ===
+1. Provide SPECIFIC, ACTIONABLE improvement suggestions for pronunciation, intonation, and fluency.
+2. If a particular word was mispronounced, mention the word and suggest the correct pronunciation.
+3. If pauses or hesitations were noticed, suggest practice techniques (e.g., shadowing, reading aloud).
+4. If intonation was flat or unnatural, suggest focusing on sentence stress and rising/falling patterns.
+5. Be encouraging - acknowledge what the student did well before suggesting improvements.
+6. All Chinese MUST be Traditional Chinese (zh-TW), NEVER Simplified Chinese.
+7. Keep each feedback field to 2-4 sentences - concise but specific.
+
+=== OUTPUT FORMAT ===
+Output MUST be valid JSON:
+{{
+  "pronunciation_score": 7,
+  "intonation_score": 6,
+  "fluency_score": 8,
+  "pronunciation_feedback_eng": "English feedback with specific improvement suggestions for pronunciation, intonation and fluency",
+  "pronunciation_feedback_chi": "繁體中文語音表達回饋，包含發音、語調和流暢度的具體改善建議"
 }}
 """
 
@@ -1370,10 +1441,144 @@ async def sel_language_select_message(unit_num: int):
     )
 
 
+# ========== 語音表達評估結果卡片建構 (Pronunciation assessment result card) ==========
+# 僅在 service6 且 pronunciation_assessment_enabled=True 時使用。
+# 顯示發音、語調與重音、流暢度三項評分及具體回饋。
+
+def _pronunciation_score_color(score: int) -> str:
+    """根據分數回傳對應顏色碼。"""
+    if score >= 8:
+        return '#00aa00'
+    elif score >= 5:
+        return '#ff8800'
+    return '#ff0000'
+
+
+def build_pronunciation_result_bubbles(pron_data) -> list:
+    """從 PronunciationAssessment 物件建構 Flex bubbles。
+    pron_data: PronunciationAssessment 物件（獨立於 SpeechAssessment，避免 schema 污染）。
+    若傳入 None 則回傳空清單（不影響原有結果顯示）。
+    """
+    if pron_data is None:
+        return []
+
+    p_score = getattr(pron_data, 'pronunciation_score', None)
+    i_score = getattr(pron_data, 'intonation_score', None)
+    f_score = getattr(pron_data, 'fluency_score', None)
+    if p_score is None or i_score is None or f_score is None:
+        return []
+
+    bubbles = []
+
+    # 評分總覽卡
+    score_contents = [
+        FlexText(
+            text='Speech Assessment\n語音表達評估',
+            wrap=True,
+            weight='bold',
+            size='xl',
+            align='center',
+        ),
+        FlexSeparator(margin='md'),
+        FlexBox(
+            layout='horizontal',
+            margin='lg',
+            contents=[
+                FlexText(text='Pronunciation\n發音', wrap=True, size='sm', flex=3, align='center'),
+                FlexText(
+                    text=f'{p_score}/10',
+                    size='lg', weight='bold', flex=2, align='center',
+                    color=_pronunciation_score_color(p_score),
+                ),
+            ]
+        ),
+        FlexBox(
+            layout='horizontal',
+            margin='sm',
+            contents=[
+                FlexText(text='Intonation & Stress\n語調與重音', wrap=True, size='sm', flex=3, align='center'),
+                FlexText(
+                    text=f'{i_score}/10',
+                    size='lg', weight='bold', flex=2, align='center',
+                    color=_pronunciation_score_color(i_score),
+                ),
+            ]
+        ),
+        FlexBox(
+            layout='horizontal',
+            margin='sm',
+            contents=[
+                FlexText(text='Fluency\n流暢度', wrap=True, size='sm', flex=3, align='center'),
+                FlexText(
+                    text=f'{f_score}/10',
+                    size='lg', weight='bold', flex=2, align='center',
+                    color=_pronunciation_score_color(f_score),
+                ),
+            ]
+        ),
+    ]
+
+    score_bubble = FlexBubble(
+        size='mega',
+        body=FlexBox(
+            layout='vertical',
+            spacing='sm',
+            contents=score_contents,
+        )
+    )
+    bubbles.append(score_bubble)
+
+    # 英文回饋卡
+    fb_eng = getattr(pron_data, 'pronunciation_feedback_eng', None)
+    if fb_eng and fb_eng.strip():
+        eng_bubble = FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Speech Feedback\n語音表達回饋',
+                        wrap=True, weight='bold', size='lg',
+                    ),
+                    FlexText(
+                        text=fb_eng, wrap=True, size='md', color='#5b5b5b',
+                    ),
+                ]
+            )
+        )
+        bubbles.append(eng_bubble)
+
+    # 中文回饋卡
+    fb_chi = getattr(pron_data, 'pronunciation_feedback_chi', None)
+    if fb_chi and fb_chi.strip():
+        chi_bubble = FlexBubble(
+            size='mega',
+            body=FlexBox(
+                layout='vertical',
+                spacing='sm',
+                contents=[
+                    FlexText(
+                        text='Speech Feedback\n語音表達回饋',
+                        wrap=True, weight='bold', size='lg',
+                    ),
+                    FlexText(
+                        text=fb_chi, wrap=True, size='md', color='#5b5b5b',
+                    ),
+                ]
+            )
+        )
+        bubbles.append(chi_bubble)
+
+    return bubbles
+
+
 async def result_message(assessment: SpeechAssessment, category: str, sub: int,
-                         show_feedback: bool = None, sel_language: str = None):
+                         show_feedback: bool = None, sel_language: str = None,
+                         pronunciation_data=None):
     """顯示作答結果。score 卡片永遠顯示；feedback 卡片由 show_feedback 控制。
     若 show_feedback 為 None，退而使用全域 display_feedback 設定。
+    pronunciation_data: PronunciationAssessment 物件 (僅 service6 傳入，其餘為 None)。
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     _sel = _is_sel_cat(category)
@@ -1491,6 +1696,11 @@ async def result_message(assessment: SpeechAssessment, category: str, sub: int,
                 )
             )
             bubbles.append(better_bubble)
+
+    # ===== 語音表達評估結果 (僅 service6 且有資料時顯示) =====
+    pronunciation_bubbles = build_pronunciation_result_bubbles(pronunciation_data)
+    if pronunciation_bubbles:
+        bubbles.extend(pronunciation_bubbles)
     
     msg = FlexMessage(
         altText=f'Q{sub + 1} Result',
@@ -2274,10 +2484,12 @@ async def game_answer_card_message(
 
 async def game_score_message(user_id: str, theme_id: str, level_idx: int, question_idx: int, 
                              score: int, is_new_high: bool, feedback_eng: str = "", feedback_chi: str = "",
-                             reference_comparison: str = "", show_feedback: bool = None) -> FlexMessage:
+                             reference_comparison: str = "", show_feedback: bool = None,
+                             pronunciation_assessment=None) -> FlexMessage:
     """Show game result and score - English feedback first, Chinese feedback second.
     Score card always renders; feedback cards are controlled by show_feedback.
     Falls back to global display_feedback when show_feedback is None.
+    pronunciation_assessment: PronunciationAssessment 物件 (僅 service6 傳入)。
     """
     display_feedback = show_feedback if show_feedback is not None else get_display_feedback()
     theme_total = get_user_game_score(user_id, theme_id)
@@ -2434,6 +2646,12 @@ async def game_score_message(user_id: str, theme_id: str, level_idx: int, questi
                 )
             )
             bubbles.append(ref_bubble)
+
+    # ===== 語音表達評估結果 (僅 service6 且有資料時顯示) =====
+    if pronunciation_assessment is not None:
+        pron_bubbles = build_pronunciation_result_bubbles(pronunciation_assessment)
+        if pron_bubbles:
+            bubbles.extend(pron_bubbles)
     
     msg = FlexMessage(
         altText=f'Topic {topic_num} Q{level_idx + 1}-{question_idx + 1} Result',
