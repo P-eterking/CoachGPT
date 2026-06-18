@@ -695,7 +695,7 @@ Evaluate whether the student's speech is continuous and smooth, with appropriate
 3  - Speech is labored; almost unable to form complete sentences.
 2  - Can only occasionally produce single words or short phrases; unable to sustain speech.
 1  - Completely unable to produce any meaningful speech.
-
+ 
 === FEEDBACK RULES ===
 1. Provide SPECIFIC, ACTIONABLE improvement suggestions for pronunciation, intonation, and fluency.
 2. If a particular word was mispronounced, mention the word and suggest the correct pronunciation.

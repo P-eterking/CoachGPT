@@ -244,7 +244,7 @@ class GameScores(BaseModel):
         theme = self.themes[theme_id]
         if level_idx not in theme.levels:
             return False
-        
+         
         level = theme.levels[level_idx]
         if level.check_completion(questions_per_level, min_score_per_question):
             level.completed = True

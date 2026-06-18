@@ -924,7 +924,7 @@ def get_first_never_answered_question_global(user_id: str, theme_id: str) -> tup
             # 已存在但嘗試次數為 0 的極端情況也視為未作答
             if level.questions[q_idx].attempts <= 0:
                 return (level_idx, q_idx)
-
+ 
     # 所有題目皆至少作答過一次
     return (-1, -1)
 

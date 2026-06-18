@@ -185,7 +185,7 @@ async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
             prompt="This is an English educational game. The user may say alphanumeric codes like CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. Transcribe exactly what is spoken in English without translation.",
         )
         return transcript_obj.text.strip()
-
+ 
 
 # ========== 語音表達綜合評估 (Pronunciation Assessment - service6 only) ==========
 # 將學生的原始音訊送入 GPT-4o-audio-preview 進行多模態分析，
