@@ -4216,7 +4216,7 @@ CHI_HINT = [
 ]
 
 ENG_HINT =[
-    'Enter your class number\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
+    'Enter your class number\n1. Board Game Design Class A\n2. Board Game Design Class B\n3. British Culture Class A\n4. British Culture Class B\n5. Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to previous step.',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to previous step.',
     'Next, what is you name?\nFor example: Paul Wang\nEnter "Back" to previous step.',
