@@ -4209,7 +4209,7 @@ async def posttest_progress_message(user_id: str) -> FlexMessage:
 # ========== [END] Game Message Functions ==========
 
 CHI_HINT = [
-    'Please enter your class number\n請依照指示輸入你的課程編號\n1. Board Game Design Class A(4-12)\n2. Board Game Design Class B(4-34)\n3. British Culture Class A(5-12)\n4. British Culture Class B(5-34)\n5. Others',
+    'Please enter your class number\n請依照指示輸入你的課程編號\n1. Board Game Design Class A\n2. Board Game Design Class B\n3. British Culture Class A\n4. British Culture Class B\n5. Others',
     'Next, what is your department?\nFor example: Information Management\nEnter "Back" to go back.\n接著，請輸入你的系級\n如：資管一乙\n輸入 "Back" 可返回上一步',
     'Next, what is your student ID?\nFor example: 11352237\nEnter "Back" to go back.\n接著，請輸入你的學號\n如：11352237\n輸入 "Back" 可返回上一步',
     'Next, what is your name?\nFor example: Paul Wang\nEnter "Back" to go back.\n接著，請輸入你的姓名\n如：王聰明\n輸入 "Back" 可返回上一步',
