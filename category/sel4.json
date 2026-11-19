@@ -1,4 +1,11 @@
 {
+    "sel_unit": {
+        "name_eng": "Feelinks 2.0",
+        "name_chi": "同感 2.0",
+        "image": "/templates/sel/feelink20.jpg",
+        "use_question_rubric_in_chinese": true,
+        "history_key_prefix": "sel4_feelinks"
+    },
     "content": [
         {
             "text": "Q1-1｜自我覺察\nRespond to the question:\nAfter playing Feelinks 2.0, what did you discover about your own feelings or thoughts?\n回答問題：\n玩完《同感2.0》後，你對自己的情緒或想法有什麼新的發現？",

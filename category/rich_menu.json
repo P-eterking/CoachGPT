@@ -772,7 +772,7 @@
             "chat_bar_text": "SEL",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
-                { "type": "postback", "label": "Tower", "data": "action=sel_unit&unit=4" },
+                { "type": "postback", "label": "Feelinks 2.0", "data": "action=sel_unit&unit=4" },
                 { "type": "postback", "label": "FLIP", "data": "action=sel_unit&unit=3" },
                 { "type": "postback", "label": "Seven!", "data": "action=sel_unit&unit=6" },
                 { "type": "switch", "label": "prev", "alias_id": "sel" },
@@ -821,7 +821,7 @@
         },
         "sel4": {
             "file": "preposttest.jpg",
-            "chat_bar_text": "Tower",
+            "chat_bar_text": "同感 2.0",
             "grid": { "rows": 2, "columns": 3 },
             "actions": [
                 { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
