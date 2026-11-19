@@ -47,6 +47,8 @@ DEFAULT_CONFIG = {
     # False = 不詢問，直接沿用預設（中文）進入單元。
     # 此開關僅影響 SEL 區塊（service4/5），不影響舊的 service1/2/3。
     'sel_language_selection_enabled': True,
+    # 僅 service4/5 的 SEL 前後測使用語言中立評分與自動語言轉錄。
+    'sel_test_language_neutral_scoring_enabled': False,
     # 遊戲大廳介紹媒體設定 (Game lobby intro media config)
     # 管理員可修改這些欄位來更新遊戲大廳頁面的內容
     'game_story_eng': (
@@ -295,7 +297,7 @@ FEATURE_DISPLAY_NAMES = {
     'sel1': 'SEL-地產大亨',
     'sel2': 'SEL-生命之旅',
     'sel3': 'SEL-換言一新',
-    'sel4': 'SEL-驚險塔',
+    'sel4': 'SEL-同感2.0',
     'sel5': 'SEL-食人花',
     'sel6': 'SEL-Seven!',
 }
@@ -565,6 +567,16 @@ def get_theme_display_number(theme_id: str) -> str:
 def is_level_card_image_enabled() -> bool:
     """是否啟用情境解謎模式 Topic-Level 卡片頂部圖片。"""
     return config.get('enable_level_card_image', True)
+
+
+def is_sel_test_language_neutral_scoring_enabled(category: str) -> bool:
+    """只允許明確啟用的 service4/5 SEL 前後測採用語言中立流程。"""
+    return (
+        category in ('pretest-sel', 'posttest-sel')
+        and config.get('rag_mode', False)
+        and config.get('service_number') in (4, 5)
+        and config.get('sel_test_language_neutral_scoring_enabled', False) is True
+    )
 
 
 def is_standard_newlines_fix_enabled() -> bool:

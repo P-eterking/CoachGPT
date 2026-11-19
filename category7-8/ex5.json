@@ -1,0 +1,70 @@
+{
+    "content": [
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nCan you describe what the team might be discussing during this meeting?\n- 你能描述這個會議中團隊可能在討論什麼嗎？",
+            "assessment_standard": "\n                    10\tThe team might be discussing the causes of the company’s declining quarterly performance, and analyzing financial trends such as reduced sales or increased costs. They could be focusing on identifying issues and proposing solutions to improve performance, like reallocating budgets or revising strategies.\n                    9\tThe team might be reviewing the company’s performance data, identifying reasons for the decline, and brainstorming possible solutions, such as adjusting budgets or improving operations.\n                    8\tThe team is analyzing performance charts to find out why results declined. They are discussing possible strategies, like cutting costs or improving sales efforts.\n                    7\tThe team is looking at charts to understand why the performance is worse. They are talking about ways to fix the problem.\n                    6\tThe team is talking about bad numbers. They are trying to find what caused it and how to fix it.\n                    5\tThe team talks about bad results and fixing them.\n                    4\tTalk about numbers going down.\n                    3\tBad numbers. Fix them.\n                    2\tBad charts.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-1.jpg",
+            "extra_info": [
+                [
+                    "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
+                    "您正在參加一場會議，並擔任團隊的會議紀錄員。團隊正在討論公司季度業績下滑的問題。團隊領導正在檢視財務圖表和數據趨勢，而站著的同事正在說明可能的原因。討論的重點是識別問題區域，例如銷售下降或成本上升，並集思廣益提出解決方案。協商內容可能包括重新分配預算、設定新優先事項或商定改善績效的下一步行動。"
+                ]
+            ]
+        },
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nWhat kind of negotiation might take place in this meeting?\n- 會議中可能會進行哪種類型的談判？",
+            "assessment_standard": "\n                    10\tThe negotiation might involve deciding how to reallocate budgets to focus on profitable areas or agreeing on adjustments to marketing and operational strategies. Team members may also discuss setting realistic performance goals and timelines to address the quarterly decline effectively.\n                    9\tThe team might negotiate reallocating budgets or deciding on priorities for upcoming projects. They could also discuss changes to strategies for improving performance.\n                    8\tThe team can talk about shifting money to important areas or changing plans to improve results. They could also decide on new goals.\n                    7\tThe team is discussing where to spend money and what changes to make to fix the problem.\n                    6\tThe team is talking about budgets and plans to improve performance.\n                    5\tThe team talks about budgets and changes.\n                    4\tTalk about spending and fixing problems.\n                    3\tBudget meeting.\n                    2\tMoney plans.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-1.jpg",
+            "extra_info": [
+                [
+                    "You are attending a meeting as the team’s note-taker. The team is discussing the company’s declining quarterly performance. The team leader is reviewing financial charts and data trends with the standing colleague, who is explaining potential causes. Discussions focus on identifying problem areas, such as reduced sales or rising costs, and brainstorming solutions. Negotiations might involve reallocating budgets, setting new priorities, or agreeing on next steps to improve performance.",
+                    "您正在參加一場會議，並擔任團隊的會議紀錄員。團隊正在討論公司季度業績下滑的問題。團隊領導正在檢視財務圖表和數據趨勢，而站著的同事正在說明可能的原因。討論的重點是識別問題區域，例如銷售下降或成本上升，並集思廣益提出解決方案。協商內容可能包括重新分配預算、設定新優先事項或商定改善績效的下一步行動。"
+                ]
+            ]
+        },
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nWhat concerns might travelers have about their plans, and how can these be addressed at the airport?\n- 旅客可能對他們的計劃有哪些擔憂，這些擔憂可以在機場如何解決？",
+            "assessment_standard": "\n                    10\tTravelers may be concerned about flight delays, cancellations, lost luggage, or unexpected travel restrictions. These concerns can be addressed by utilizing airport services such as real-time updates on flight boards, luggage assistance desks, and travel insurance counters for last-minute coverage.\n                    9\tTravelers might worry about delays, missing their connections, or baggage issues. The airport can assist with information boards, customer service desks, and insurance kiosks for last-minute needs.\n                    8\tSome passengers may worry about delayed flights or lost luggage. The airport staff and service desks can help address these problems.\n                    7\tThey might worry about late flights or losing their bags. Staff at the airport can help solve these problems.\n                    6\tThey are worried about their flights or bags. They can ask for help.\n                    5\tThey worry about flights and bags.\n                    4\tWorry about flight, ask staff help.\n                    3\tFlight bad. Help.\n                    2\tFlight.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-3.jpg",
+            "extra_info": [
+                [
+                    "You are observing activities in a busy airport terminal. Passengers are checking in or exchanging currency, and some are considering buying insurance for their travel plans.",
+                    "您正在觀察繁忙的機場航廈內的活動。乘客正在辦理登機手續或兌換貨幣，有些人正在考慮為旅行計劃購買保險。"
+                ]
+            ]
+        },
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nHow might passengers be preparing for their flights at the check-in counters?\n- 旅客可能會如何在登機櫃檯為航班做準備？",
+            "assessment_standard": "\n                    10\tPassengers might confirm their travel documents, check in their luggage, select seats, and verify any special requests, such as meal preferences or additional assistance. They may also inquire about flight updates or connecting flights.\n                    9\tPassengers may be preparing for their flights by checking their tickets, dropping off luggage, and confirming their seats. They might also ask about meal preferences or travel details.\n                    8\tPassengers could check in their bags, show their tickets, and talk to staff about their flights.\n                    7\tThey check tickets and bags and ask questions at the counter.\n                    6\tThey prepare tickets and bags for their flight.\n                    5\tThey check bags and tickets.\n                    4\tCheck bags and tickets.\n                    3\tBag check.\n                    2\tTicket.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-3.jpg",
+            "extra_info": [
+                [
+                    "You are observing activities in a busy airport terminal. Passengers are checking in or exchanging currency, and some are considering buying insurance for their travel plans.",
+                    "您正在觀察繁忙的機場航廈內的活動。乘客正在辦理登機手續或兌換貨幣，有些人正在考慮為旅行計劃購買保險。"
+                ]
+            ]
+        },
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nWhat information might the guests be providing to the front desk staff during check-in?\n- 客人在辦理入住手續時可能向前台人員提供什麼資訊？",
+            "assessment_standard": "\n                    10\tThe guests might be providing their reservation details, valid IDs, and payment information. They may also confirm the duration of their stay, specify room preferences, and mention any special needs, such as early check-in or accessibility requirements.\n                    9\tThe guests might share their reservation confirmation, ID, and payment details. They may also indicate specific room preferences or mention their length of stay.\n                    8\tThe guests provide their reservation number, ID, and payment. They might also mention their check-in and check-out dates.\n                    7\tThe guests give their ID and booking information and tell how long they are staying.\n                    6\tThe guests give their name and ID for check-in.\n                    5\tThe guests give their name and booking.\n                    4\tGive name, booking\n                    3\tName.\n                    2\tID.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-5.jpg",
+            "extra_info": [
+                [
+                    "You are observing interactions at the front desk of a busy hotel. Guests are checking in and asking for additional services during their stay.",
+                    "您正在觀察一家繁忙飯店前台的互動。客人正在辦理入住手續並詢問住宿期間的其他服務。"
+                ]
+            ]
+        },
+        {
+            "text": "請先閱讀右方情境說明再答題\nRead the scenario instructions on the right before answering.\n\nWhat additional services might guests request during their stay?\n- 客人在住宿期間可能會要求哪些額外服務？",
+            "assessment_standard": "10\tGuests might request room service, access to the gym or spa, laundry services, or assistance with booking local tours and transportation. They may also inquire about late check-out or upgrading their room.\n                    9\tThe guests might ask for room service, laundry, or help with booking transportation and tours. They might also request late check-out or room upgrades.\n                    8\tThe guests might ask for room service, access to the gym, or help with tours.\n                    7\tThe guests ask for food in their room or help with transportation.\n                    6\tThey ask for room service or help with booking.\n                    5\tThey want room service and help.\n                    4\tAsk for food, help.\n                    3\tFood.\n                    2\tRoom.\n                    1\t(Incomprehensible reply.)\n                    0\t(No response.)\n                ",
+            "image_url": "/templates/0/cover2-5.jpg",
+            "extra_info": [
+                [
+                    "You are observing interactions at the front desk of a busy hotel. Guests are checking in and asking for additional services during their stay.",
+                    "您正在觀察一家繁忙飯店前台的互動。客人正在辦理入住手續並詢問住宿期間的其他服務。"
+                ]
+            ]
+        }
+    ]
+}

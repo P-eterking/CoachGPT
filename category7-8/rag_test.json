@@ -1,0 +1,22 @@
+{
+    "content": [
+        {
+            "text": "Scenario: The Golden Lion statue has been stolen from the museum. You are interrogating Mr. Sterling, the Curator. He seems anxious.\n\nTask: Ask him about the security system and who had access to the gallery last night.",
+            "assessment_standard": "Roleplay participation",
+            "image_url": "/templates/rag_test/curator.jpg",
+            "max_score": 10
+        },
+        {
+            "text": "Scenario: You are now speaking to Jack, the Night Guard. He is defensive and looks tired.\n\nTask: Ask him why the alarm didn't go off and what he was doing between 2 AM and 4 AM.",
+            "assessment_standard": "Roleplay participation",
+            "image_url": "/templates/rag_test/guard.jpg",
+            "max_score": 10
+        },
+        {
+            "text": "Scenario: Finally, you question Ms. Vane, a wealthy donor who was seen arguing with the Curator yesterday.\n\nTask: Ask her about her relationship with the museum and where she was last night.",
+            "assessment_standard": "Roleplay participation",
+            "image_url": "/templates/rag_test/donor.jpg",
+            "max_score": 10
+        }
+    ]
+}

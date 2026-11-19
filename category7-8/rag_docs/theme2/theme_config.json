@@ -1,0 +1,153 @@
+{
+    "id": "theme2",
+    "name": "The Second-hand Market",
+    "prologue": "After the Westminster Abbey case, you receive an anonymous tip about a mysterious vintage market in East London. The Ghost has reportedly hidden clues about his next target among the antiques. You must navigate through the bustling Brick Lane Market, examining vintage postcards, ancient clocks, WWII artifacts, and royal memorabilia to uncover the location of the 'Time Treasure' before it falls into the wrong hands.",
+    "cover_image": "/templates/themes/theme2_cover.jpg",
+    "npcs": [
+        {
+            "id": "Dr. John Watson",
+            "name": "Dr. John Watson",
+            "persona": "A loyal and practical British army doctor who assists by reporting on physical evidence found at the scene and information gathered from vendors and locals with a helpful, curious demeanor.",
+            "file": "Theme_2_John_Watson.md",
+            "display_description": "Watson is a loyal British army doctor and Sherlock's trusted companion. He can provide information about physical evidence and local gossip from market vendors.",
+            "background": "Served in Afghanistan as an army doctor. Now assists Sherlock Holmes in solving mysteries around London.",
+            "image": "John_Watson.jpg"
+        },
+        {
+            "id": "Mycroft Holmes",
+            "name": "Mycroft Holmes",
+            "persona": "A condescending British official who is the embodiment of the Government, responsible for providing historical context and official records with an air of weary superiority.",
+            "file": "Theme_2_Mycroft_Holmes.md",
+            "display_description": "Mycroft is Sherlock's older brother and a senior British government official. He has access to classified historical archives and official records.",
+            "background": "The most powerful man in British government. His word can open any door in the realm.",
+            "image": "Mycroft_Holmes.jpg"
+        },
+        {
+            "id": "Sherlock Holmes",
+            "name": "Sherlock Holmes",
+            "persona": "An arrogant and hyper-observant British consulting detective who provides answers about precise visual details and deductions about artifacts while frequently insulting the user's lack of intellect.",
+            "file": "Theme_2_Sherlock_Holmes.md",
+            "display_description": "The world's only consulting detective. He notices every detail on vintage items and can deduce facts that others miss. Ask him about visual clues on antiques.",
+            "background": "221B Baker Street's famous detective. His methods of deduction are legendary.",
+            "image": "Sherlock_Holmes.jpg"
+        }
+    ],
+    "levels": [
+        {
+            "id": 0,
+            "title": "The Secret of the Vintage Postcards",
+            "description": "You arrive at the vintage market and approach a stall filled with old postcards. The vendor hands you a stack of vintage postcards that have traveled across the UK (York, Cambridge, Nottingham), but only one contains the key to the first clue. You must examine them carefully to find the hidden message.",
+            "video_file": "Theme_2_Level_1_video.mp4",
+            "questions": [
+                {
+                    "text": "Which city's postcard has a strange hidden symbol in the postmark?",
+                    "hint": "",
+                    "reference_answer": "10\tThe postcard from the city of York contains the strange hidden symbol in its postmark.|I can clearly see that the postcard from York features the hidden symbol.|According to the clues, the hidden symbol is located on the York postcard.\n9\tThe postcard from York has a strange hidden symbol.|York's postcard is the one with the hidden symbol.|The city whose postcard has the hidden symbol is York.\n8\tThe hidden symbol is on the York postcard.|I believe the city is York.|You can find the symbol on the postcard from York.\n7\tIt is the postcard from York.|The answer is the city of York.|York has the hidden symbol.\n6\tThe York postcard.|The city of York.|Just York.\n5\tA city called York.|Maybe it is York.|The postcard from a place like York.\n4\tYork.|City of York.|The York one.\n3\tA city.|Some town.|A postcard.\n2\tCity.|Place.|Postmark.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "What animal symbol is hidden in the postmark?",
+                    "hint": "",
+                    "reference_answer": "10\tThe specific animal symbol hidden within the postmark is a cat.|I can clearly see that a cat symbol is hidden in the postmark.|Based on the visual evidence, the hidden animal symbol is a cat.\n9\tThe animal symbol hidden in the postmark is a cat.|A cat symbol is cleverly hidden within the postmark.|The hidden animal is definitely a cat.\n8\tThe hidden symbol is a cat.|I think the animal is a cat.|It looks like a cat symbol.\n7\tIt is a cat symbol.|The animal is a cat.|You can see a cat.\n6\tA cat symbol.|The cat.|Just a cat.\n5\tSome kind of feline.|Maybe a cat.|It looks like a pet cat.\n4\tCat.|Feline.|A pet.\n3\tAn animal.|A creature.|Some pet.\n2\tAnimal.|Symbol.|Shape.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "Based on the clues, where should you go next to find the clockmaker?",
+                    "hint": "",
+                    "reference_answer": "10\tBased on the clues provided, we should head to the clock repair shop next to find the clockmaker.|We must immediately go to the clock repair shop to locate the clockmaker.|The next logical destination to find the clockmaker is the clock repair shop.\n9\tWe should go to the clock repair shop next.|The clues point us directly to the clock repair shop.|We need to visit the clock repair shop to find him.\n8\tLet's go to the clock repair shop.|We have to check the clock repair shop next.|The clockmaker is at the clock repair shop.\n7\tGo to the clock repair shop.|Head to the clock repair shop.|The destination is the clock repair shop.\n6\tThe clock repair shop.|A clock repair shop.|Clock repair shop.\n5\tSome clock shop.|A place for repairing clocks.|Maybe a clock store.\n4\tClock shop.|Repair shop.|The store.\n3\tA shop.|A building.|Somewhere in town.\n2\tShop.|Clock.|Repair.\n1\tI don't know.|No idea.|(No response / Silence)"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "title": "The Riddle of the Ancient Clock",
+            "description": "Following Sherlock's guidance, you enter the clock repair shop. The clockmaker wearing a red scarf is waiting for you. He holds a beautiful Victorian pocket watch that stopped at a significant moment. He says it witnessed the peak of the British Industrial Revolution, and its hands and engravings hide a secret.",
+            "video_file": "Theme_2_Level_2_video.mp4",
+            "questions": [
+                {
+                    "text": "What famous building is engraved on the back of the pocket watch?",
+                    "hint": "",
+                    "reference_answer": "10\tThe famous building beautifully engraved on the back of the pocket watch is the Crystal Palace.|I can confirm that the engraving on the pocket watch depicts the Crystal Palace.|The architectural structure shown on the back of the watch is the Crystal Palace.\n9\tThe building engraved on the pocket watch is the Crystal Palace.|The Crystal Palace is the building engraved on the back.|The engraving clearly shows the Crystal Palace.\n8\tIt is the Crystal Palace on the back of the watch.|The pocket watch has the Crystal Palace on it.|I see the Crystal Palace engraved there.\n7\tThe famous building is the Crystal Palace.|It is the Crystal Palace.|The engraving is the Crystal Palace.\n6\tThe Crystal Palace.|Crystal Palace.|A building called Crystal Palace.\n5\tThe crystal building.|Some glass palace.|Maybe the Crystal Palace.\n4\tCrystal.|Palace.|Glass building.\n3\tA building.|A big structure.|A famous place.\n2\tBuilding.|Engraving.|Watch.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "In what year was the Great Exhibition held at this location?",
+                    "hint": "",
+                    "reference_answer": "10\tThe Great Exhibition was officially held at the Crystal Palace in the year 1851.|According to historical records, the Great Exhibition took place there in 1851.|The specific year the Great Exhibition was held at this location was 1851.\n9\tThe Great Exhibition was held in the year 1851.|It took place in 1851.|The year of the Great Exhibition was 1851.\n8\tThe exhibition happened in 1851.|I believe it was held in 1851.|The correct year is 1851.\n7\tIt was in 1851.|The year is 1851.|Held in 1851.\n6\tThe year 1851.|In 1851.|Exactly 1851.\n5\tSometime in the 1850s.|Around 1851.|Maybe 1850 something.\n4\t1851.|Year 1851.|The 1850s.\n3\tA long time ago.|Some year.|A date in history.\n2\tYear.|Date.|Time.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "What time must you set the pocket watch to for it to open?",
+                    "hint": "",
+                    "reference_answer": "10\tYou must set the pocket watch to exactly 12:00 for the mechanism to open.|To successfully open the pocket watch, you need to adjust the time to 12:00.|The correct time required to unlock the pocket watch is 12:00.\n9\tYou need to set the watch to 12:00.|The time must be set to 12:00 to open it.|Please set the pocket watch to 12:00.\n8\tYou should set the time to 12:00.|Set the watch hands to 12:00.|The secret time is 12:00.\n7\tSet it to 12:00.|The time is 12:00.|Turn it to 12:00.\n6\t12:00.|Twelve o'clock.|Exactly 12:00.\n5\tTwelve.|Maybe noon.|Set it to twelve.\n4\t12.|Noon.|Midnight.\n3\tA specific time.|Clock numbers.|The hour.\n2\tTime.|Watch.|Numbers.\n1\tI don't know.|No idea.|(No response / Silence)"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "The Secret Inside the Leather Suitcase",
+            "description": "After solving the pocket watch puzzle, the hands point to a vintage leather suitcase in the corner. The vendor says this box holds WWII secrets. An old television nearby is playing a black-and-white documentary about 'The Blitz.' You must unlock the suitcase and discover what history it protects.",
+            "video_file": "Theme_2_Level_3_video.mp4",
+            "questions": [
+                {
+                    "text": "What is the three-digit code to unlock the WWII suitcase?",
+                    "hint": "",
+                    "reference_answer": "10\tThe precise three-digit code required to unlock the WWII suitcase is 940.|You need to input the three-digit code 940 to open the WWII suitcase.|Based on our findings, the correct code for the suitcase is 940.\n9\tThe three-digit code to unlock the suitcase is 940.|You must use the code 940 to open it.|The code for the suitcase lock is 940.\n8\tThe code you need is 940.|I think the three-digit code is 940.|The combination is 940.\n7\tThe code is 940.|It is 940.|Enter 940.\n6\tCode 940.|The number 940.|Exactly 940.\n5\tNine four zero.|A code with 940.|Maybe 940.\n4\t940.|Number 940.|The digits 940.\n3\tThree numbers.|A password.|Some digits.\n2\tCode.|Lock.|Digits.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "What survival item is found inside the suitcase?",
+                    "hint": "",
+                    "reference_answer": "10\tThe essential survival item discovered inside the opened suitcase is a gas mask.|When you unlock the suitcase, you will find a gas mask hidden inside.|A vintage gas mask is the survival item contained within the suitcase.\n9\tThe survival item found inside the suitcase is a gas mask.|You can clearly see a gas mask inside the suitcase.|The item hidden inside is a gas mask.\n8\tThere is a gas mask inside the suitcase.|The item is a gas mask.|I found a gas mask in there.\n7\tIt is a gas mask.|You find a gas mask.|A gas mask is inside.\n6\tA gas mask.|The gas mask.|Just a gas mask.\n5\tSome kind of breathing mask.|A protective mask.|Maybe a gas mask.\n4\tGas mask.|Mask.|Respirator.\n3\tSurvival gear.|An item.|Equipment.\n2\tGear.|Bag.|Tool.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "What material was used to rebuild this market after the war?",
+                    "hint": "",
+                    "reference_answer": "10\tAfter the war, this market was resourcefully rebuilt using rubble collected from bombed buildings.|The historical material used to reconstruct the market was rubble from bombed buildings.|They utilized the rubble from bombed buildings to rebuild this entire market.\n9\tThe market was rebuilt using rubble from bombed buildings.|They used rubble from bombed buildings as the main material.|The rebuilding material was rubble from bombed buildings.\n8\tIt was rebuilt using rubble from bombed buildings.|They used the rubble from bombed buildings.|People used bombed building rubble to rebuild it.\n7\tRubble from bombed buildings.|Bombed building rubble.|Made of rubble from bombed buildings.\n6\tRubble from buildings.|Building rubble.|Old rubble.\n5\tBricks from bombed places.|Debris from the war.|Rubble from bombs.\n4\tRubble.|Debris.|Old bricks.\n3\tBuilding materials.|Old stuff.|Things from the war.\n2\tStones.|Material.|War.\n1\tI don't know.|No idea.|(No response / Silence)"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "The History of the Handcrafted Ring",
+            "description": "After solving the gas mask puzzle, the vendor nods and pours out a silver handcrafted ring from the gas mask's filter canister. He carefully places the ring on velvet cloth and says it witnessed the coronation of Edward VII. The engraving inside points to the next clue.",
+            "video_file": "Theme_2_Level_4_video.mp4",
+            "questions": [
+                {
+                    "text": "What inscription is engraved inside the ring?",
+                    "hint": "",
+                    "reference_answer": "10\tThe specific inscription beautifully engraved inside the handcrafted ring reads E.R. 1902.|If you inspect the inside of the ring, you will see the engraving E.R. 1902.|The secret historical inscription inside the ring is E.R. 1902.\n9\tThe inscription inside the ring is E.R. 1902.|The ring has E.R. 1902 engraved inside it.|It clearly says E.R. 1902 on the inside.\n8\tThe engraving is E.R. 1902.|I can see E.R. 1902 engraved there.|The words inside are E.R. 1902.\n7\tIt says E.R. 1902.|The text is E.R. 1902.|Engraved E.R. 1902.\n6\tE.R. 1902.|Inscription E.R. 1902.|Letters E.R. 1902.\n5\tIt has E.R. and 1902.|A year like 1902 and E.R.|Maybe E.R. 1902.\n4\tE.R.|1902.|Letters and numbers.\n3\tSome writing.|A date.|Words inside.\n2\tRing.|Letters.|Words.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "What does 'E.R.' stand for in royal terms?",
+                    "hint": "",
+                    "reference_answer": "10\tIn royal terminology, the initials 'E.R.' stand for the Latin phrase Edwardus Rex.|The letters 'E.R.' are a royal cipher that stands for Edwardus Rex.|The abbreviation 'E.R.' translates to Edwardus Rex in royal terms.\n9\t'E.R.' officially stands for Edwardus Rex.|The initials stand for Edwardus Rex.|It means Edwardus Rex in royal terms.\n8\tThe letters mean Edwardus Rex.|It stands for Edwardus Rex.|I believe it means Edwardus Rex.\n7\tIt is Edwardus Rex.|Edwardus Rex is the meaning.|The name is Edwardus Rex.\n6\tEdwardus Rex.|King Edwardus Rex.|Just Edwardus Rex.\n5\tKing Edwardus.|Edward something.|Latin for King Edward.\n4\tEdwardus.|Rex.|King Edward.\n3\tA king's name.|Royal title.|Some king.\n2\tKing.|Royal.|Name.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "Where is the final map fragment hidden?",
+                    "hint": "",
+                    "reference_answer": "10\tThe final map fragment is cleverly hidden inside the 1902 Coronation Commemorative Stamp Album.|You can discover the final map fragment tucked within the 1902 Coronation Commemorative Stamp Album.|The 1902 Coronation Commemorative Stamp Album contains the hidden final map fragment.\n9\tThe fragment is hidden in the 1902 Coronation Commemorative Stamp Album.|It can be found in the 1902 Coronation Commemorative Stamp Album.|The final piece is in the 1902 Coronation Commemorative Stamp Album.\n8\tIt is hidden in the 1902 stamp album.|Look inside the Coronation Commemorative Stamp Album.|The map is inside the 1902 stamp album.\n7\tIn the 1902 Coronation Stamp Album.|The stamp album from 1902.|Inside the commemorative stamp album.\n6\t1902 Stamp Album.|A stamp album.|The stamp album.\n5\tIn an old album.|The 1902 album.|A book for stamps.\n4\tStamp album.|Album.|A book.\n3\tInside a book.|Hidden in something.|A folder.\n2\tBook.|Map.|Stamp.\n1\tI don't know.|No idea.|(No response / Silence)"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "The Puzzle of the Collection Map",
+            "description": "You open the commemorative stamp album found at the book stall. Inside are several yellowed, broken map fragments. The vendor finally smiles with satisfaction: 'Excellent. The postcards guided the direction, the pocket watch confirmed the time, the suitcase protected history, and the ring symbolized glory. Now piece these fragments together, and you will find the Time Treasure left by the Victorian industrialist.'",
+            "video_file": "Theme_2_Level_5_video.mp4",
+            "questions": [
+                {
+                    "text": "What shape is the missing corner of the map?",
+                    "hint": "",
+                    "reference_answer": "10\tThe missing corner of the puzzle map is specifically shaped like a factory chimney.|Upon close inspection, the missing corner resembles a tall factory chimney.|The exact shape of the missing map section is a factory chimney.\n9\tThe missing corner is shaped like a factory chimney.|It has the distinct shape of a factory chimney.|The torn corner looks exactly like a factory chimney.\n8\tIt is shaped like a factory chimney.|The shape looks like a factory chimney.|I think it's a factory chimney.\n7\tIt is a factory chimney.|The shape is a factory chimney.|Like a factory chimney.\n6\tFactory chimney.|A factory chimney.|The factory chimney.\n5\tSome kind of chimney.|It looks like a chimney.|A tall smoke chimney.\n4\tChimney.|Factory.|Tall building.\n3\tA piece.|A weird shape.|Building part.\n2\tShape.|Corner.|Map.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "Which famous London brewery does the map point to?",
+                    "hint": "",
+                    "reference_answer": "10\tThe map clearly points directly to the famous London brewery known as the Old Truman Brewery.|According to our completed map, the destination is the Old Truman Brewery.|The historical London location indicated by the map is the Old Truman Brewery.\n9\tThe map points to the Old Truman Brewery.|The famous London brewery is the Old Truman Brewery.|It leads us right to the Old Truman Brewery.\n8\tIt points to the Old Truman Brewery.|The location is the Old Truman Brewery.|We need to go to the Old Truman Brewery.\n7\tIt is the Old Truman Brewery.|The Old Truman Brewery.|Truman Brewery.\n6\tOld Truman Brewery.|The Truman Brewery.|Old Truman.\n5\tA brewery called Truman.|The old brewery place.|Something Truman Brewery.\n4\tTruman.|Brewery.|Old Truman.\n3\tA beer place.|Some factory.|A building.\n2\tBeer.|London.|Map.\n1\tI don't know.|No idea.|(No response / Silence)"
+                },
+                {
+                    "text": "Where exactly is the treasure hidden?",
+                    "hint": "",
+                    "reference_answer": "10\tThe treasure is hidden exactly at the location marked by the Black Eagle symbol.|You will find the buried treasure hidden right at the Black Eagle symbol.|The precise location of the hidden treasure is beneath the Black Eagle symbol.\n9\tThe treasure is hidden at the Black Eagle symbol.|It is securely hidden by the Black Eagle symbol.|The exact spot is the Black Eagle symbol.\n8\tYou can find it at the Black Eagle symbol.|It's hidden near the Black Eagle symbol.|Look for the Black Eagle symbol to find it.\n7\tAt the Black Eagle symbol.|By the Black Eagle symbol.|Under the Black Eagle symbol.\n6\tThe Black Eagle symbol.|Black Eagle symbol.|A Black Eagle symbol.\n5\tNear a black bird symbol.|At the eagle mark.|The eagle symbol.\n4\tBlack Eagle.|Eagle symbol.|Eagle.\n3\tA symbol.|A bird.|A mark.\n2\tBird.|Symbol.|Spot.\n1\tI don't know.|No idea.|(No response / Silence)"
+                }
+            ]
+        }
+    ],
+    "novel_url": "https://hackmd.io/@sXPepRwnTrKIM4LWkcWK3g/Theme_2_novel"
+}

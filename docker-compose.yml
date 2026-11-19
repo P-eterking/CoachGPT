@@ -121,3 +121,41 @@ services:
       - ./data/user_data6.json:/app/user_data.json
       - ./category:/app/category
       - ./templates:/app/templates
+      
+  service7:
+    build: .
+    container_name: linebot-service7
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    env_file:
+      - .env
+    environment:
+      - DOMAIN=${DOMAIN7}
+      - PORT=8008
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET7}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN7}
+    volumes:
+      - ./data/config7.json:/app/config.json
+      - ./data/user_data7.json:/app/user_data.json
+      - ./category:/app/category7-8
+      - ./templates:/app/templates
+
+  service8:
+    build: .
+    container_name: linebot-service8
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    env_file:
+      - .env
+    environment:
+      - DOMAIN=${DOMAIN8}
+      - PORT=8009
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET8}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN8}
+    volumes:
+      - ./data/config8.json:/app/config.json
+      - ./data/user_data8.json:/app/user_data.json
+      - ./category:/app/category7-8
+      - ./templates:/app/templates

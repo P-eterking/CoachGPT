@@ -1,0 +1,862 @@
+{
+    "rich_menus": {
+        "menu": {
+            "file": "menu.jpg",
+            "chat_bar_text": "CoachGPT",
+            "selected": true,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "pretest", "alias_id": "pretest" },
+                { "type": "switch", "label": "exercises", "alias_id": "exercises" },
+                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
+                { "type": "postback", "label": "progress", "data": "action=progress" },
+                { "type": "switch", "label": "chat", "alias_id": "chat" },
+                { "type": "switch", "label": "admin", "alias_id": "admin" }
+            ]
+        },
+        "menu_game": {
+            "file": "Game_Menu.jpg",
+            "chat_bar_text": "Mystery Game",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "pretest", "alias_id": "pretest" },
+                { "type": "switch", "label": "Game Mode", "alias_id": "game_lobby" },
+                { "type": "switch", "label": "SEL", "alias_id": "sel" },
+                { "type": "switch", "label": "posttest", "alias_id": "posttest" },
+                { "type": "postback", "label": "progress", "data": "action=progress_select" },
+                { "type": "switch", "label": "Other", "alias_id": "menu_other" }
+            ]
+        },
+        "game_lobby": {
+            "file": "game_lobby.jpg",
+            "chat_bar_text": "Game Lobby",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Game Rules", "data": "action=game_info&section=rules" },
+                { "type": "postback", "label": "Story", "data": "action=game_info&section=story" },
+                { "type": "postback", "label": "Characters", "data": "action=game_info&section=characters" },
+                { "type": "postback", "label": "Structure", "data": "action=game_info&section=structure" },
+                { "type": "postback", "label": "Select Topic", "data": "action=game_show_themes" },
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "game_theme_select": {
+            "file": "game_theme_select.jpg",
+            "chat_bar_text": "Select Topic",
+            "selected": false,
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Topic 1", "data": "action=game_theme&theme=theme1" },
+                { "type": "postback", "label": "Topic 2", "data": "action=game_theme&theme=theme2" },
+                { "type": "postback", "label": "Topic 3", "data": "action=game_theme&theme=theme3" },
+                {},
+                {},
+                { "type": "switch", "label": "Back", "alias_id": "game_lobby" }
+            ]
+        },
+        "menu_other": {
+            "file": "menu_other.jpg",
+            "chat_bar_text": "Other",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "exercises", "alias_id": "exercises" },
+                { "type": "switch", "label": "chat", "alias_id": "chat" },
+                { "type": "switch", "label": "admin", "alias_id": "game_admin" },
+                {},
+                {},
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "rag_test": {
+            "file": "Game_Sel.jpg",
+            "chat_bar_text": "Select Role",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "case1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "case2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "case3", "data": "action=record&sub=2" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_game" }
+            ]
+        },
+        "game_theme1": {
+            "file": "game_theme1.jpg",
+            "chat_bar_text": "Topic 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme1&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme1&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme1&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme1" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme1" },
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "game_theme2": {
+            "file": "game_theme2.jpg",
+            "chat_bar_text": "Topic 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme2&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme2&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme2&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme2" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme2" },
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "game_theme3": {
+            "file": "game_theme3.jpg",
+            "chat_bar_text": "Topic 3",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "NPC 1", "data": "action=game_npc&theme=theme3&npc=0" },
+                { "type": "postback", "label": "NPC 2", "data": "action=game_npc&theme=theme3&npc=1" },
+                { "type": "postback", "label": "NPC 3", "data": "action=game_npc&theme=theme3&npc=2" },
+                { "type": "postback", "label": "Levels", "data": "action=game_levels&theme=theme3" },
+                { "type": "postback", "label": "Answer", "data": "action=game_next_answer&theme=theme3" },
+                { "type": "switch", "label": "Back", "alias_id": "menu_game" }
+            ]
+        },
+        "pretest": {
+            "file": "prelobby.jpg",
+            "chat_bar_text": "Pre-test",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "pretest1", "alias_id": "pretest1" },
+                { "type": "switch", "label": "pretest2", "alias_id": "pretest2" },
+                {},
+                {},
+                {},
+                { "type": "switch", "label": "back", "alias_id": "menu" }
+            ]
+        },
+        "posttest": {
+            "file": "postlobby.jpg",
+            "chat_bar_text": "Post-test",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "posttest1", "alias_id": "posttest1" },
+                { "type": "switch", "label": "posttest2", "alias_id": "posttest2" },
+                {},
+                {},
+                {},
+                { "type": "switch", "label": "back", "alias_id": "menu" }
+            ]
+        },
+        "admin": {
+            "file": "admin.jpg",
+            "chat_bar_text": "Admin",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "enabled", "alias_id": "enabled" },
+                { "type": "switch", "label": "respond", "alias_id": "respond" },
+                { "type": "postback", "label": "save", "data": "action=save" },
+                { "type": "postback", "label": "reload", "data": "action=reload" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "menu" }
+            ]
+        },
+        "exercises": {
+            "file": "exercises.jpg",
+            "chat_bar_text": "Exercises",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "ex1", "alias_id": "ex1" },
+                { "type": "switch", "label": "ex2", "alias_id": "ex2" },
+                { "type": "switch", "label": "ex3", "alias_id": "ex3" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "advanced", "alias_id": "exercises2" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_other" }
+            ]
+        },
+        "exercises2": {
+            "file": "exercises_advanced.jpg",
+            "chat_bar_text": "Exercises",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "ex4", "alias_id": "ex4" },
+                { "type": "switch", "label": "ex5", "alias_id": "ex5" },
+                { "type": "switch", "label": "ex6", "alias_id": "ex6" },
+                { "type": "switch", "label": "regular", "alias_id": "exercises" },
+                { "type": "postback", "label": "next", "data": "action=idle" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_other" }
+            ]
+        },
+        "ex1": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Exercise 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" }
+            ]
+        },
+        "ex2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Exercise 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" }
+            ]
+        },
+        "ex3": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Exercise 3",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "ex3-2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises" }
+            ]
+        },
+        "ex3-2": {
+            "file": "exercises_page2-2.jpg",
+            "chat_bar_text": "Exercise 3",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex3" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "exercises" }
+            ]
+        },
+        "ex4": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Exercise 4",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "ex4-2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Exercise 4",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4" },
+                { "type": "switch", "label": "next", "alias_id": "ex4-3" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Exercise 4",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=record&sub=6" },
+                { "type": "postback", "label": "q8", "data": "action=record&sub=7" },
+                { "type": "postback", "label": "q9", "data": "action=record&sub=8" },
+                { "type": "switch", "label": "prev", "alias_id": "ex4-2" },
+                { "type": "switch", "label": "next", "alias_id": "ex4-4" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex4-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Exercise 4",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=record&sub=9" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "ex4-3" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex5": {
+            "file": "exercises_page1.jpg",
+            "chat_bar_text": "Exercise 5",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "ex5-2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex5-2": {
+            "file": "exercises_page2-2.jpg",
+            "chat_bar_text": "Exercise 5",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "postback", "label": "q6", "data": "action=record&sub=5" },
+                { "type": "switch", "label": "prev", "alias_id": "ex5" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "ex6": {
+            "file": "exercises_3.jpg",
+            "chat_bar_text": "Exercise 6",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" },
+                { "type": "switch", "label": "menu", "alias_id": "exercises2" }
+            ]
+        },
+        "chat": {
+            "file": "chat.jpg",
+            "chat_bar_text": "Chat",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=chat&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=chat&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=chat&sub=2" },
+                { "type": "switch", "label": "settings", "alias_id": "audio" },
+                { "type": "postback", "label": "q4", "data": "action=chat&sub=3" },
+                { "type": "switch", "label": "menu", "alias_id": "menu_other" }
+            ]
+        },
+        "enabled": {
+            "file": "toggle.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=enabled&alias=ex1" },
+                { "type": "postback", "label": "q2", "data": "action=enabled&alias=ex2" },
+                { "type": "postback", "label": "q3", "data": "action=enabled&alias=ex3" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "enabled2" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "enabled2": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=enabled&alias=ex4" },
+                { "type": "postback", "label": "q5", "data": "action=enabled&alias=ex5" },
+                { "type": "postback", "label": "q6", "data": "action=enabled&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "enabled" },
+                { "type": "switch", "label": "next", "alias_id": "enabled3" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "enabled3": {
+            "file": "toggle3.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=enabled&alias=pretest" },
+                { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
+                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "enabled2" },
+                { "type": "postback", "label": "sel", "data": "action=enabled&alias=sel" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "respond": {
+            "file": "toggle.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=respond&alias=ex1" },
+                { "type": "postback", "label": "q2", "data": "action=respond&alias=ex2" },
+                { "type": "postback", "label": "q3", "data": "action=respond&alias=ex3" },
+                { "type": "postback", "label": "prev", "data": "action=idle" },
+                { "type": "switch", "label": "next", "alias_id": "respond2" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "respond2": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=respond&alias=ex4" },
+                { "type": "postback", "label": "q5", "data": "action=respond&alias=ex5" },
+                { "type": "postback", "label": "q6", "data": "action=respond&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "respond" },
+                { "type": "switch", "label": "next", "alias_id": "respond3" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "respond3": {
+            "file": "toggle3.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=respond&alias=pretest" },
+                { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
+                { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
+                { "type": "switch", "label": "prev", "alias_id": "respond2" },
+                { "type": "postback", "label": "sel", "data": "action=respond&alias=sel" },
+                { "type": "switch", "label": "menu", "alias_id": "admin" }
+            ]
+        },
+        "audio": {
+            "file": "audio_settings.jpg",
+            "chat_bar_text": "Audio Settings",
+            "grid": { "rows": 2, "columns": 2 },
+            "actions": [
+                { "type": "switch", "label": "sex", "alias_id": "sex" },
+                { "type": "switch", "label": "accent", "alias_id": "accent" },
+                { "type": "switch", "label": "menu", "alias_id": "chat" },
+                { "type": "switch", "label": "menu", "alias_id": "chat" }
+            ]
+        },
+        "sex": {
+            "file": "audio_sex.jpg",
+            "chat_bar_text": "Sex",
+            "grid": { "rows": 2, "columns": 2 },
+            "actions": [
+                { "type": "postback", "label": "male", "data": "action=sex&sub=0" },
+                { "type": "postback", "label": "female", "data": "action=sex&sub=1" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" }
+            ]
+        },
+        "accent": {
+            "file": "audio_accent.jpg",
+            "chat_bar_text": "Accent",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "accent1", "data": "action=accent&sub=0" },
+                { "type": "postback", "label": "accent2", "data": "action=accent&sub=1" },
+                { "type": "postback", "label": "accent3", "data": "action=accent&sub=2" },
+                { "type": "postback", "label": "accent4", "data": "action=accent&sub=3" },
+                { "type": "postback", "label": "accent5", "data": "action=accent&sub=4" },
+                { "type": "switch", "label": "menu", "alias_id": "audio" }
+            ]
+        },
+        "game_admin": {
+            "file": "game_admin.jpg",
+            "chat_bar_text": "Admin",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "switch", "label": "enabled", "alias_id": "game_enabled" },
+                { "type": "switch", "label": "respond", "alias_id": "game_respond" },
+                { "type": "postback", "label": "save", "data": "action=save" },
+                { "type": "postback", "label": "reload", "data": "action=reload" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "menu_other" }
+            ]
+        },
+        "game_enabled": {
+            "file": "game_toggle.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=enabled&alias=pretest" },
+                { "type": "postback", "label": "game", "data": "action=enabled&alias=rag_test" },
+                { "type": "postback", "label": "posttest", "data": "action=enabled&alias=posttest" },
+                { "type": "postback", "label": "sel", "data": "action=enabled&alias=sel" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled2" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled2": {
+            "file": "game_toggle2.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex1", "data": "action=enabled&alias=ex1" },
+                { "type": "postback", "label": "ex2", "data": "action=enabled&alias=ex2" },
+                { "type": "postback", "label": "ex3", "data": "action=enabled&alias=ex3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled3" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled3": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex4", "data": "action=enabled&alias=ex4" },
+                { "type": "postback", "label": "ex5", "data": "action=enabled&alias=ex5" },
+                { "type": "postback", "label": "ex6", "data": "action=enabled&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled2" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled4" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled4": {
+            "file": "game_toggle4.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "chat", "data": "action=enabled&alias=chat" },
+                { "type": "postback", "label": "sel1", "data": "action=enabled&alias=sel1" },
+                { "type": "postback", "label": "sel2", "data": "action=enabled&alias=sel2" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled3" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled5" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled5": {
+            "file": "game_toggle5.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "sel5", "data": "action=enabled&alias=sel5" },
+                { "type": "postback", "label": "sel4", "data": "action=enabled&alias=sel4" },
+                { "type": "postback", "label": "sel3", "data": "action=enabled&alias=sel3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled4" },
+                { "type": "switch", "label": "next", "alias_id": "game_enabled6" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_enabled6": {
+            "file": "game_toggle6.jpg",
+            "chat_bar_text": "Enabled",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "sel6", "data": "action=enabled&alias=sel6" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "game_enabled5" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond": {
+            "file": "game_toggle.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "pretest", "data": "action=respond&alias=pretest" },
+                { "type": "postback", "label": "game", "data": "action=respond&alias=rag_test" },
+                { "type": "postback", "label": "posttest", "data": "action=respond&alias=posttest" },
+                { "type": "postback", "label": "sel", "data": "action=respond&alias=sel" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond2" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond2": {
+            "file": "game_toggle2.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex1", "data": "action=respond&alias=ex1" },
+                { "type": "postback", "label": "ex2", "data": "action=respond&alias=ex2" },
+                { "type": "postback", "label": "ex3", "data": "action=respond&alias=ex3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond3" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond3": {
+            "file": "toggle2.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "ex4", "data": "action=respond&alias=ex4" },
+                { "type": "postback", "label": "ex5", "data": "action=respond&alias=ex5" },
+                { "type": "postback", "label": "ex6", "data": "action=respond&alias=ex6" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond2" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond4" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond4": {
+            "file": "game_toggle4.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "chat", "data": "action=respond&alias=chat" },
+                { "type": "postback", "label": "sel1", "data": "action=respond&alias=sel1" },
+                { "type": "postback", "label": "sel2", "data": "action=respond&alias=sel2" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond3" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond5" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond5": {
+            "file": "game_toggle5.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "sel5", "data": "action=respond&alias=sel5" },
+                { "type": "postback", "label": "sel4", "data": "action=respond&alias=sel4" },
+                { "type": "postback", "label": "sel3", "data": "action=respond&alias=sel3" },
+                { "type": "switch", "label": "prev", "alias_id": "game_respond4" },
+                { "type": "switch", "label": "next", "alias_id": "game_respond6" },
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "game_respond6": {
+            "file": "game_toggle6.jpg",
+            "chat_bar_text": "Respond",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "sel6", "data": "action=respond&alias=sel6" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "game_respond5" },
+                {},
+                { "type": "switch", "label": "menu", "alias_id": "game_admin" }
+            ]
+        },
+        "pretest1": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=new_test_record&sub=0&base=pretest" },
+                { "type": "postback", "label": "q2", "data": "action=new_test_record&sub=1&base=pretest" },
+                { "type": "postback", "label": "q3", "data": "action=new_test_record&sub=2&base=pretest" },
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=pretest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=pretest" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=pretest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=pretest" },
+                { "type": "postback", "label": "q6", "data": "action=new_test_record&sub=5&base=pretest" },
+                { "type": "switch", "label": "prev", "alias_id": "pretest1" },
+                { "type": "switch", "label": "next", "alias_id": "pretest1-3" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=new_test_record&sub=6&base=pretest" },
+                { "type": "postback", "label": "q8", "data": "action=new_test_record&sub=7&base=pretest" },
+                { "type": "postback", "label": "q9", "data": "action=new_test_record&sub=8&base=pretest" },
+                { "type": "switch", "label": "prev", "alias_id": "pretest1-2" },
+                { "type": "switch", "label": "next", "alias_id": "pretest1-4" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest1-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Pre-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=new_test_record&sub=9&base=pretest" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "pretest1-3" },
+                {},
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "pretest2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Pre-test 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "pretest" }
+            ]
+        },
+        "posttest1": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=new_test_record&sub=0&base=posttest" },
+                { "type": "postback", "label": "q2", "data": "action=new_test_record&sub=1&base=posttest" },
+                { "type": "postback", "label": "q3", "data": "action=new_test_record&sub=2&base=posttest" },
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=posttest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=posttest" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-2": {
+            "file": "exercises_page2.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q4", "data": "action=new_test_record&sub=3&base=posttest" },
+                { "type": "postback", "label": "q5", "data": "action=new_test_record&sub=4&base=posttest" },
+                { "type": "postback", "label": "q6", "data": "action=new_test_record&sub=5&base=posttest" },
+                { "type": "switch", "label": "prev", "alias_id": "posttest1" },
+                { "type": "switch", "label": "next", "alias_id": "posttest1-3" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-3": {
+            "file": "exercises_page3.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q7", "data": "action=new_test_record&sub=6&base=posttest" },
+                { "type": "postback", "label": "q8", "data": "action=new_test_record&sub=7&base=posttest" },
+                { "type": "postback", "label": "q9", "data": "action=new_test_record&sub=8&base=posttest" },
+                { "type": "switch", "label": "prev", "alias_id": "posttest1-2" },
+                { "type": "switch", "label": "next", "alias_id": "posttest1-4" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest1-4": {
+            "file": "exercises_page4.jpg",
+            "chat_bar_text": "Post-test 1",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q10", "data": "action=new_test_record&sub=9&base=posttest" },
+                {},
+                {},
+                { "type": "switch", "label": "prev", "alias_id": "posttest1-3" },
+                {},
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "posttest2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Post-test 2",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "posttest" }
+            ]
+        },
+        "sel": {
+            "file": "boardGameTheme_1.jpg",
+            "chat_bar_text": "SEL",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Monopoly", "data": "action=sel_unit&unit=1" },
+                { "type": "postback", "label": "Life", "data": "action=sel_unit&unit=2" },
+                { "type": "postback", "label": "Piranha", "data": "action=sel_unit&unit=5" },
+                {},
+                { "type": "switch", "label": "next", "alias_id": "sel-2" },
+                { "type": "switch", "label": "back", "alias_id": "menu_game" }
+            ]
+        },
+        "sel-2": {
+            "file": "boardGameTheme_2.jpg",
+            "chat_bar_text": "SEL",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "Tower", "data": "action=sel_unit&unit=4" },
+                { "type": "postback", "label": "FLIP", "data": "action=sel_unit&unit=3" },
+                { "type": "postback", "label": "Seven!", "data": "action=sel_unit&unit=6" },
+                { "type": "switch", "label": "prev", "alias_id": "sel" },
+                {},
+                { "type": "switch", "label": "back", "alias_id": "menu_game" }
+            ]
+        },
+        "sel1": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Monopoly",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel" }
+            ]
+        },
+        "sel2": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Life",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel" }
+            ]
+        },
+        "sel3": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "FLIP",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel-2" }
+            ]
+        },
+        "sel4": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Tower",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel-2" }
+            ]
+        },
+        "sel5": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Piranha",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel" }
+            ]
+        },
+        "sel6": {
+            "file": "preposttest.jpg",
+            "chat_bar_text": "Seven!",
+            "grid": { "rows": 2, "columns": 3 },
+            "actions": [
+                { "type": "postback", "label": "q1", "data": "action=record&sub=0" },
+                { "type": "postback", "label": "q2", "data": "action=record&sub=1" },
+                { "type": "postback", "label": "q3", "data": "action=record&sub=2" },
+                { "type": "postback", "label": "q4", "data": "action=record&sub=3" },
+                { "type": "postback", "label": "q5", "data": "action=record&sub=4" },
+                { "type": "switch", "label": "back", "alias_id": "sel-2" }
+            ]
+        }
+    }
+}

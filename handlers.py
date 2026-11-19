@@ -30,6 +30,7 @@ from utils.message_utils import (
     # 用於 audio 評分的 <standard> 區段建構輔助函式
     # 修正 chr(10) 壓平 bug 並對 SEL 套用十級 few-shot 格式
     build_standard_section_for_audio,
+    build_sel_test_language_neutral_instruction,
     # Question card with image for service4 game_answer action
     game_answer_card_message,
     # new_test single question card (pretest1 / posttest1)
@@ -166,23 +167,31 @@ async def generate_npc_tts(npc_reply: str, voice: str = "onyx") -> tuple:
 
     return filename, duration
 
-async def transcribe_audio(message_content: bytes, language: str = "en") -> str:
+async def transcribe_audio(message_content: bytes, language: str | None = "en") -> str:
     """Transcribe audio to text
     language parameter specifies the transcription language, default is English
-    IMPORTANT: Do NOT translate, only transcribe in the specified language
+    None enables language detection; preserve Chinese, English and code-switching.
+    IMPORTANT: Do NOT translate, only transcribe the original speech.
     """
     with tempfile.NamedTemporaryFile(suffix=".m4a", delete=True) as f:
         f.write(message_content)
         f.seek(0)
         f.flush()
         
-        # Use language parameter to force English transcription without translation
+        language_options = {} if language is None else {'language': language}
+        transcription_prompt = (
+            "The speaker may use Mandarin Chinese, English, or both. Transcribe in the "
+            "original spoken languages without translation. Preserve code-switching. "
+            "Use Traditional Chinese for Chinese speech."
+            if language is None else
+            "This is an English educational game. The user may say alphanumeric codes like CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. Transcribe exactly what is spoken in English without translation."
+        )
         transcript_obj = await client.audio.transcriptions.create(
             model="gpt-4o-mini-transcribe",
             file=(f.name, f.read()),
-            language=language,
+            **language_options,
             # Add prompt to help with code-like content
-            prompt="This is an English educational game. The user may say alphanumeric codes like CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. Transcribe exactly what is spoken in English without translation.",
+            prompt=transcription_prompt,
         )
         return transcript_obj.text.strip()
  
@@ -818,7 +827,12 @@ async def handle_audio_message(event):
                     print(f"Fallback guide audio error: {_fb_err}")
             return
         
-        if not isEnabled(category) and not isAdmin(user_id):
+        # SEL 前後測沿用前測／後測主開關，與選題入口保持一致。
+        audio_enabled_category = (
+            get_enabled_category_for_alias(category)
+            if category in ('pretest-sel', 'posttest-sel') else category
+        )
+        if not isEnabled(audio_enabled_category) and not isAdmin(user_id):
             await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
         
@@ -834,11 +848,14 @@ async def handle_audio_message(event):
         # 'chi' = 用中文作答（中文轉錄、全中文回饋、不評英文文法、不給建議回答）。
         # 'eng' = 用英文作答（英文轉錄、中英對照回饋）。未選擇預設為中文。
         _is_sel = _is_sel_category(category)
+        _neutral_sel_test = is_sel_test_language_neutral_scoring_enabled(category)
         _sel_language = None
         if _is_sel:
             _sel_language = getattr(user_state, 'sel_language', None) or 'chi'
         # SEL 中文模式以中文轉錄；其餘（含英文 SEL 與一般練習）維持英文轉錄。
         _transcribe_lang = 'zh' if (_is_sel and _sel_language == 'chi') else 'en'
+        if _neutral_sel_test:
+            _transcribe_lang = None
 
         try:
             message_content = await get_audio_content(event)
@@ -858,14 +875,18 @@ async def handle_audio_message(event):
         
         # SEL（'sel' 或多單元 'sel1'..'sel6'）改用以 SEL 五大核心能力為主軸的評分提示詞，
         # 並依作答語言（中 / 英）選擇對應版本；其餘練習維持原本的 SYSTEM_INSTRUCTION。
-        if _is_sel:
+        if _neutral_sel_test:
+            _system_prompt_for_audio = build_sel_test_language_neutral_instruction()
+        elif _is_sel:
             _system_prompt_for_audio = build_sel_system_instruction(_sel_language)
         else:
             _system_prompt_for_audio = SYSTEM_INSTRUCTION
 
         # SEL 中文作答模式不附上 <standard>（題庫的十級參考答案為英文，對中文作答不適用）。
         # 其餘情況維持原本行為（SEL 英文模式仍展開十級 few-shot；一般練習照舊）。
-        if _is_sel and _sel_language == 'chi':
+        if _neutral_sel_test:
+            standard_section = f"<standard>\n{question.assessment_standard or ''}\n</standard>"
+        elif _is_sel and _sel_language == 'chi'and category != 'sel4':
             standard_section = ""
         else:
             standard_section = build_standard_section_for_audio(
@@ -893,7 +914,7 @@ async def handle_audio_message(event):
             model="gpt-4o",
             response_format=SpeechAssessment,
             max_completion_tokens=2048,
-            temperature=1,
+            temperature=0 if _neutral_sel_test else 1,
             messages=[
                 {
                     "role": "system",
@@ -913,6 +934,9 @@ async def handle_audio_message(event):
         assessment = completion.choices[0].message.parsed
         assessment.transcript = text
         assessment.timestamp = time.time()
+
+        if _neutral_sel_test:
+            assessment.better_ans = ""
 
         # SEL 一律不提供「建議回答」(better_ans)，避免框架住學生回應；
         # 中文作答模式同時清空英文回饋，確保只給中文回饋。
@@ -1838,7 +1862,7 @@ async def handle_postback(event):
         # pretest2/posttest2 are rich-menu aliases for the original pretest/posttest questions;
         # map the internal category back so question_manager can find the questions.
         # Pretest1/posttest1 sub-pages (e.g. pretest1-2) extract category with split('-')[0].
-        _MENU_CATEGORY_MAP = {'pretest2': 'pretest', 'posttest2': 'posttest'}
+        _MENU_CATEGORY_MAP = {'pretest2': 'pretest-sel', 'posttest2': 'posttest-sel'}
         raw_cat = alias.split('-')[0]
         user_state.category = _MENU_CATEGORY_MAP.get(raw_cat, raw_cat)
         # Reset NPC chat state on menu switch
