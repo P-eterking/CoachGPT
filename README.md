@@ -197,6 +197,12 @@ Key design principles:
 - Multi-attempt continuity: previous attempts on the same question are fed back to GPT so that brief follow-up answers are scored as additive improvements, not isolated fragments
 - Warm, growth-oriented feedback encourages Non-Violent Communication (NVC) expression
 
+#### SEL 研究對答
+
+在測試服務的環境變數設定 `SEL_RESEARCH_ENABLED=1` 後，已綁定帳號可輸入 `/sel 13` 開啟第 13 週，也可用第 4–15 週的其他週次。學生用中文錄音或打字。輸入 `/sel 略過` 記為資料不足，`/sel 離開` 可暫停，再以原週次回到同一筆對答。
+
+`research/sel_weekly.json` 收錄週次表選出的主問題、只在缺少資訊時使用的 A／B 備用題，以及五個向度的 0–5 分規準。研究紀錄存於學生資料的 `sel_research_sessions`，以週次對應主問題回答、補問與回答、分數、證據摘錄及作答狀態。資料不足的紀錄沒有分數，有效的 0 分以數字 0 保留。
+
 ---
 
 ### 3. New Test Format (pretest1 / posttest1)

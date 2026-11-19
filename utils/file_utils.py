@@ -7,7 +7,7 @@ import time
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
-from config import USER_DATA_FILE, CONFIG_FILE, client
+from config import USER_DATA_FILE, CONFIG_FILE, client, question_manager
 from utils.models import (
     ChatHistory, User, SpeechAssessment, UserState, RagChunk,
     GameThemeConfig, GameScores, GameThemeScore, GameLevelScore, GameQuestionScore,
@@ -226,15 +226,20 @@ def getChatHistory(user_id: str) -> ChatHistory:
 def updateChatHistory(user_id, chat: ChatHistory):
     user_data[user_id].chat = chat
 
-# 更新使用者的歷史紀錄
-def updateHistory(user_id, key, history: SpeechAssessment):
-    if key not in user_data[user_id].history:
-        user_data[user_id].history[key] = []
-    user_data[user_id].history[key].append(history)
+def _question_history_key(key: str) -> str:
+    category, _, index = key.rpartition("-")
+    bank = question_manager.get_category(category) if index.isdecimal() else None
+    if bank and bank.sel_unit and bank.sel_unit.history_key_prefix:
+        return f"{bank.sel_unit.history_key_prefix}-{index}"
+    return key
 
-# 獲取使用者的歷史紀錄
+
+def updateHistory(user_id, key, history: SpeechAssessment):
+    user_data[user_id].history.setdefault(_question_history_key(key), []).append(history)
+
+
 def getHistory(user_id, key) -> list[SpeechAssessment] | None:
-    return user_data[user_id].history.get(key, None)
+    return user_data[user_id].history.get(_question_history_key(key))
 
 # ========== 管理員與功能開關 ==========
 
@@ -304,6 +309,9 @@ FEATURE_DISPLAY_NAMES = {
 
 def get_feature_display_name(alias: str) -> str:
     """取得功能的中文顯示名稱"""
+    bank = question_manager.get_category(alias)
+    if bank is not None and bank.sel_unit is not None:
+        return f"SEL-{bank.sel_unit.name_chi}"
     return FEATURE_DISPLAY_NAMES.get(alias, alias)
 
 # ========== 遊戲主題功能 ==========
