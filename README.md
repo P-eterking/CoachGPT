@@ -170,7 +170,8 @@ Six independent units, each linked to a familiar board game context. Students re
 | sel1 | Monopoly | 地產大亨 |
 | sel2 | The Game of Life | 生命之旅 |
 | sel3 | FLIP (reframing negatives) | 換言一新 |
-| sel4 | Balancing Tower Game | 瑪利歐驚險塔 |
+| sel4 | Feelinks 2.0 (services 1–6) | 同感 2.0 |
+| sel4 | Balancing Tower Game (services 7–8) | 瑪利歐驚險塔 |
 | sel5 | Piranha Plant Escape | 瑪利歐食人花 |
 | sel6 | Seven! (strategy card game) | Seven! |
 
@@ -199,7 +200,7 @@ Key design principles:
 
 #### SEL 研究對答
 
-在測試服務的環境變數設定 `SEL_RESEARCH_ENABLED=1` 後，已綁定帳號可輸入 `/sel 13` 開啟第 13 週，也可用第 4–15 週的其他週次。學生用中文錄音或打字。輸入 `/sel 略過` 記為資料不足，`/sel 離開` 可暫停，再以原週次回到同一筆對答。
+Docker Compose 在四號機器人（`service4`）的服務設定中啟用 `SEL_RESEARCH_ENABLED=1`。已綁定帳號可在四號機器人輸入 `/sel 13` 開啟第 13 週，也可用第 4–15 週的其他週次。學生用中文錄音或打字。輸入 `/sel 略過` 記為資料不足，`/sel 離開` 可暫停，再以原週次回到同一筆對答。
 
 `research/sel_weekly.json` 收錄週次表選出的主問題、只在缺少資訊時使用的 A／B 備用題，以及五個向度的 0–5 分規準。研究紀錄存於學生資料的 `sel_research_sessions`，以週次對應主問題回答、補問與回答、分數、證據摘錄及作答狀態。資料不足的紀錄沒有分數，有效的 0 分以數字 0 保留。
 

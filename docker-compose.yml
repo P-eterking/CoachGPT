@@ -78,6 +78,7 @@ services:
       - PORT=8005
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET4}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN4}
+      - SEL_RESEARCH_ENABLED=1
     volumes:
       - ./data/config4.json:/app/config.json
       - ./data/user_data4.json:/app/user_data.json

@@ -23,6 +23,9 @@ class ResearchBankTests(TestCase):
         self.assertEqual(len(bank.rubrics), 5)
         for first, second in ((5, 15), (8, 10)):
             self.assertEqual(bank.weeks[first], bank.weeks[second])
+        self.assertEqual(bank.weeks[6].game, "同感 2.0")
+        self.assertEqual(bank.weeks[6].dimension, "社會覺察")
+        self.assertEqual(bank.weeks[13].game, "同感 2.0")
         self.assertEqual(bank.weeks[13].dimension, "自我管理")
         self.assertEqual(bank.weeks[14].dimension, "自我管理")
 
@@ -62,9 +65,9 @@ class ResearchInterviewTests(IsolatedAsyncioTestCase):
     async def test_only_final_turn_is_scored_and_uses_both_answers(self):
         self.replies(
             FollowupDecision(action="ask_b"),
-            ResearchRating(score=4, evidence=["先找平衡點", "比較不緊張"], suggestion="下次也可以先停一下。"),
+            ResearchRating(score=4, evidence=["先停一下再開口", "比較不緊張"], suggestion="下次也可以先停一下。"),
         )
-        pending = await next_research_step(self.client, self.bank, self.session, "我先找平衡點。", "11")
+        pending = await next_research_step(self.client, self.bank, self.session, "我先停一下再開口。", "11")
         self.assertEqual(pending.followup_question, self.bank.weeks[13].followups["B"].question)
         self.assertEqual(pending.status, "pending")
         self.assertIsNone(pending.result)
@@ -79,22 +82,22 @@ class ResearchInterviewTests(IsolatedAsyncioTestCase):
         request = self.parse.call_args.kwargs
         self.assertIs(request["response_format"], ResearchRating)
         payload = json.loads(request["messages"][1]["content"])
-        self.assertEqual(payload["primary"], "我先找平衡點。")
+        self.assertEqual(payload["primary"], "我先停一下再開口。")
         self.assertEqual(payload["followup"], "後來比較不緊張。")
         self.assertNotIn("previousAttempts", payload)
 
     async def test_a_uses_the_prescribed_question(self):
         self.replies(FollowupDecision(action="ask_a"))
-        pending = await next_research_step(self.client, self.bank, self.session, "塔一直晃。", "21")
+        pending = await next_research_step(self.client, self.bank, self.session, "大家選的情緒不一樣。", "21")
         self.assertEqual(pending.followup_question, self.bank.weeks[13].followups["A"].question)
         self.assertIsNone(pending.result)
 
     async def test_valid_zero_is_saved_as_scored(self):
         self.replies(
             FollowupDecision(action="complete"),
-            ResearchRating(score=0, evidence=["塔倒了"], suggestion="下次可回顧當時的做法。"),
+            ResearchRating(score=0, evidence=["大家選的情緒不一樣"], suggestion="下次可回顧當時的做法。"),
         )
-        complete = await next_research_step(self.client, self.bank, self.session, "塔倒了。", "31")
+        complete = await next_research_step(self.client, self.bank, self.session, "大家選的情緒不一樣。", "31")
         self.assertEqual(complete.result.score, 0)
         self.assertEqual(complete.status, "scored")
         self.assertIsNone(complete.missing_reason)
@@ -126,5 +129,5 @@ class ResearchInterviewTests(IsolatedAsyncioTestCase):
             ResearchRating(score=4, evidence=["先深呼吸"], suggestion="繼續練習。"),
         )
         with self.assertRaisesRegex(ValueError, "證據必須取自"):
-            await next_research_step(self.client, self.bank, self.session, "我先找平衡點。", "61")
+            await next_research_step(self.client, self.bank, self.session, "我先停一下再開口。", "61")
         self.assertIsNone(self.session.result)
