@@ -29,8 +29,17 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
 
             item = load_bank().weeks[13]
             session = ResearchSession(week=13, game=item.game, dimension=item.dimension, question=item.question)
-            user.sel_research_sessions[13] = session
-            state = UserState(sel_research_week=13)
+            user = User.model_validate({
+                **user.model_dump(),
+                "sel_research_sessions": {13: {
+                    **session.model_dump(exclude={"result"}),
+                    "status": "scored",
+                    "primary": "舊版作答",
+                    "primary_message_id": "legacy-primary",
+                    "result": {"score": 0, "evidence": ["舊版作答"], "suggestion": "試答回饋。"},
+                }},
+            })
+            state = UserState()
             pending = session.model_copy(update={
                 "primary": "我先停一下。",
                 "primary_message_id": "primary",
@@ -45,11 +54,12 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
             })
             advance = AsyncMock(side_effect=[pending, completed])
             save = AsyncMock()
-            sender = AsyncMock(side_effect=[TimeoutError(), None, None, TimeoutError(), None])
+            sender = AsyncMock(side_effect=[None, TimeoutError(), None, None, TimeoutError(), None])
             read_answer = AsyncMock(side_effect=["我先停一下。", "後來比較冷靜。"])
             primary = SimpleNamespace(message=SimpleNamespace(id="primary"))
             repeated_text = SimpleNamespace(message=SimpleNamespace(id="repeat-as-new-input"))
             supplement = SimpleNamespace(message=SimpleNamespace(id="supplement"))
+            legacy_primary = SimpleNamespace(message=SimpleNamespace(id="legacy-primary"))
             resume = SimpleNamespace(message=SimpleNamespace(id="resume"))
 
             with (
@@ -59,9 +69,16 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
                 patch.object(handler, "save_user_data", save),
                 patch.object(handler, "send_text_message", sender),
             ):
+                await handler.research_command(resume, "student", "/sel 13")
+                self.assertIn(item.question, sender.await_args.args[1])
+                self.assertEqual(user.sel_research_sessions[13].result.score, 0)
+                self.assertIsNone(user.sel_teacher_sessions[13].result)
+                self.assertTrue(await handler.handle_research_input(legacy_primary, "student", read_answer))
+                advance.assert_not_awaited()
+
                 with self.assertRaises(TimeoutError):
                     await handler.handle_research_input(primary, "student", read_answer)
-                self.assertEqual(user.sel_research_sessions[13].pending_reply_id, "primary")
+                self.assertEqual(user.sel_teacher_sessions[13].pending_reply_id, "primary")
 
                 # A newly sent answer cannot be mistaken for the unseen supplement.
                 self.assertTrue(await handler.handle_research_input(repeated_text, "student", read_answer))
@@ -70,14 +87,14 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
 
                 self.assertTrue(await handler.handle_research_input(primary, "student", read_answer))
                 self.assertIn(item.followups["B"].question, sender.await_args.args[1])
-                self.assertIsNone(user.sel_research_sessions[13].pending_reply_id)
+                self.assertIsNone(user.sel_teacher_sessions[13].pending_reply_id)
                 self.assertTrue(await handler.handle_research_input(primary, "student", read_answer))
-                self.assertEqual(sender.await_count, 3)
+                self.assertEqual(sender.await_count, 4)
                 self.assertEqual(advance.await_count, 1)
 
                 with self.assertRaises(TimeoutError):
                     await handler.handle_research_input(supplement, "student", read_answer)
-                self.assertEqual(user.sel_research_sessions[13].pending_reply_id, "supplement")
+                self.assertEqual(user.sel_teacher_sessions[13].pending_reply_id, "supplement")
                 self.assertEqual(state.sel_research_week, 13)
 
                 # Reading the saved score through /sel works after a service restart.
@@ -85,8 +102,10 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
                 get_user.return_value = restored
                 state.sel_research_week = None
                 await handler.research_command(resume, "student", "/sel 13")
-                self.assertIn("4／5 分", sender.await_args.args[1])
-                self.assertIsNone(restored.sel_research_sessions[13].pending_reply_id)
+                self.assertIn("4／10 分", sender.await_args.args[1])
+                self.assertIsNone(restored.sel_teacher_sessions[13].pending_reply_id)
                 self.assertIsNone(state.sel_research_week)
                 self.assertEqual(advance.await_count, 2)
-                self.assertEqual(save.await_count, 2)
+                self.assertEqual(restored.sel_research_sessions[13].result.score, 0)
+                self.assertEqual(restored.sel_teacher_sessions[13].result.score, 4)
+                self.assertEqual(save.await_count, 3)

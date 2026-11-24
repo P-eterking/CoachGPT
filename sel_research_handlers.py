@@ -28,7 +28,7 @@ def _session_message(session: ResearchSession) -> str:
     if session.result is not None:
         return (
             f"第 {session.week} 週《{session.game}》｜{session.dimension}\n"
-            f"{session.result.score}／5 分\n{session.result.suggestion}"
+            f"{session.result.score}／10 分\n{session.result.suggestion}"
         )
     if session.followup_question:
         return f"補問｜{session.followup_question}\n可輸入 /sel 略過 或 /sel 離開。"
@@ -46,15 +46,15 @@ async def _send_session_reply(event, session: ResearchSession) -> None:
 
 
 async def _save_session(user, session: ResearchSession) -> None:
-    previous = user.sel_research_sessions.get(session.week)
-    user.sel_research_sessions[session.week] = session
+    previous = user.sel_teacher_sessions.get(session.week)
+    user.sel_teacher_sessions[session.week] = session
     try:
         await save_user_data()
     except Exception:
         if previous is None:
-            del user.sel_research_sessions[session.week]
+            del user.sel_teacher_sessions[session.week]
         else:
-            user.sel_research_sessions[session.week] = previous
+            user.sel_teacher_sessions[session.week] = previous
         raise
 
 
@@ -74,7 +74,7 @@ async def research_command(event, user_id: str, message: str) -> None:
             reply = "已離開研究對答。重新輸入 /sel 與週次可回到同一筆紀錄。"
         elif arg == "略過":
             week = state.sel_research_week
-            session = user.sel_research_sessions.get(week)
+            session = user.sel_teacher_sessions.get(week)
             if session is None or session.status != "pending":
                 reply = "請先輸入 /sel 與本週的週次。"
             else:
@@ -84,7 +84,7 @@ async def research_command(event, user_id: str, message: str) -> None:
                 reply = _session_message(session)
         elif arg in {str(week) for week in _bank().weeks}:
             week = int(arg)
-            session = user.sel_research_sessions.get(week)
+            session = user.sel_teacher_sessions.get(week)
             if session is None:
                 item = _bank().weeks[week]
                 session = ResearchSession(week=week, game=item.game, dimension=item.dimension, question=item.question)
@@ -114,14 +114,19 @@ async def handle_research_input(event, user_id: str, read_answer) -> bool:
         if user is None or state is None:
             return False
         message_id = str(event.message.id)
-        for entry in user.sel_research_sessions.values():
+        for entry in user.sel_teacher_sessions.values():
             if message_id not in (entry.primary_message_id, entry.followup_message_id):
                 continue
             if entry.pending_reply_id == message_id and state.sel_research_week == entry.week:
                 await _send_session_reply(event, entry)
                 state.sel_research_week = entry.week if entry.status == "pending" else None
             return True
-        session = user.sel_research_sessions.get(state.sel_research_week)
+        if any(
+            message_id in (entry.primary_message_id, entry.followup_message_id)
+            for entry in user.sel_research_sessions.values()
+        ):
+            return True
+        session = user.sel_teacher_sessions.get(state.sel_research_week)
         if session is None:
             return False
         if session.pending_reply_id is not None:
