@@ -139,7 +139,7 @@ services:
     volumes:
       - ./data/config7.json:/app/config.json
       - ./data/user_data7.json:/app/user_data.json
-      - ./category7-8:/app/category
+      - ./category:/app/category7-8
       - ./templates:/app/templates
 
   service8:
@@ -158,5 +158,5 @@ services:
     volumes:
       - ./data/config8.json:/app/config.json
       - ./data/user_data8.json:/app/user_data.json
-      - ./category7-8:/app/category
+      - ./category:/app/category7-8
       - ./templates:/app/templates

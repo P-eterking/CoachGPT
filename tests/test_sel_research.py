@@ -35,11 +35,8 @@ class ResearchBankTests(TestCase):
 
     def test_sel4_uses_the_loaded_banks_metadata(self):
         classroom = QuestionCategory.model_validate_json(Path("category/sel4.json").read_text())
-        older = QuestionCategory.model_validate_json(Path("category7-8/sel4.json").read_text())
         self.assertEqual(classroom.sel_unit.name_chi, "同感 2.0")
         self.assertTrue(classroom.sel_unit.use_question_rubric_in_chinese)
-        self.assertEqual(older.sel_unit.name_chi, "瑪利歐驚險塔")
-        self.assertFalse(older.sel_unit.use_question_rubric_in_chinese)
 
     def test_rubric_range_cannot_exceed_five(self):
         with self.assertRaises(ValidationError):

@@ -361,7 +361,6 @@ class SELUnitMetadata(BaseModel):
     name_chi: str
     image: str
     use_question_rubric_in_chinese: bool = False
-    history_key_prefix: str | None = None
 
 
 class QuestionCategory(BaseModel):

@@ -3,8 +3,7 @@
         "name_eng": "Feelinks 2.0",
         "name_chi": "同感 2.0",
         "image": "/templates/sel/feelink20.jpg",
-        "use_question_rubric_in_chinese": true,
-        "history_key_prefix": "sel4_feelinks"
+        "use_question_rubric_in_chinese": true
     },
     "content": [
         {

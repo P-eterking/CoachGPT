@@ -1,10 +1,4 @@
 {
-    "sel_unit": {
-        "name_eng": "Balancing Tower",
-        "name_chi": "瑪利歐驚險塔",
-        "image": "/templates/sel/scare_tower.jpg",
-        "use_question_rubric_in_chinese": false
-    },
     "content": [
         {
             "text": "Respond to the question:\nPlease describe a moment in the Balancing Tower Game when you felt the most nervous. How did you keep yourself calm or focused?\n回答問題：\n請描述一次你在瑪利歐驚險塔遊戲中感到最緊張的時刻，你是如何讓自己保持冷靜或專注的？",

@@ -38,6 +38,13 @@ def _session_message(session: ResearchSession) -> str:
     )
 
 
+async def _send_session_reply(event, session: ResearchSession) -> None:
+    await send_text_message(event, _session_message(session))
+    # The saved marker survives a restart until the next normal data save.
+    # LINE's one-use reply token prevents a second reply to the same event.
+    session.pending_reply_id = None
+
+
 async def _save_session(user, session: ResearchSession) -> None:
     previous = user.sel_research_sessions.get(session.week)
     user.sel_research_sessions[session.week] = session
@@ -83,7 +90,8 @@ async def research_command(event, user_id: str, message: str) -> None:
                 session = ResearchSession(week=week, game=item.game, dimension=item.dimension, question=item.question)
                 await _save_session(user, session)
             state.sel_research_week = week if session.status == "pending" else None
-            reply = _session_message(session)
+            await _send_session_reply(event, session)
+            return
         else:
             reply = "請輸入 /sel 與本週的週次（第 4–15 週），例如 /sel 13。"
     await send_text_message(event, reply)
@@ -106,24 +114,32 @@ async def handle_research_input(event, user_id: str, read_answer) -> bool:
         if user is None or state is None:
             return False
         message_id = str(event.message.id)
-        if any(
-            message_id in (entry.primary_message_id, entry.followup_message_id)
-            for entry in user.sel_research_sessions.values()
-        ):
+        for entry in user.sel_research_sessions.values():
+            if message_id not in (entry.primary_message_id, entry.followup_message_id):
+                continue
+            if entry.pending_reply_id == message_id and state.sel_research_week == entry.week:
+                await _send_session_reply(event, entry)
+                state.sel_research_week = entry.week if entry.status == "pending" else None
             return True
         session = user.sel_research_sessions.get(state.sel_research_week)
-        if session is None or session.status != "pending":
+        if session is None:
+            return False
+        if session.pending_reply_id is not None:
+            await send_text_message(event, f"請先輸入 /sel {session.week} 取得尚未送出的補問或評分。")
+            return True
+        if session.status != "pending":
             return False
 
         try:
             text = (await read_answer()).strip()
             updated = await next_research_step(client, _bank(), session, text, message_id)
+            updated.pending_reply_id = message_id
             await _save_session(user, updated)
         except Exception as error:
             _logger.warning("SEL research answer failed (%s)", type(error).__name__)
             await send_text_message(event, "這次對答暫時處理失敗，請重新傳送剛才的回答。")
             return True
+        await _send_session_reply(event, updated)
         if updated.status != "pending":
             state.sel_research_week = None
-        await send_text_message(event, _session_message(updated))
         return True

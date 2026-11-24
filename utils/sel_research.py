@@ -65,6 +65,7 @@ class ResearchSession(BaseModel):
     followup_question: str | None = None
     followup: str | None = None
     followup_message_id: str | None = None
+    pending_reply_id: str | None = None
     status: Literal["pending", "scored", "insufficient"] = "pending"
     result: ResearchRating | None = None
     missing_reason: Literal["skipped", "unintelligible", "no_experience"] | None = None

@@ -226,20 +226,15 @@ def getChatHistory(user_id: str) -> ChatHistory:
 def updateChatHistory(user_id, chat: ChatHistory):
     user_data[user_id].chat = chat
 
-def _question_history_key(key: str) -> str:
-    category, _, index = key.rpartition("-")
-    bank = question_manager.get_category(category) if index.isdecimal() else None
-    if bank and bank.sel_unit and bank.sel_unit.history_key_prefix:
-        return f"{bank.sel_unit.history_key_prefix}-{index}"
-    return key
-
-
+# 更新使用者的歷史紀錄
 def updateHistory(user_id, key, history: SpeechAssessment):
-    user_data[user_id].history.setdefault(_question_history_key(key), []).append(history)
+    if key not in user_data[user_id].history:
+        user_data[user_id].history[key] = []
+    user_data[user_id].history[key].append(history)
 
-
+# 獲取使用者的歷史紀錄
 def getHistory(user_id, key) -> list[SpeechAssessment] | None:
-    return user_data[user_id].history.get(_question_history_key(key))
+    return user_data[user_id].history.get(key, None)
 
 # ========== 管理員與功能開關 ==========
 
