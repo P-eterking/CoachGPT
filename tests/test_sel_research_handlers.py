@@ -229,3 +229,111 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
                 self.assertIn("8／10 分", reply.await_args.args[1])
                 self.assertIsNone(user.sel_menu_sessions["clicked-q1"].followup_question)
                 self.assertEqual(user.sel_menu_sessions["clicked-q5"].result.score, 7)
+
+    async def test_audio_cannot_score_a_newer_question_or_an_exited_question(self):
+        with patch.dict(os.environ, {
+            "OPENAI_API_KEY": "test-key",
+            "LINE_CHANNEL_SECRET": "test-secret",
+            "LINE_CHANNEL_ACCESS_TOKEN": "test-token",
+            "DOMAIN": "example.invalid",
+            "SEL_RESEARCH_ENABLED": "1",
+        }):
+            import config
+            import handlers
+            import sel_research_handlers as research
+            from utils import file_utils
+
+            self.addAsyncCleanup(config.client.close)
+            self.addAsyncCleanup(config.async_api_client.close)
+            user = User(id="test", dep="test", name="test", class_time=1, history={})
+            state = UserState(category="sel4", sel_language="chi")
+            source = SimpleNamespace(user_id="student")
+            q1 = SimpleNamespace(source=source, timestamp=100, webhook_event_id="q1",
+                                 postback=SimpleNamespace(data="action=record&sub=0"))
+            q2 = SimpleNamespace(source=source, timestamp=300, webhook_event_id="q2",
+                                 postback=SimpleNamespace(data="action=record&sub=1"))
+            late_q1_audio = SimpleNamespace(source=source, timestamp=200, message=SimpleNamespace(id="q1-audio"))
+            exit_command = SimpleNamespace(source=source, timestamp=400,
+                                           message=SimpleNamespace(id="leave", text="/sel 離開"))
+            after_exit_audio = SimpleNamespace(source=source, timestamp=500,
+                                              message=SimpleNamespace(id="closed-audio"))
+
+            with (
+                patch.object(file_utils, "user_data", {"student": user}),
+                patch.object(file_utils, "user_state", {"student": state}),
+                patch.object(handlers, "handle_rich_menu", AsyncMock()),
+                patch.object(handlers, "check_user_login", AsyncMock(return_value=True)),
+                patch.object(handlers, "isEnabled", return_value=True),
+                patch.object(handlers, "show_loading", AsyncMock()),
+                patch.object(handlers, "get_audio_content", AsyncMock()) as download,
+                patch.object(handlers, "send_text_message", AsyncMock()) as prompt,
+                patch.object(research, "send_message", AsyncMock()),
+                patch.object(research, "send_text_message", AsyncMock()) as research_reply,
+                patch.object(research, "save_user_data", AsyncMock()),
+            ):
+                await handlers.handle_postback(q1)
+                await handlers.handle_postback(q2)
+                await handlers.handle_audio_message(late_q1_audio)
+                self.assertIn("請選回原題後再傳一次", research_reply.await_args.args[1])
+                self.assertEqual(state.sel_menu_session_id, "q2")
+                self.assertIsNone(user.sel_menu_sessions["q1"].primary)
+                self.assertIsNone(user.sel_menu_sessions["q2"].primary)
+
+                await handlers.handle_text_message(exit_command)
+                self.assertIsNone(state.sel_menu_session_id)
+                await handlers.handle_audio_message(after_exit_audio)
+                self.assertIn("請先點選", prompt.await_args.args[1])
+                download.assert_not_awaited()
+                self.assertEqual(user.history, {})
+
+                # A delayed replay of the original click cannot reopen the exited question.
+                await handlers.handle_postback(q2)
+                self.assertIsNone(state.sel_menu_session_id)
+
+    async def test_failed_card_is_retried_on_redelivery_after_reload(self):
+        with patch.dict(os.environ, {
+            "OPENAI_API_KEY": "test-key",
+            "LINE_CHANNEL_SECRET": "test-secret",
+            "LINE_CHANNEL_ACCESS_TOKEN": "test-token",
+            "SEL_RESEARCH_ENABLED": "1",
+        }):
+            import config
+            import sel_research_handlers as research
+
+            self.addAsyncCleanup(config.client.close)
+            self.addAsyncCleanup(config.async_api_client.close)
+            user = User(id="test", dep="test", name="test", class_time=1, history={})
+            state = UserState(sel_research_week=13)
+            click = SimpleNamespace(webhook_event_id="click", timestamp=100)
+            card = object()
+            sender = AsyncMock(side_effect=[TimeoutError(), None])
+            persisted = []
+
+            async def save():
+                persisted.append(get_user.return_value.model_dump_json())
+
+            with (
+                patch.object(research, "getUser", return_value=user) as get_user,
+                patch.object(research, "get_user_state", return_value=state) as get_state,
+                patch.object(research, "send_message", sender),
+                patch.object(research, "save_user_data", side_effect=save),
+            ):
+                with self.assertRaises(TimeoutError):
+                    await research.begin_menu_question(click, "student", "sel4", 0, "第一題", "zh", card)
+                self.assertIsNone(state.sel_research_week)
+                self.assertIsNone(state.sel_menu_session_id)
+                self.assertTrue(user.sel_menu_sessions["click"].card_pending)
+
+                get_user.return_value = User.model_validate_json(persisted[-1])
+                get_state.return_value = UserState()
+                await research.begin_menu_question(click, "student", "sel4", 0, "第一題", "zh", card)
+                self.assertEqual(get_state.return_value.sel_menu_session_id, "click")
+                sender.assert_awaited_with(click, [card])
+
+                restored = User.model_validate_json(persisted[-1])
+                self.assertFalse(restored.sel_menu_sessions["click"].card_pending)
+                self.assertEqual(len(restored.sel_menu_sessions), 1)
+
+                get_user.return_value = restored
+                await research.begin_menu_question(click, "student", "sel4", 0, "第一題", "zh", card)
+                self.assertEqual(sender.await_count, 2)

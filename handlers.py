@@ -720,15 +720,20 @@ async def handle_audio_message(event):
     if not user_state:
         return
     
-    await show_loading(user_id, secs=30)
-
     async def read_answer(language):
+        await show_loading(user_id, secs=30)
         audio = await get_audio_content(event)
         if not audio:
             raise ValueError("無法取得音訊")
         return await transcribe_audio(audio, language=language)
 
     if await handle_research_input(event, user_id, read_answer):
+        return
+
+    await show_loading(user_id, secs=30)
+
+    if research_enabled() and _is_sel_category(user_state.category):
+        await send_text_message(event, "請先點選下方的 SEL 題目，再傳送錄音。")
         return
 
     # Prioritize game mode
@@ -1770,8 +1775,8 @@ async def handle_postback(event):
     if not user_state:
         return
     menu_followup = research_enabled() and action == 'record' and _is_sel_category(user_state.category)
-    if not menu_followup:
-        await close_research_input(user_id)
+    if not menu_followup and not await close_research_input(user_id, event):
+        return
 
     if action == 'chat':
         if vars.get('summary'):
@@ -1816,7 +1821,6 @@ async def handle_postback(event):
         if not isEnabled(_record_cat) and not isAdmin(user_id):
             await send_text_message(event, "該區塊功能尚未開放。\nThis feature has not been unlocked yet.")
             return
-        user_state.sub = sub
         # SEL 題目卡片依使用者選擇的作答語言（中 / 英）顯示；
         # 非 SEL 類別 sel_language 傳 None，行為完全不變。
         _record_sel_lang = getattr(user_state, 'sel_language', None) if _is_sel_category(user_state.category) else None
@@ -1829,6 +1833,7 @@ async def handle_postback(event):
             language = "en" if _record_sel_lang == "eng" else "zh"
             await begin_menu_question(event, user_id, user_state.category, sub, question.text, language, card)
         else:
+            user_state.sub = sub
             await send_message(event, card)
     elif action == 'carousel':
         page = int(vars.get('page', 0))

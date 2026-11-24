@@ -317,6 +317,7 @@ class User(BaseModel):
 class UserState(BaseModel):
     sel_research_week: int | None = None
     sel_menu_session_id: str | None = None
+    sel_selected_at: int | None = None
     category: Optional[str] = Field(description="類別", default=None)  # 類別
     sub:  Optional[int] = Field(description="子題", default=-1)  # 子題
     sex: Optional[int] = Field(description="性別", default=0)  # 性別

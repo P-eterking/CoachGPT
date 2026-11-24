@@ -25,6 +25,11 @@ def _user_lock(user_id: str) -> asyncio.Lock:
     return _locks.setdefault(user_id, asyncio.Lock())
 
 
+def _predates_selection(event, state) -> bool:
+    timestamp = getattr(event, "timestamp", None)
+    return timestamp is not None and state.sel_selected_at is not None and timestamp < state.sel_selected_at
+
+
 def _session_message(session: ResearchSession | MenuSELSession) -> str:
     menu = isinstance(session, MenuSELSession)
     label = f"Q{session.sub + 1}" if menu else f"第 {session.week} 週《{session.game}》"
@@ -91,29 +96,52 @@ async def begin_menu_question(event, user_id: str, category: str, sub: int, ques
     if user is None or state is None:
         return
     async with _user_lock(user_id):
+        if _predates_selection(event, state):
+            return
         event_id = getattr(event, "webhook_event_id", None) or uuid4().hex
         sessions = user.sel_menu_sessions
-        if event_id in sessions:
-            return
-        previous = next((
+        delivery = next((
             (key, attempt) for key, attempt in reversed(sessions.items())
-            if (attempt.category, attempt.sub, attempt.question, attempt.language) == (category, sub, question, language)
-            and (attempt.status == "pending" or attempt.pending_reply_id is not None)
+            if attempt.card_event_id == event_id
         ), None)
-        if previous is None:
-            session_id = event_id
-            session = MenuSELSession(category=category, sub=sub, question=question, language=language)
-            await _save_session(user, sessions, session_id, session)
+        if delivery is not None:
+            session_id, session = delivery
+            if not session.card_pending:
+                return
+            if (session.category, session.sub, session.question, session.language) != (category, sub, question, language):
+                await send_text_message(event, "題目或作答語言已切換，請重新點選原題。")
+                return
         else:
-            session_id, session = previous
+            if event_id in sessions:
+                return
+            previous = next((
+                (key, attempt) for key, attempt in reversed(sessions.items())
+                if (attempt.category, attempt.sub, attempt.question, attempt.language) == (category, sub, question, language)
+                and (attempt.status == "pending" or attempt.pending_reply_id is not None or attempt.card_pending)
+            ), None)
+            if previous is None:
+                session_id = event_id
+                session = MenuSELSession(category=category, sub=sub, question=question, language=language)
+            else:
+                session_id, session = previous
+            session = session.model_copy(update={"card_event_id": event_id, "card_pending": True})
+            await _save_session(user, sessions, session_id, session)
 
         state.sel_research_week = None
-        state.sel_menu_session_id = session_id
+        state.sel_menu_session_id = None
+        state.sel_selected_at = getattr(event, "timestamp", state.sel_selected_at)
         messages = [card]
         if session.followup_question or session.status != "pending":
             messages.append(await text_message(_session_message(session)))
         await send_message(event, messages)
+        state.sel_menu_session_id = session_id
+        state.sub = sub
+
+        # LINE reply tokens can only be used once, so keep the confirmed delivery in memory
+        # even if persisting this acknowledgement fails.
+        session.card_pending = False
         session.pending_reply_id = None
+        await save_user_data()
 
 
 async def research_command(event, user_id: str, message: str) -> None:
@@ -127,9 +155,13 @@ async def research_command(event, user_id: str, message: str) -> None:
 
     arg = message.partition(" ")[2].strip()
     async with _user_lock(user_id):
+        if _predates_selection(event, state):
+            return
+        selected_at = getattr(event, "timestamp", state.sel_selected_at)
         if arg == "離開":
             state.sel_research_week = None
             state.sel_menu_session_id = None
+            state.sel_selected_at = selected_at
             reply = "已離開 SEL 對答。重新點選原題或輸入原週次即可繼續。"
         elif arg == "略過":
             records, key = _selected_session(user, state)
@@ -140,6 +172,8 @@ async def research_command(event, user_id: str, message: str) -> None:
                 session = session.model_copy(update={"status": "insufficient", "missing_reason": "skipped", "pending_reply_id": None})
                 await _save_session(user, records, key, session)
                 state.sel_research_week = None
+                state.sel_menu_session_id = None
+                state.sel_selected_at = selected_at
                 reply = _session_message(session)
         elif arg in {str(week) for week in _bank().weeks}:
             week = int(arg)
@@ -150,6 +184,7 @@ async def research_command(event, user_id: str, message: str) -> None:
                 await _save_session(user, user.sel_teacher_sessions, week, session)
             state.sel_menu_session_id = None
             state.sel_research_week = week if session.status == "pending" else None
+            state.sel_selected_at = selected_at
             await _send_session_reply(event, session)
             return
         else:
@@ -157,13 +192,17 @@ async def research_command(event, user_id: str, message: str) -> None:
     await send_text_message(event, reply)
 
 
-async def close_research_input(user_id: str) -> None:
+async def close_research_input(user_id: str, event) -> bool:
     if research_enabled():
         async with _user_lock(user_id):
             state = get_user_state(user_id)
             if state is not None:
+                if _predates_selection(event, state):
+                    return False
                 state.sel_research_week = None
                 state.sel_menu_session_id = None
+                state.sel_selected_at = getattr(event, "timestamp", state.sel_selected_at)
+    return True
 
 
 async def handle_research_input(event, user_id: str, read_answer) -> bool:
@@ -191,6 +230,9 @@ async def handle_research_input(event, user_id: str, read_answer) -> bool:
             return True
         if session is None:
             return False
+        if _predates_selection(event, state):
+            await send_text_message(event, "這則回答是在目前這題開啟前送出的。請選回原題後再傳一次。")
+            return True
         menu = isinstance(session, MenuSELSession)
         if session.pending_reply_id is not None:
             resume = f"再按一次 Q{session.sub + 1}" if menu else f"輸入 /sel {session.week}"

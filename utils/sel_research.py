@@ -86,6 +86,8 @@ class MenuSELSession(SELConversation):
     category: str
     sub: int
     language: Literal["zh", "en"] = "zh"
+    card_event_id: str | None = None
+    card_pending: bool = False
 
 
 class LegacyResearchRating(ResearchRating):
