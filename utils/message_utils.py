@@ -1234,8 +1234,16 @@ SEL_UNITS_CONFIG = {
 
 
 def get_sel_unit_config(unit_num: int) -> dict:
-    """取得指定 SEL 單元的設定（含中英文名稱與圖片網址）。"""
+    """Use metadata from the active question bank when a unit has different editions."""
+    category = question_manager.get_category(f"sel{unit_num}")
+    if category is not None and category.sel_unit is not None:
+        return category.sel_unit.model_dump()
     return SEL_UNITS_CONFIG.get(unit_num, {})
+
+
+def use_chinese_sel_question_rubric(category: str) -> bool:
+    bank = question_manager.get_category(category)
+    return bool(bank and bank.sel_unit and bank.sel_unit.use_question_rubric_in_chinese)
 
 
 def get_sel_unit_name(unit_num: int, language: str = 'both') -> str:
@@ -4061,7 +4069,7 @@ async def sel_progress_message(user_id: str) -> FlexMessage:
         ('sel1', 'Monopoly / 地產大亨'),
         ('sel2', 'The Game of Life / 生命之旅'),
         ('sel5', 'Piranha Plant / 食人花'),
-        ('sel4', 'Balancing Tower / 驚險塔'),
+        ('sel4', get_sel_unit_name(4)),
         ('sel3', 'FLIP / 換言一新'),
         ('sel6', 'Seven!'),
     ]

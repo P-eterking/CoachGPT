@@ -1,6 +1,9 @@
 from typing import Annotated, List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field, conlist, field_validator, model_validator, ConfigDict
 
+from utils.sel_research import ResearchSession
+
+
 class SpeechAssessment(BaseModel):
     chi_suggestion: str = Field(description="繁體中文建議 Traditional Chinese (zh-TW) suggestion", default_factory=lambda: "無建議。")  # 中文建議
     eng_suggestion: str = Field(description="英文建議 English suggestion", default_factory=lambda: "No suggestion.")  # 英文建議
@@ -304,11 +307,13 @@ class User(BaseModel):
     question_history: dict[str, list[dict]] = Field(description='問題回答紀錄', default_factory=dict)  # 問題回答紀錄
     # 「顯示文字」功能使用次數 (僅在 npc_voice_output=True 的服務中記錄，用於研究分析)
     show_text_count: int = Field(description='顯示文字功能使用次數 (service5 語音模式)', default=0)
+    sel_research_sessions: dict[int, ResearchSession] = Field(default_factory=dict)
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
 
 class UserState(BaseModel):
+    sel_research_week: int | None = None
     category: Optional[str] = Field(description="類別", default=None)  # 類別
     sub:  Optional[int] = Field(description="子題", default=-1)  # 子題
     sex: Optional[int] = Field(description="性別", default=0)  # 性別
@@ -351,7 +356,15 @@ class Question(BaseModel):
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
 
+class SELUnitMetadata(BaseModel):
+    name_eng: str
+    name_chi: str
+    image: str
+    use_question_rubric_in_chinese: bool = False
+
+
 class QuestionCategory(BaseModel):
+    sel_unit: SELUnitMetadata | None = None
     # enabled: bool = Field(description="是否啟用", default=True)  # 是否啟用
     # response: bool = Field(description="是否回饋", default=True)  # 是否回饋
     content: List[Question] = Field(description="問題")  # 問題

@@ -44,7 +44,7 @@ from utils.message_utils import (
     get_chat_topic_system_prompt,
     chat_welcome_message, chat_topic_intro_message,
     # SEL 單元介紹卡片
-    sel_unit_intro_message,
+    sel_unit_intro_message, use_chinese_sel_question_rubric,
     # 語音表達評估提示詞 (service6)
     PRONUNCIATION_ASSESSMENT_INSTRUCTION,
 )
@@ -75,6 +75,10 @@ import base64
 from pydub import AudioSegment
 from io import BytesIO
 import os
+
+from sel_research_handlers import (
+    close_research_input, handle_research_input, research_command, research_enabled,
+)
 
 # ========== 引導型客服機器人系統提示詞 ==========
 # 作為文件載入失敗時的備援，直接嵌入核心指引。
@@ -179,13 +183,20 @@ async def transcribe_audio(message_content: bytes, language: str | None = "en") 
         f.flush()
         
         language_options = {} if language is None else {'language': language}
-        transcription_prompt = (
-            "The speaker may use Mandarin Chinese, English, or both. Transcribe in the "
-            "original spoken languages without translation. Preserve code-switching. "
-            "Use Traditional Chinese for Chinese speech."
-            if language is None else
-            "This is an English educational game. The user may say alphanumeric codes like CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. Transcribe exactly what is spoken in English without translation."
-        )
+        if language == "zh":
+            transcription_prompt = "請用繁體中文忠實轉錄學生的中文回答，保留原話，避免翻譯、改寫或補寫。"
+        elif language is None:
+            transcription_prompt = (
+                "The speaker may use Mandarin Chinese, English, or both. Transcribe in the "
+                "original spoken languages without translation. Preserve code-switching. "
+                "Use Traditional Chinese for Chinese speech."
+            )
+        else:
+            transcription_prompt = (
+                "This is an English educational game. The user may say alphanumeric codes like "
+                "CROWN-X-1859, SH-221B, OVERRIDE-PROTOCOL-007, or times like 04:18:37. "
+                "Transcribe exactly what is spoken in English without translation."
+            )
         transcript_obj = await client.audio.transcriptions.create(
             model="gpt-4o-mini-transcribe",
             file=(f.name, f.read()),
@@ -319,6 +330,12 @@ async def handle_text_message(event):
         await _dispatch_slash_command(event, user_id, message)
         return
 
+    async def read_answer():
+        return message
+
+    if await handle_research_input(event, user_id, read_answer):
+        return
+
     if is_fallback_guide_enabled() and hasData(user_id):
         # Service4/5：對任意非指令文字訊息啟用引導型客服機器人回應。
         await show_loading(user_id, secs=15)
@@ -425,6 +442,8 @@ async def _cmd_help(event, user_id, _message):
         if admin_only and not is_user_admin:
             continue
         alias_str = " 或 ".join(aliases)
+        if _handler is research_command and not research_enabled():
+            continue
         suffix = " [admin]" if admin_only else ""
         lines.append(f"{alias_str}{suffix}")
         lines.append(f"  {desc_zh}")
@@ -459,6 +478,10 @@ _SLASH_COMMANDS = (
      "管理員專用：強制重建全部 rich menu（耗時較長）",
      "Admin only: force-rebuild every rich menu (takes longer)",
      True),
+    (('/sel',), research_command,
+     "第 4–15 週 SEL 研究對答，例 /sel 13",
+     "SEL research interview for weeks 4–15, e.g. /sel 13",
+     False),
     (('/help', '/幫助'), _cmd_help,
      "顯示本指令清單",
      "Show this command list",
@@ -698,7 +721,16 @@ async def handle_audio_message(event):
         return
     
     await show_loading(user_id, secs=30)
-    
+
+    async def read_answer():
+        audio = await get_audio_content(event)
+        if not audio:
+            raise ValueError("無法取得音訊")
+        return await transcribe_audio(audio, language="zh")
+
+    if await handle_research_input(event, user_id, read_answer):
+        return
+
     # Prioritize game mode
     if config.get('rag_mode'):
         # Check if in NPC chat mode
@@ -882,11 +914,9 @@ async def handle_audio_message(event):
         else:
             _system_prompt_for_audio = SYSTEM_INSTRUCTION
 
-        # SEL 中文作答模式不附上 <standard>（題庫的十級參考答案為英文，對中文作答不適用）。
-        # 其餘情況維持原本行為（SEL 英文模式仍展開十級 few-shot；一般練習照舊）。
         if _neutral_sel_test:
             standard_section = f"<standard>\n{question.assessment_standard or ''}\n</standard>"
-        elif _is_sel and _sel_language == 'chi'and category != 'sel4':
+        elif _is_sel and _sel_language == 'chi' and not use_chinese_sel_question_rubric(category):
             standard_section = ""
         else:
             standard_section = build_standard_section_for_audio(
@@ -1735,11 +1765,12 @@ async def handle_postback(event):
     
     if not await check_user_login(event):
         return
-    
+
+    await close_research_input(user_id)
     user_state = get_user_state(user_id)
     if not user_state:
         return
-    
+
     if action == 'chat':
         if vars.get('summary'):
             await handle_chat_summary(event)
