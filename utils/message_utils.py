@@ -962,7 +962,8 @@ async def progress_message(user_id):
     )
 
 
-async def question_message(user_id, category, sub, show_feedback: bool = True, sel_language: str = None):
+async def question_message(user_id, category, sub, show_feedback: bool = True,
+                           sel_language: str = None, *, research_followup: bool = False):
     question = question_manager.get_question(category, sub)
     history = getHistory(user_id, f'{category}-{sub}')
 
@@ -1055,7 +1056,11 @@ async def question_message(user_id, category, sub, show_feedback: bool = True, s
     
     # SEL 中文模式顯示全中文說明「試著用中文回答以下問題」；
     # 其餘維持原本中英對照說明（含 service1/2/3 與 SEL 英文模式）。
-    if _chi_mode:
+    if research_followup and _chi_mode:
+        _instruction_text = "請用中文打字或錄音回答這一題。如果需要補充細節，CoachGPT 會再問你一次。"
+    elif research_followup:
+        _instruction_text = "Type or record your answer. CoachGPT may ask one follow-up before giving feedback."
+    elif _chi_mode:
         _instruction_text = (
             '試著用中文回答以下問題！\n'
             '請在發送文字訊息的鍵盤位置，點擊麥克風符號錄音並發送語音訊息以作答。'

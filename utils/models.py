@@ -1,7 +1,7 @@
 from typing import Annotated, List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field, conlist, field_validator, model_validator, ConfigDict
 
-from utils.sel_research import ResearchSession
+from utils.sel_research import LegacyResearchSession, MenuSELSession, ResearchSession
 
 
 class SpeechAssessment(BaseModel):
@@ -307,13 +307,17 @@ class User(BaseModel):
     question_history: dict[str, list[dict]] = Field(description='問題回答紀錄', default_factory=dict)  # 問題回答紀錄
     # 「顯示文字」功能使用次數 (僅在 npc_voice_output=True 的服務中記錄，用於研究分析)
     show_text_count: int = Field(description='顯示文字功能使用次數 (service5 語音模式)', default=0)
-    sel_research_sessions: dict[int, ResearchSession] = Field(default_factory=dict)
+    sel_research_sessions: dict[int, LegacyResearchSession] = Field(default_factory=dict)
+    sel_teacher_sessions: dict[int, ResearchSession] = Field(default_factory=dict)
+    sel_menu_sessions: dict[str, MenuSELSession] = Field(default_factory=dict)
     
     def to_dict(self) -> dict:
         return self.model_dump(exclude_none=True)
 
 class UserState(BaseModel):
     sel_research_week: int | None = None
+    sel_menu_session_id: str | None = None
+    sel_selected_at: int | None = None
     category: Optional[str] = Field(description="類別", default=None)  # 類別
     sub:  Optional[int] = Field(description="子題", default=-1)  # 子題
     sex: Optional[int] = Field(description="性別", default=0)  # 性別

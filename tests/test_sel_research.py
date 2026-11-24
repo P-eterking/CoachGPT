@@ -20,7 +20,11 @@ class ResearchBankTests(TestCase):
     def test_schedule_matches_expected_dimensions(self):
         bank = load_bank()
         self.assertEqual(set(bank.weeks), set(range(4, 16)))
-        self.assertEqual(len(bank.rubrics), 5)
+        self.assertEqual([level.score for level in bank.rubric], list(range(1, 11)))
+        self.assertEqual(
+            set(bank.rubric[0].model_dump(by_alias=True)),
+            {"score", "社會情緒覺察", "反思與推理", "人際回應與策略", "表達與組織"},
+        )
         for first, second in ((5, 15), (8, 10)):
             self.assertEqual(bank.weeks[first], bank.weeks[second])
         self.assertEqual(bank.weeks[6].game, "同感 2.0")
@@ -32,15 +36,18 @@ class ResearchBankTests(TestCase):
     def test_legacy_user_loads_without_research_record(self):
         student = User(id="test", dep="test", name="test", class_time=1, history={})
         self.assertEqual(student.sel_research_sessions, {})
+        self.assertEqual(student.sel_teacher_sessions, {})
 
     def test_sel4_uses_the_loaded_banks_metadata(self):
         classroom = QuestionCategory.model_validate_json(Path("category/sel4.json").read_text())
         self.assertEqual(classroom.sel_unit.name_chi, "同感 2.0")
         self.assertTrue(classroom.sel_unit.use_question_rubric_in_chinese)
 
-    def test_rubric_range_cannot_exceed_five(self):
-        with self.assertRaises(ValidationError):
-            ResearchRating(score=6, evidence=[], suggestion="耐心等待。")
+    def test_teacher_rating_range_is_one_to_ten(self):
+        for score in (0, 11):
+            with self.assertRaises(ValidationError):
+                ResearchRating(score=score, evidence=[], suggestion="耐心等待。")
+        self.assertEqual(ResearchRating(score=10, evidence=[], suggestion="耐心等待。").score, 10)
 
 
 class ResearchInterviewTests(IsolatedAsyncioTestCase):
@@ -82,6 +89,8 @@ class ResearchInterviewTests(IsolatedAsyncioTestCase):
         self.assertEqual(payload["primary"], "我先停一下再開口。")
         self.assertEqual(payload["followup"], "後來比較不緊張。")
         self.assertNotIn("previousAttempts", payload)
+        self.assertEqual([level["score"] for level in payload["rubric"]], list(range(1, 11)))
+        self.assertIn("整體等級", request["messages"][0]["content"])
 
     async def test_a_uses_the_prescribed_question(self):
         self.replies(FollowupDecision(action="ask_a"))
@@ -89,13 +98,13 @@ class ResearchInterviewTests(IsolatedAsyncioTestCase):
         self.assertEqual(pending.followup_question, self.bank.weeks[13].followups["A"].question)
         self.assertIsNone(pending.result)
 
-    async def test_valid_zero_is_saved_as_scored(self):
+    async def test_valid_one_is_saved_as_scored(self):
         self.replies(
             FollowupDecision(action="complete"),
-            ResearchRating(score=0, evidence=["大家選的情緒不一樣"], suggestion="下次可回顧當時的做法。"),
+            ResearchRating(score=1, evidence=["大家選的情緒不一樣"], suggestion="下次可回顧當時的做法。"),
         )
         complete = await next_research_step(self.client, self.bank, self.session, "大家選的情緒不一樣。", "31")
-        self.assertEqual(complete.result.score, 0)
+        self.assertEqual(complete.result.score, 1)
         self.assertEqual(complete.status, "scored")
         self.assertIsNone(complete.missing_reason)
 
