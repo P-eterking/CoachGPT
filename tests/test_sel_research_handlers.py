@@ -109,3 +109,123 @@ class ResearchHandlerTests(IsolatedAsyncioTestCase):
                 self.assertEqual(restored.sel_research_sessions[13].result.score, 0)
                 self.assertEqual(restored.sel_teacher_sessions[13].result.score, 4)
                 self.assertEqual(save.await_count, 3)
+
+    async def test_existing_q_button_routes_card_text_and_audio_to_one_score(self):
+        from json import loads
+
+        with patch.dict(os.environ, {
+            "OPENAI_API_KEY": "test-key",
+            "LINE_CHANNEL_SECRET": "test-secret",
+            "LINE_CHANNEL_ACCESS_TOKEN": "test-token",
+            "DOMAIN": "example.invalid",
+            "SEL_RESEARCH_ENABLED": "1",
+        }):
+            import config
+            import handlers
+            import sel_research_handlers as research
+            from utils import file_utils
+            from utils.sel_research import MenuFollowupDecision
+
+            self.addAsyncCleanup(config.client.close)
+            self.addAsyncCleanup(config.async_api_client.close)
+            user = User(id="test", dep="test", name="test", class_time=1, history={})
+            state = UserState(category="sel4", sel_language="chi")
+            question = config.question_manager.get_question("sel4", 4).text
+            source = SimpleNamespace(user_id="student")
+            click = SimpleNamespace(
+                source=source, webhook_event_id="clicked-q5",
+                postback=SimpleNamespace(data="action=record&sub=4"),
+            )
+            main = SimpleNamespace(
+                source=source,
+                message=SimpleNamespace(id="main-answer", text="下次分組有人沈默，我會先問他有沒有不同想法。"),
+            )
+            supplement = SimpleNamespace(source=source, message=SimpleNamespace(id="voice-answer"))
+            followup = "你為什麼會想先問他的想法？"
+            parse = AsyncMock(side_effect=[
+                SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                    parsed=MenuFollowupDecision(action="ask", question=followup)
+                ))]),
+                SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                    parsed=ResearchRating(score=7, evidence=["也許他不同意"], suggestion="可以先問對方的想法。")
+                ))]),
+            ])
+            model_client = SimpleNamespace(beta=SimpleNamespace(
+                chat=SimpleNamespace(completions=SimpleNamespace(parse=parse)),
+            ))
+            with (
+                patch.object(file_utils, "user_data", {"student": user}),
+                patch.object(file_utils, "user_state", {"student": state}),
+                patch.object(handlers, "handle_rich_menu", AsyncMock()),
+                patch.object(handlers, "check_user_login", AsyncMock(return_value=True)),
+                patch.object(handlers, "isEnabled", return_value=True),
+                patch.object(handlers, "show_loading", AsyncMock()),
+                patch.object(handlers, "get_audio_content", AsyncMock(return_value=b"audio")),
+                patch.object(handlers, "transcribe_audio", AsyncMock(return_value="也許他不同意，但沒有機會說。")) as transcribe,
+                patch.object(handlers, "send_message", AsyncMock()) as old_card,
+                patch.object(research, "send_message", AsyncMock()) as card_sender,
+                patch.object(research, "send_text_message", AsyncMock()) as reply,
+                patch.object(research, "save_user_data", AsyncMock()),
+                patch.object(research, "client", model_client),
+            ):
+                await handlers.handle_postback(click)
+                card = card_sender.await_args.args[1][0]
+                self.assertEqual(card.alt_text, "Q5")
+                self.assertEqual(card.contents.contents[0].body.contents[1].text, question)
+                self.assertIn("打字或錄音", card.contents.contents[-1].body.contents[0].text)
+                self.assertEqual(state.sel_menu_session_id, "clicked-q5")
+
+                await handlers.handle_text_message(main)
+                self.assertIn(followup, reply.await_args.args[1])
+                self.assertEqual(parse.await_count, 1)
+                self.assertNotIn("sel4-4", user.history)
+                decision_payload = loads(parse.await_args.kwargs["messages"][1]["content"])
+                self.assertEqual(decision_payload["question"], question)
+
+                click_again = SimpleNamespace(
+                    source=source, webhook_event_id="clicked-q5-again", postback=click.postback,
+                )
+                await handlers.handle_postback(click_again)
+                self.assertEqual(state.sel_menu_session_id, "clicked-q5")
+                self.assertIn(followup, card_sender.await_args.args[1][1].text)
+
+                await handlers.handle_audio_message(supplement)
+                transcribe.assert_awaited_once_with(b"audio", language="zh")
+                self.assertIn("7／10 分", reply.await_args.args[1])
+                self.assertEqual(parse.await_count, 2)
+                score_payload = loads(parse.await_args.kwargs["messages"][1]["content"])
+                self.assertFalse(score_payload["require_actual_experience"])
+                self.assertEqual(score_payload["followup_question"], followup)
+                self.assertEqual(user.history["sel4-4"][0].score, 7)
+                self.assertEqual(user.sel_menu_sessions["clicked-q5"].result.score, 7)
+                self.assertEqual(user.sel_teacher_sessions, {})
+
+                await handlers.handle_audio_message(supplement)
+                self.assertEqual(parse.await_count, 2)
+                self.assertEqual(len(user.history["sel4-4"]), 1)
+
+                with patch.dict(os.environ, {"SEL_RESEARCH_ENABLED": "0"}):
+                    await handlers.handle_postback(click)
+                old_card.assert_awaited_once()
+                self.assertEqual(len(user.sel_menu_sessions), 1)
+
+                q1_click = SimpleNamespace(
+                    source=source, webhook_event_id="clicked-q1",
+                    postback=SimpleNamespace(data="action=record&sub=0"),
+                )
+                q1_answer = "選情緒卡時，我發現自己先緊張，聽完同學的理由才放心。"
+                parse.side_effect = [
+                    SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                        parsed=MenuFollowupDecision(action="complete", question=None)
+                    ))]),
+                    SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                        parsed=ResearchRating(score=8, evidence=["我發現自己先緊張"], suggestion="留意情緒變化。")
+                    ))]),
+                ]
+                await handlers.handle_postback(q1_click)
+                await handlers.handle_text_message(SimpleNamespace(
+                    source=source, message=SimpleNamespace(id="q1-answer", text=q1_answer),
+                ))
+                self.assertIn("8／10 分", reply.await_args.args[1])
+                self.assertIsNone(user.sel_menu_sessions["clicked-q1"].followup_question)
+                self.assertEqual(user.sel_menu_sessions["clicked-q5"].result.score, 7)

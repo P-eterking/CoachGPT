@@ -205,7 +205,9 @@ Docker Compose 在五號機器人（`service5`）的服務設定中啟用 `SEL_R
 
 `research/sel_weekly.json` 收錄週次表的主問題、A／B 備用題及教師的中文版 SEL 評分規準。每次對答聚焦當週的 SEL 向度，依規準四項描述給整段一個 1–10 分。資料不足的紀錄沒有分數。
 
-採教師規準的對答存於 `sel_teacher_sessions`，保留週次、學生原話、補問、整體分數及作答狀態。先前的 0–5 分紀錄保存在 `sel_research_sessions`，研究分析使用 `sel_teacher_sessions`。
+在五號也可直接點 SEL 遊戲選單的 Q 按鈕。學生回答卡片中的題目後，系統視需要補問一次，再依教師規準給整段一個 1–10 分。選單題依原題意接受實例或假設策略。重新點選可繼續未完成的對答，或開始新的練習。選單對答記在 `sel_menu_sessions`，結束評分也記進原本的單題作答歷史。
+
+採每週教師規準的對答存於 `sel_teacher_sessions`，保留週次、學生原話、補問、整體分數及作答狀態。先前的 0–5 分紀錄保存在 `sel_research_sessions`，研究分析使用 `sel_teacher_sessions`。
 
 ---
 
